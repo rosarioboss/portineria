@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="it">
+<html>
 <head>
 
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <title>Portineria Digitale</title>
 
@@ -16,17 +16,12 @@ margin:0;
 padding:10px;
 }
 
-.container{
-max-width:500px;
-margin:auto;
-}
-
 .card{
 background:white;
 padding:15px;
-border-radius:10px;
 margin-bottom:15px;
-box-shadow:0 3px 8px rgba(0,0,0,0.1);
+border-radius:10px;
+box-shadow:0 3px 10px rgba(0,0,0,0.1);
 }
 
 h2{
@@ -35,49 +30,48 @@ color:#075e54;
 }
 
 input,select,textarea{
-
 width:100%;
 padding:10px;
 margin-bottom:10px;
 border-radius:6px;
 border:1px solid #ccc;
-
 }
 
 button{
-
 width:100%;
 padding:12px;
 border:none;
 border-radius:8px;
 font-weight:bold;
 margin-top:5px;
-
 }
 
-.btn-add{background:#3498db;color:white;}
-.btn-wa{background:#25d366;color:white;}
-.btn-mass{background:#e67e22;color:white;}
-.btn-rac{background:#9b59b6;color:white;}
+.btn{
+background:#25d366;
+color:white;
+}
+
+.btn2{
+background:#f39c12;
+color:white;
+}
+
+.btn3{
+background:#3498db;
+color:white;
+}
+
+.btn4{
+background:#e74c3c;
+color:white;
+}
 
 .riga{
-
 display:flex;
 justify-content:space-between;
 align-items:center;
-padding:6px 0;
+padding:6px;
 border-bottom:1px solid #eee;
-
-}
-
-.btn-mini{
-
-background:#25d366;
-color:white;
-border:none;
-padding:6px 10px;
-border-radius:5px;
-
 }
 
 </style>
@@ -86,25 +80,35 @@ border-radius:5px;
 
 <body>
 
-<div class="container">
+<div class="card">
+
+<h2>➕ Nuovo condomino</h2>
+
+<input id="nome" placeholder="Nome">
+
+<input id="telefono" placeholder="Telefono">
+
+<select id="scalaAdd">
+<option>A</option>
+<option>B</option>
+<option>C</option>
+</select>
+
+<button class="btn" onclick="aggiungi()">Salva</button>
+
+</div>
 
 <div class="card">
 
-<h2>👥 Aggiungi condomino</h2>
+<h2>🔎 Cerca condomino</h2>
 
-<input id="nome" placeholder="Nome o interno">
+<input id="cerca" onkeyup="filtra()" placeholder="Nome condomino">
 
-<input id="telefono" placeholder="Telefono 3933...">
+</div>
 
-<select id="scala">
+<div class="card">
 
-<option value="A">Scala A</option>
-<option value="B">Scala B</option>
-<option value="C">Scala C</option>
-
-</select>
-
-<button class="btn-add" onclick="aggiungi()">Salva</button>
+<h2>👥 Condomini</h2>
 
 <div id="lista"></div>
 
@@ -112,13 +116,23 @@ border-radius:5px;
 
 <div class="card">
 
-<h2>📦 Pacchi</h2>
+<h2>📦 Pacco arrivato</h2>
 
 <select id="rubrica"></select>
 
-<button class="btn-wa" onclick="inviaPacco()">Avviso pacco</button>
+<input id="corriere" placeholder="Corriere">
 
-<button class="btn-rac" onclick="inviaRac()">Raccomandata</button>
+<input type="file" accept="image/*" capture="camera">
+
+<button class="btn3" onclick="pacco()">Registra pacco</button>
+
+</div>
+
+<div class="card">
+
+<h2>📜 Pacchi in portineria</h2>
+
+<div id="storico"></div>
 
 </div>
 
@@ -126,65 +140,51 @@ border-radius:5px;
 
 <h2>📢 Avviso a tutti</h2>
 
-<textarea id="msg" placeholder="Scrivi avviso..."></textarea>
+<textarea id="msg"></textarea>
 
-<div id="invioMassivo"></div>
+<button class="btn2" onclick="tutti()">Invia</button>
 
 </div>
 
 <div class="card">
 
-<h2>🏢 Avviso per scala</h2>
+<h2>🏢 Avviso scala</h2>
 
-<select id="scalaAvviso">
+<select id="scala">
 
-<option value="A">Scala A</option>
-<option value="B">Scala B</option>
-<option value="C">Scala C</option>
+<option>A</option>
+<option>B</option>
+<option>C</option>
 
 </select>
 
-<textarea id="msgScala" placeholder="Messaggio scala"></textarea>
+<textarea id="msgScala"></textarea>
 
-<button class="btn-mass" onclick="avvisoScala()">Invia avviso scala</button>
+<button class="btn2" onclick="scala()">Invia</button>
 
 </div>
+
+<div class="card">
+
+<h2>💾 Backup dati</h2>
+
+<button onclick="backup()">Esporta dati</button>
+
+<input type="file" id="ripristina">
+
+<button onclick="importa()">Importa dati</button>
 
 </div>
 
 <script>
 
-function carica(){
+let condomini=JSON.parse(localStorage.getItem("condomini"))||[]
+let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
 
-let db = JSON.parse(localStorage.getItem("portineria")) || []
+function salva(){
 
-let lista=document.getElementById("lista")
-let rubrica=document.getElementById("rubrica")
-let mass=document.getElementById("invioMassivo")
-
-lista.innerHTML=""
-rubrica.innerHTML=""
-mass.innerHTML=""
-
-db.forEach(c=>{
-
-lista.innerHTML+=`
-<div class="riga">
-${c.nome} (Scala ${c.scala})
-<button onclick="elimina(${c.id})">X</button>
-</div>
-`
-
-rubrica.innerHTML+=`<option value="${c.tel}">${c.nome}</option>`
-
-mass.innerHTML+=`
-<div class="riga">
-${c.nome}
-<button class="btn-mini" onclick="inviaMassivo('${c.tel}')">Invia</button>
-</div>
-`
-
-})
+localStorage.setItem("condomini",JSON.stringify(condomini))
+localStorage.setItem("pacchi",JSON.stringify(pacchi))
 
 }
 
@@ -192,90 +192,154 @@ function aggiungi(){
 
 let nome=document.getElementById("nome").value
 let tel=document.getElementById("telefono").value
-let scala=document.getElementById("scala").value
+let scala=document.getElementById("scalaAdd").value
 
-if(!nome||!tel) return
+condomini.push({nome,tel,scala})
 
-let db=JSON.parse(localStorage.getItem("portineria"))||[]
+salva()
+render()
 
-db.push({
+}
 
-id:Date.now(),
-nome:nome,
-tel:tel,
-scala:scala
+function elimina(i){
+
+condomini.splice(i,1)
+
+salva()
+render()
+
+}
+
+function render(){
+
+let lista=document.getElementById("lista")
+let rubrica=document.getElementById("rubrica")
+
+lista.innerHTML=""
+rubrica.innerHTML=""
+
+condomini.forEach((c,i)=>{
+
+lista.innerHTML+=`
+<div class="riga">
+${c.nome} (${c.scala})
+<button class="btn4" onclick="elimina(${i})">X</button>
+</div>
+`
+
+rubrica.innerHTML+=`
+<option value="${c.tel}">
+${c.nome}
+</option>
+`
 
 })
 
-localStorage.setItem("portineria",JSON.stringify(db))
-
-document.getElementById("nome").value=""
-document.getElementById("telefono").value=""
-
-carica()
+storico()
 
 }
 
-function elimina(id){
+function filtra(){
 
-let db=JSON.parse(localStorage.getItem("portineria"))||[]
+let q=document.getElementById("cerca").value.toLowerCase()
 
-db=db.filter(c=>c.id!==id)
+let lista=document.getElementById("lista")
 
-localStorage.setItem("portineria",JSON.stringify(db))
+lista.innerHTML=""
 
-carica()
+condomini.forEach((c,i)=>{
+
+if(c.nome.toLowerCase().includes(q)){
+
+lista.innerHTML+=`
+<div class="riga">
+${c.nome} (${c.scala})
+<button class="btn4" onclick="elimina(${i})">X</button>
+</div>
+`
 
 }
 
-function inviaPacco(){
+})
+
+}
+
+function pacco(){
 
 let sel=document.getElementById("rubrica")
-let tel=sel.value
+
 let nome=sel.options[sel.selectedIndex].text
+let tel=sel.value
 
-let msg="Buongiorno, è arrivato un pacco per "+nome+" in portineria."
+let corriere=document.getElementById("corriere").value
 
-window.location.href="https://wa.me/"+tel+"?text="+encodeURIComponent(msg)
+let ora=new Date().toLocaleTimeString()
+
+pacchi.push({
+nome,
+corriere,
+ora
+})
+
+salva()
+storico()
+
+let msg="Buongiorno, è arrivato un pacco ("+corriere+") in portineria."
+
+window.open("https://wa.me/"+tel+"?text="+encodeURIComponent(msg))
 
 }
 
-function inviaRac(){
+function ritirato(i){
 
-let sel=document.getElementById("rubrica")
-let tel=sel.value
-let nome=sel.options[sel.selectedIndex].text
+pacchi.splice(i,1)
 
-let msg="Buongiorno, è arrivata una raccomandata per "+nome+" in portineria."
-
-window.location.href="https://wa.me/"+tel+"?text="+encodeURIComponent(msg)
+salva()
+storico()
 
 }
 
-function inviaMassivo(tel){
+function storico(){
+
+let s=document.getElementById("storico")
+
+s.innerHTML=""
+
+pacchi.forEach((p,i)=>{
+
+s.innerHTML+=`
+<div class="riga">
+${p.ora} - ${p.nome} (${p.corriere})
+<button class="btn3" onclick="ritirato(${i})">Ritirato</button>
+</div>
+`
+
+})
+
+}
+
+function tutti(){
 
 let msg=document.getElementById("msg").value
 
-if(!msg) return alert("Scrivi il messaggio")
+condomini.forEach(c=>{
 
-window.location.href="https://wa.me/"+tel+"?text="+encodeURIComponent(msg)
+window.open("https://wa.me/"+c.tel+"?text="+encodeURIComponent(msg))
+
+})
 
 }
 
-function avvisoScala(){
+function scala(){
 
-let scala=document.getElementById("scalaAvviso").value
+let sc=document.getElementById("scala").value
 let msg=document.getElementById("msgScala").value
 
-let db=JSON.parse(localStorage.getItem("portineria"))||[]
+condomini.forEach(c=>{
 
-db.forEach(c=>{
+if(c.scala==sc){
 
-if(c.scala===scala){
-
-let url="https://wa.me/"+c.tel+"?text="+encodeURIComponent(msg)
-
-window.open(url)
+window.open("https://wa.me/"+c.tel+"?text="+encodeURIComponent(msg))
 
 }
 
@@ -283,11 +347,50 @@ window.open(url)
 
 }
 
-window.onload=carica
+function backup(){
+
+let dati={
+condomini:condomini,
+pacchi:pacchi
+}
+
+let blob=new Blob([JSON.stringify(dati)],{type:"application/json"})
+
+let a=document.createElement("a")
+
+a.href=URL.createObjectURL(blob)
+
+a.download="backup_portineria.json"
+
+a.click()
+
+}
+
+function importa(){
+
+let file=document.getElementById("ripristina").files[0]
+
+let reader=new FileReader()
+
+reader.onload=function(){
+
+let dati=JSON.parse(reader.result)
+
+condomini=dati.condomini
+pacchi=dati.pacchi
+
+salva()
+render()
+
+}
+
+reader.readAsText(file)
+
+}
+
+render()
 
 </script>
 
 </body>
-
 </html>
-
