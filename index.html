@@ -93,7 +93,9 @@ border-bottom:1px solid #eee;
 
 <video id="camera" autoplay playsinline style="width:100%;display:none;"></video>
 
-<button id="scattaBtn" onclick="catturaFoto()" style="display:none;">📸 Scatta foto etichetta</button>
+<button id="scattaBtn" onclick="catturaFoto()" style="display:none;">
+📸 Scatta foto etichetta
+</button>
 
 <canvas id="canvas" style="display:none;"></canvas>
 
@@ -129,7 +131,7 @@ border-bottom:1px solid #eee;
 
 <textarea id="msgScala"></textarea>
 
-<button onclick="avvisoScala()">Invia</button>
+<button class="btn-mass" onclick="avvisoScala()">Invia</button>
 
 </div>
 
@@ -178,7 +180,7 @@ let r=await fetch("https://api.jsonbin.io/v3/b/"+BIN+"/latest",{headers:{"X-Mast
 
 let d=await r.json()
 
-return d.record || {condomini:[],pacchi:[]}
+return d.record
 
 }
 
@@ -307,21 +309,15 @@ carica()
 
 }
 
-function importaFile(e){
+function cercaCondomino(){
 
-let file=e.target.files[0]
+let testo=document.getElementById("cerca").value.toLowerCase()
 
-let reader=new FileReader()
+let righe=document.querySelectorAll("#lista .riga")
 
-reader.onload=function(ev){
-
-let dati=JSON.parse(ev.target.result)
-
-localStorage.setItem("portineria",JSON.stringify(dati.condomini))
-
-}
-
-reader.readAsText(file)
+righe.forEach(r=>{
+r.style.display=r.innerText.toLowerCase().includes(testo)?"flex":"none"
+})
 
 }
 
