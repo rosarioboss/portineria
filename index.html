@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="it">
-
 <head>
 
 <meta charset="UTF-8">
@@ -110,7 +109,6 @@ border-bottom:1px solid #eee;
 
 </div>
 
-
 <div class="card">
 
 <h2>📦 Pacchi in giacenza</h2>
@@ -118,7 +116,6 @@ border-bottom:1px solid #eee;
 <div id="listaPacchi"></div>
 
 </div>
-
 
 <div class="card">
 
@@ -142,7 +139,6 @@ border-bottom:1px solid #eee;
 
 </div>
 
-
 <div class="card">
 
 <h2>📢 Avviso a tutti</h2>
@@ -154,7 +150,6 @@ border-bottom:1px solid #eee;
 <button onclick="toggleMassivo()">Mostra / Nascondi lista condomini</button>
 
 </div>
-
 
 <div class="card">
 
@@ -310,7 +305,6 @@ db.forEach(c=>{
 if(c.nome.toLowerCase().includes(testo)){
 
 let div=document.createElement("div")
-
 div.className="riga"
 div.innerHTML=c.nome
 
@@ -460,15 +454,38 @@ function trovaCondomino(testo){
 
 let db=JSON.parse(localStorage.getItem("portineria"))||[]
 
+testo=testo.toLowerCase()
+
+testo=testo.replace(/0/g,"o")
+testo=testo.replace(/5/g,"s")
+testo=testo.replace(/1/g,"i")
+
 let trovato=null
 
 db.forEach(c=>{
 
-let cognome=c.nome.toLowerCase().split(" ").pop()
+let nomeCompleto=c.nome.toLowerCase()
 
-let pezzo=cognome.substring(0,4)
+let parti=nomeCompleto.split(" ")
 
-if(testo.includes(cognome)||testo.includes(pezzo)){
+let nome=parti[0]||""
+let cognome=parti[parti.length-1]||""
+
+let n3=nome.substring(0,3)
+let n4=nome.substring(0,4)
+
+let c3=cognome.substring(0,3)
+let c4=cognome.substring(0,4)
+
+if(
+testo.includes(nomeCompleto)||
+testo.includes(nome)||
+testo.includes(cognome)||
+testo.includes(n3)||
+testo.includes(n4)||
+testo.includes(c3)||
+testo.includes(c4)
+){
 trovato=c
 }
 
