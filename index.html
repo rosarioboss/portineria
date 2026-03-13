@@ -95,18 +95,18 @@ border-bottom:1px solid #eee;
 <button class="btn-add" onclick="aggiungi()">Salva condomino</button>
 
 <h3>Importa condomini</h3>
-
 <input type="file" onchange="importaFile(event)">
 
 <button onclick="backup()">Scarica backup</button>
 
 <h3>Cerca condomino</h3>
-
 <input id="cerca" placeholder="Scrivi 2 lettere..." onkeyup="cercaCondomino()">
 
 <div id="risultatiRicerca"></div>
 
-<div id="lista"></div>
+<button onclick="toggleCondomini()">👥 Mostra / Nascondi condomini</button>
+
+<div id="lista" style="display:none;"></div>
 
 </div>
 
@@ -161,6 +161,18 @@ border-bottom:1px solid #eee;
 </div>
 
 <script>
+
+function toggleCondomini(){
+
+let lista=document.getElementById("lista")
+
+if(lista.style.display==="none"){
+lista.style.display="block"
+}else{
+lista.style.display="none"
+}
+
+}
 
 function carica(){
 
@@ -262,7 +274,9 @@ carica()
 mostraPacchi()
 
 }catch{
+
 alert("File non valido")
+
 }
 
 }
@@ -310,9 +324,7 @@ div.className="riga"
 div.innerHTML=c.nome
 
 div.onclick=()=>{
-
 document.getElementById("rubrica").value=c.tel
-
 }
 
 risultati.appendChild(div)
@@ -326,9 +338,7 @@ risultati.appendChild(div)
 function inviaPacco(){
 
 let sel=document.getElementById("rubrica")
-
 let tel=sel.value
-
 let nome=sel.options[sel.selectedIndex].text
 
 let msg="Buongiorno, è arrivato un pacco per "+nome+" in portineria."
@@ -351,9 +361,7 @@ window.location.href="https://wa.me/"+tel+"?text="+encodeURIComponent(msg)
 function inviaRac(){
 
 let sel=document.getElementById("rubrica")
-
 let tel=sel.value
-
 let nome=sel.options[sel.selectedIndex].text
 
 let msg="Buongiorno, è arrivata una raccomandata per "+nome+" in portineria."
@@ -375,7 +383,6 @@ div.innerHTML=""
 lista.forEach((p,i)=>{
 
 let data=new Date(p.data)
-
 let giorni=Math.floor((new Date()-data)/(1000*60*60*24))
 
 let riga=document.createElement("div")
@@ -409,7 +416,6 @@ mostraPacchi()
 function inviaMassivo(tel){
 
 let msg=document.getElementById("msg").value
-
 if(!msg)return
 
 window.location.href="https://wa.me/"+tel+"?text="+encodeURIComponent(msg)
@@ -426,9 +432,7 @@ let db=JSON.parse(localStorage.getItem("portineria"))||[]
 db.forEach(c=>{
 
 if(c.scala===scala){
-
 window.open("https://wa.me/"+c.tel+"?text="+encodeURIComponent(msg))
-
 }
 
 })
@@ -495,47 +499,26 @@ trovaCondomino(testo)
 
 function trovaCondomino(testo){
 
-let db = JSON.parse(localStorage.getItem("portineria")) || []
+let db=JSON.parse(localStorage.getItem("portineria"))||[]
 
-testo = testo.toLowerCase()
+testo=testo.toLowerCase()
 
-let trovato = null
+let trovato=null
 
 db.forEach(c=>{
 
-let nome = c.nome.toLowerCase()
+let nome=c.nome.toLowerCase()
 
-let parti = nome.split(" ")
+let parti=nome.split(" ")
 
-let nome1 = parti[0] || ""
-let nome2 = parti[1] || ""
+let nome1=parti[0]||""
+let nome2=parti[1]||""
 
-if(
-testo.includes(nome) ||
-(testo.includes(nome1) && testo.includes(nome2))
-){
-trovato = c
+if(testo.includes(nome)||(testo.includes(nome1)&&testo.includes(nome2))){
+trovato=c
 }
 
 })
-
-if(trovato){
-
-let msg = "Buongiorno, è arrivato un pacco per " + trovato.nome + " in portineria."
-
-window.open("https://wa.me/" + trovato.tel + "?text=" + encodeURIComponent(msg))
-
-}else{
-
-alert("Condomino non trovato")
-
-}
-
-}
-
-let db=JSON.parse(localStorage.getItem("portineria"))||[]
-
-let trovato=db.find(c=>testo.includes(c.nome.toLowerCase()))
 
 if(trovato){
 
@@ -561,6 +544,4 @@ mostraPacchi()
 </script>
 
 </body>
-
 </html>
-
