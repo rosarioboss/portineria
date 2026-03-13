@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="it">
-
 <head>
 
 <meta charset="UTF-8">
@@ -15,7 +14,6 @@
 body{
 font-family:Arial;
 background:#f2f2f2;
-margin:0;
 padding:10px;
 }
 
@@ -32,44 +30,24 @@ margin-bottom:15px;
 box-shadow:0 3px 8px rgba(0,0,0,0.1);
 }
 
-h2{
-margin-top:0;
-color:#075e54;
-}
-
-input,select,textarea{
-width:100%;
-padding:10px;
-margin-bottom:10px;
-border-radius:6px;
-border:1px solid #ccc;
-}
-
 button{
 width:100%;
 padding:12px;
 border:none;
 border-radius:8px;
-font-weight:bold;
-margin-top:5px;
-}
-
-.btn-add{background:#3498db;color:white;}
-.btn-wa{background:#25d366;color:white;}
-.btn-mass{background:#e67e22;color:white;}
-.btn-rac{background:#9b59b6;color:white;}
-
-.riga{
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding:6px;
-border-bottom:1px solid #eee;
+margin-top:6px;
 }
 
 .verde{background:#b9f6ca}
 .giallo{background:#fff59d}
 .rosso{background:#ff8a80}
+
+.riga{
+display:flex;
+justify-content:space-between;
+padding:6px;
+border-bottom:1px solid #eee;
+}
 
 </style>
 
@@ -85,17 +63,13 @@ border-bottom:1px solid #eee;
 
 <select id="rubrica"></select>
 
-<button class="btn-wa" onclick="inviaPacco()">Avviso pacco</button>
+<button onclick="inviaPacco()">Avviso pacco</button>
 
-<button class="btn-rac" onclick="inviaRac()">Raccomandata</button>
-
-<button class="btn-add" onclick="scansionaEtichetta()">📷 Scansiona etichetta</button>
+<button onclick="scansionaEtichetta()">📷 Scansiona etichetta</button>
 
 <video id="camera" autoplay playsinline style="width:100%;display:none;"></video>
 
-<button id="scattaBtn" onclick="catturaFoto()" style="display:none;">
-📸 Scatta foto etichetta
-</button>
+<button id="scattaBtn" onclick="catturaFoto()" style="display:none;">Scatta foto</button>
 
 <canvas id="canvas" style="display:none;"></canvas>
 
@@ -111,58 +85,9 @@ border-bottom:1px solid #eee;
 
 <div class="card">
 
-<h2>📢 Avviso a tutti</h2>
-
-<textarea id="msg"></textarea>
-
-<div id="invioMassivo"></div>
-
-</div>
-
-<div class="card">
-
-<h2>🏢 Avviso per scala</h2>
-
-<select id="scalaAvviso">
-<option>A</option>
-<option>B</option>
-<option>C</option>
-</select>
-
-<textarea id="msgScala"></textarea>
-
-<button class="btn-mass" onclick="avvisoScala()">Invia</button>
-
-</div>
-
-<div class="card">
-
-<h2>👥 Gestione condomini</h2>
-
-<input id="cerca" placeholder="Cerca condomino..." onkeyup="cercaCondomino()">
-
-<div id="risultatiRicerca"></div>
-
-<button onclick="toggleCondomini()">Mostra / Nascondi condomini</button>
-
-<div id="lista" style="display:none;"></div>
-
-<h3>Aggiungi condomino</h3>
-
-<input id="nome" placeholder="Nome">
-<input id="telefono" placeholder="Telefono">
-
-<select id="scala">
-<option>A</option>
-<option>B</option>
-<option>C</option>
-</select>
-
-<button onclick="aggiungi()">Salva condomino</button>
+<h2>👥 Rubrica</h2>
 
 <input type="file" onchange="importaFile(event)">
-
-<button onclick="backup()">Scarica backup</button>
 
 </div>
 
@@ -170,72 +95,47 @@ border-bottom:1px solid #eee;
 
 <script>
 
-const BIN="69b4356999b15f1d78363448"
+function caricaRubrica(){
 
-const KEY="$2a$10$MSOOYNTStKR/vC9S87mPo.Kg6g35ImWKUEIO60Hxl6Qj9zUAeujoK"
-
-async function caricaDB(){
-
-let r=await fetch("https://api.jsonbin.io/v3/b/"+BIN+"/latest",{headers:{"X-Master-Key":KEY}})
-
-let d=await r.json()
-
-return d.record
-
-}
-
-async function salvaDB(data){
-
-await fetch("https://api.jsonbin.io/v3/b/"+BIN,{
-method:"PUT",
-headers:{
-"Content-Type":"application/json",
-"X-Master-Key":KEY
-},
-body:JSON.stringify(data)
-})
-
-}
-
-async function carica(){
-
-let db=await caricaDB()
+let db=JSON.parse(localStorage.getItem("condomini"))||[]
 
 let rubrica=document.getElementById("rubrica")
 
 rubrica.innerHTML=""
 
-db.condomini.forEach(c=>{
-rubrica.innerHTML+=`<option value="${c.tel}">${c.nome}</option>`
-})
-
-mostraPacchi(db.pacchi)
-
-caricaLista(db.condomini)
-
-}
-
-function caricaLista(db){
-
-let lista=document.getElementById("lista")
-
-lista.innerHTML=""
-
 db.forEach(c=>{
-lista.innerHTML+=`<div class="riga">${c.nome} (${c.scala})</div>`
+
+rubrica.innerHTML+=`<option value="${c.tel}">${c.nome}</option>`
+
 })
 
 }
 
-function toggleCondomini(){
+function importaFile(event){
 
-let lista=document.getElementById("lista")
+let file=event.target.files[0]
 
-lista.style.display=(lista.style.display==="none")?"block":"none"
+let reader=new FileReader()
+
+reader.onload=function(e){
+
+let dati=JSON.parse(e.target.result)
+
+localStorage.setItem("condomini",JSON.stringify(dati.condomini))
+
+alert("Rubrica caricata")
+
+caricaRubrica()
 
 }
 
-function mostraPacchi(lista){
+reader.readAsText(file)
+
+}
+
+function mostraPacchi(){
+
+let lista=JSON.parse(localStorage.getItem("pacchi"))||[]
 
 let div=document.getElementById("listaPacchi")
 
@@ -243,7 +143,9 @@ div.innerHTML=""
 
 lista.forEach((p,i)=>{
 
-let giorni=Math.floor((Date.now()-new Date(p.data))/(1000*60*60*24))
+let data=new Date(p.data)
+
+let giorni=Math.floor((Date.now()-data)/(1000*60*60*24))
 
 let r=document.createElement("div")
 
@@ -261,9 +163,7 @@ div.appendChild(r)
 
 }
 
-async function inviaPacco(){
-
-let db=await caricaDB()
+function inviaPacco(){
 
 let sel=document.getElementById("rubrica")
 
@@ -271,112 +171,38 @@ let tel=sel.value
 
 let nome=sel.options[sel.selectedIndex].text
 
-db.pacchi.push({nome:nome,data:new Date().toISOString()})
+let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
 
-await salvaDB(db)
+pacchi.push({nome:nome,data:new Date().toISOString()})
 
-carica()
+localStorage.setItem("pacchi",JSON.stringify(pacchi))
+
+mostraPacchi()
 
 window.open("https://wa.me/"+tel+"?text="+encodeURIComponent("È arrivato un pacco per "+nome))
 
 }
 
-async function ritirato(i){
+function ritirato(i){
 
-let db=await caricaDB()
+let lista=JSON.parse(localStorage.getItem("pacchi"))||[]
 
-db.pacchi.splice(i,1)
+lista.splice(i,1)
 
-await salvaDB(db)
+localStorage.setItem("pacchi",JSON.stringify(lista))
 
-carica()
-
-}
-
-async function aggiungi(){
-
-let db=await caricaDB()
-
-let nome=document.getElementById("nome").value
-let tel=document.getElementById("telefono").value
-let scala=document.getElementById("scala").value
-
-db.condomini.push({nome:nome,tel:tel,scala:scala})
-
-await salvaDB(db)
-
-carica()
-
-}
-
-async function importaFile(event){
-
-let file = event.target.files[0]
-
-if(!file) return
-
-let reader = new FileReader()
-
-reader.onload = async function(e){
-
-let dati = JSON.parse(e.target.result)
-
-let db = await caricaDB()
-
-if(Array.isArray(dati)){
-db.condomini = dati
-}
-
-if(dati.condomini){
-db.condomini = dati.condomini
-}
-
-await salvaDB(db)
-
-alert("Rubrica importata")
-
-carica()
-
-}
-
-reader.readAsText(file)
-
-}
-
-function cercaCondomino(){
-
-let testo=document.getElementById("cerca").value.toLowerCase()
-
-let righe=document.querySelectorAll("#lista .riga")
-
-righe.forEach(r=>{
-r.style.display=r.innerText.toLowerCase().includes(testo)?"flex":"none"
-})
-
-}
-
-function backup(){
-
-let data=localStorage.getItem("portineria")
-
-let blob=new Blob([data])
-
-let a=document.createElement("a")
-
-a.href=URL.createObjectURL(blob)
-
-a.download="backup_condomini.json"
-
-a.click()
+mostraPacchi()
 
 }
 
 async function scansionaEtichetta(){
 
 let video=document.getElementById("camera")
+
 let btn=document.getElementById("scattaBtn")
 
 video.style.display="block"
+
 btn.style.display="block"
 
 let stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
@@ -388,26 +214,21 @@ video.srcObject=stream
 function catturaFoto(){
 
 let video=document.getElementById("camera")
+
 let canvas=document.getElementById("canvas")
+
 let ctx=canvas.getContext("2d")
 
-let w=video.videoWidth
-let h=video.videoHeight
+canvas.width=video.videoWidth
 
-let cw=w*0.7
-let ch=h*0.3
+canvas.height=video.videoHeight
 
-let x=(w-cw)/2
-let y=(h-ch)/2
-
-canvas.width=cw
-canvas.height=ch
-
-ctx.drawImage(video,x,y,cw,ch,0,0,cw,ch)
+ctx.drawImage(video,0,0)
 
 video.srcObject.getTracks().forEach(t=>t.stop())
 
 video.style.display="none"
+
 document.getElementById("scattaBtn").style.display="none"
 
 let img=canvas.toDataURL()
@@ -424,32 +245,19 @@ trovaCondomino(r.data.text)
 
 }
 
-async function trovaCondomino(testo){
+function trovaCondomino(testo){
 
-let db=await caricaDB()
+let db=JSON.parse(localStorage.getItem("condomini"))||[]
 
 testo=testo.toLowerCase()
 
-testo=testo.replace(/0/g,"o")
-testo=testo.replace(/5/g,"s")
-
 let trovato=null
 
-db.condomini.forEach(c=>{
+db.forEach(c=>{
 
-let n=c.nome.toLowerCase()
+let nome=c.nome.toLowerCase()
 
-let parti=n.split(" ")
-
-let nome=parti[0]
-let cognome=parti[parti.length-1]
-
-if(
-testo.includes(nome)||
-testo.includes(cognome)||
-testo.includes(nome.substring(0,3))||
-testo.includes(cognome.substring(0,3))
-){
+if(testo.includes(nome)||testo.includes(nome.split(" ")[0])){
 
 trovato=c
 
@@ -473,7 +281,13 @@ alert("Condomino non trovato")
 
 }
 
-window.onload=carica
+window.onload=function(){
+
+caricaRubrica()
+
+mostraPacchi()
+
+}
 
 </script>
 
