@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="it">
+
 <head>
 
 <meta charset="UTF-8">
@@ -14,6 +15,7 @@
 body{
 font-family:Arial;
 background:#f2f2f2;
+margin:0;
 padding:10px;
 }
 
@@ -30,28 +32,44 @@ margin-bottom:15px;
 box-shadow:0 3px 8px rgba(0,0,0,0.1);
 }
 
+h2{
+margin-top:0;
+color:#075e54;
+}
+
+input,select,textarea{
+width:100%;
+padding:10px;
+margin-bottom:10px;
+border-radius:6px;
+border:1px solid #ccc;
+}
+
 button{
 width:100%;
 padding:12px;
-margin-top:6px;
 border:none;
 border-radius:8px;
 font-weight:bold;
+margin-top:5px;
 }
 
-.btn-wa{background:#25d366;color:white;}
 .btn-add{background:#3498db;color:white;}
-
-.verde{background:#b9f6ca}
-.giallo{background:#fff59d}
-.rosso{background:#ff8a80}
+.btn-wa{background:#25d366;color:white;}
+.btn-mass{background:#e67e22;color:white;}
+.btn-rac{background:#9b59b6;color:white;}
 
 .riga{
 display:flex;
 justify-content:space-between;
+align-items:center;
 padding:6px;
 border-bottom:1px solid #eee;
 }
+
+.verde{background:#b9f6ca}
+.giallo{background:#fff59d}
+.rosso{background:#ff8a80}
 
 </style>
 
@@ -62,19 +80,20 @@ border-bottom:1px solid #eee;
 <div class="container">
 
 <div class="card">
+
 <h2>📦 Nuovo pacco</h2>
 
 <select id="rubrica"></select>
 
 <button class="btn-wa" onclick="inviaPacco()">Avviso pacco</button>
 
+<button class="btn-rac" onclick="inviaRac()">Raccomandata</button>
+
 <button class="btn-add" onclick="scansionaEtichetta()">📷 Scansiona etichetta</button>
 
 <video id="camera" autoplay playsinline style="width:100%;display:none;"></video>
 
-<button id="scattaBtn" onclick="catturaFoto()" style="display:none;">
-📸 Scatta foto
-</button>
+<button id="scattaBtn" onclick="catturaFoto()" style="display:none;">📸 Scatta foto etichetta</button>
 
 <canvas id="canvas" style="display:none;"></canvas>
 
@@ -90,13 +109,58 @@ border-bottom:1px solid #eee;
 
 <div class="card">
 
-<h2>👥 Aggiungi condomino</h2>
+<h2>📢 Avviso a tutti</h2>
+
+<textarea id="msg"></textarea>
+
+<div id="invioMassivo"></div>
+
+</div>
+
+<div class="card">
+
+<h2>🏢 Avviso per scala</h2>
+
+<select id="scalaAvviso">
+<option>A</option>
+<option>B</option>
+<option>C</option>
+</select>
+
+<textarea id="msgScala"></textarea>
+
+<button onclick="avvisoScala()">Invia</button>
+
+</div>
+
+<div class="card">
+
+<h2>👥 Gestione condomini</h2>
+
+<input id="cerca" placeholder="Cerca condomino..." onkeyup="cercaCondomino()">
+
+<div id="risultatiRicerca"></div>
+
+<button onclick="toggleCondomini()">Mostra / Nascondi condomini</button>
+
+<div id="lista" style="display:none;"></div>
+
+<h3>Aggiungi condomino</h3>
 
 <input id="nome" placeholder="Nome">
-
 <input id="telefono" placeholder="Telefono">
 
-<button onclick="aggiungi()">Salva</button>
+<select id="scala">
+<option>A</option>
+<option>B</option>
+<option>C</option>
+</select>
+
+<button onclick="aggiungi()">Salva condomino</button>
+
+<input type="file" onchange="importaFile(event)">
+
+<button onclick="backup()">Scarica backup</button>
 
 </div>
 
@@ -104,39 +168,29 @@ border-bottom:1px solid #eee;
 
 <script>
 
-const BIN_ID="69b4356999b15f1d78363448"
+const BIN="69b4356999b15f1d78363448"
 
-const API_KEY="$2a$10$MSOOYNTStKR/vC9S87mPo.Kg6g35ImWKUEIO60Hxl6Qj9zUAeujoK"
+const KEY="$2a$10$MSOOYNTStKR/vC9S87mPo.Kg6g35ImWKUEIO60Hxl6Qj9zUAeujoK"
 
 async function caricaDB(){
 
-let r=await fetch("https://api.jsonbin.io/v3/b/"+BIN_ID+"/latest",{
+let r=await fetch("https://api.jsonbin.io/v3/b/"+BIN+"/latest",{headers:{"X-Master-Key":KEY}})
 
-headers:{
-"X-Master-Key":API_KEY
-}
+let d=await r.json()
 
-})
-
-let data=await r.json()
-
-return data.record || {condomini:[],pacchi:[]}
+return d.record || {condomini:[],pacchi:[]}
 
 }
 
 async function salvaDB(data){
 
-await fetch("https://api.jsonbin.io/v3/b/"+BIN_ID,{
-
+await fetch("https://api.jsonbin.io/v3/b/"+BIN,{
 method:"PUT",
-
 headers:{
 "Content-Type":"application/json",
-"X-Master-Key":API_KEY
+"X-Master-Key":KEY
 },
-
 body:JSON.stringify(data)
-
 })
 
 }
@@ -150,12 +204,32 @@ let rubrica=document.getElementById("rubrica")
 rubrica.innerHTML=""
 
 db.condomini.forEach(c=>{
-
 rubrica.innerHTML+=`<option value="${c.tel}">${c.nome}</option>`
-
 })
 
 mostraPacchi(db.pacchi)
+
+caricaLista(db.condomini)
+
+}
+
+function caricaLista(db){
+
+let lista=document.getElementById("lista")
+
+lista.innerHTML=""
+
+db.forEach(c=>{
+lista.innerHTML+=`<div class="riga">${c.nome} (${c.scala})</div>`
+})
+
+}
+
+function toggleCondomini(){
+
+let lista=document.getElementById("lista")
+
+lista.style.display=(lista.style.display==="none")?"block":"none"
 
 }
 
@@ -167,9 +241,7 @@ div.innerHTML=""
 
 lista.forEach((p,i)=>{
 
-let data=new Date(p.data)
-
-let giorni=Math.floor((Date.now()-data)/(1000*60*60*24))
+let giorni=Math.floor((Date.now()-new Date(p.data))/(1000*60*60*24))
 
 let r=document.createElement("div")
 
@@ -197,13 +269,7 @@ let tel=sel.value
 
 let nome=sel.options[sel.selectedIndex].text
 
-db.pacchi.push({
-
-nome:nome,
-
-data:new Date().toISOString()
-
-})
+db.pacchi.push({nome:nome,data:new Date().toISOString()})
 
 await salvaDB(db)
 
@@ -230,10 +296,10 @@ async function aggiungi(){
 let db=await caricaDB()
 
 let nome=document.getElementById("nome").value
-
 let tel=document.getElementById("telefono").value
+let scala=document.getElementById("scala").value
 
-db.condomini.push({nome:nome,tel:tel})
+db.condomini.push({nome:nome,tel:tel,scala:scala})
 
 await salvaDB(db)
 
@@ -241,14 +307,46 @@ carica()
 
 }
 
+function importaFile(e){
+
+let file=e.target.files[0]
+
+let reader=new FileReader()
+
+reader.onload=function(ev){
+
+let dati=JSON.parse(ev.target.result)
+
+localStorage.setItem("portineria",JSON.stringify(dati.condomini))
+
+}
+
+reader.readAsText(file)
+
+}
+
+function backup(){
+
+let data=localStorage.getItem("portineria")
+
+let blob=new Blob([data])
+
+let a=document.createElement("a")
+
+a.href=URL.createObjectURL(blob)
+
+a.download="backup_condomini.json"
+
+a.click()
+
+}
+
 async function scansionaEtichetta(){
 
 let video=document.getElementById("camera")
-
 let btn=document.getElementById("scattaBtn")
 
 video.style.display="block"
-
 btn.style.display="block"
 
 let stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
@@ -260,33 +358,26 @@ video.srcObject=stream
 function catturaFoto(){
 
 let video=document.getElementById("camera")
-
 let canvas=document.getElementById("canvas")
-
 let ctx=canvas.getContext("2d")
 
 let w=video.videoWidth
-
 let h=video.videoHeight
 
-let cropW=w*0.7
+let cw=w*0.7
+let ch=h*0.3
 
-let cropH=h*0.3
+let x=(w-cw)/2
+let y=(h-ch)/2
 
-let x=(w-cropW)/2
+canvas.width=cw
+canvas.height=ch
 
-let y=(h-cropH)/2
-
-canvas.width=cropW
-
-canvas.height=cropH
-
-ctx.drawImage(video,x,y,cropW,cropH,0,0,cropW,cropH)
+ctx.drawImage(video,x,y,cw,ch,0,0,cw,ch)
 
 video.srcObject.getTracks().forEach(t=>t.stop())
 
 video.style.display="none"
-
 document.getElementById("scattaBtn").style.display="none"
 
 let img=canvas.toDataURL()
@@ -310,7 +401,6 @@ let db=await caricaDB()
 testo=testo.toLowerCase()
 
 testo=testo.replace(/0/g,"o")
-
 testo=testo.replace(/5/g,"s")
 
 let trovato=null
@@ -322,16 +412,13 @@ let n=c.nome.toLowerCase()
 let parti=n.split(" ")
 
 let nome=parti[0]
-
 let cognome=parti[parti.length-1]
 
 if(
-
 testo.includes(nome)||
 testo.includes(cognome)||
 testo.includes(nome.substring(0,3))||
 testo.includes(cognome.substring(0,3))
-
 ){
 
 trovato=c
