@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="it">
+
 <head>
 
 <meta charset="UTF-8">
@@ -66,14 +67,6 @@ padding:6px;
 border-bottom:1px solid #eee;
 }
 
-.btn-mini{
-background:#25d366;
-color:white;
-border:none;
-padding:6px 10px;
-border-radius:5px;
-}
-
 .verde{background:#b9f6ca}
 .giallo{background:#fff59d}
 .rosso{background:#ff8a80}
@@ -101,12 +94,14 @@ border-radius:5px;
 
 <button class="btn-add" onclick="aggiungi()">Salva condomino</button>
 
-<h3>Importa da file</h3>
+<h3>Importa condomini</h3>
+
 <input type="file" onchange="importaFile(event)">
 
 <button onclick="backup()">Scarica backup</button>
 
 <h3>Cerca condomino</h3>
+
 <input id="cerca" placeholder="Scrivi 2 lettere..." onkeyup="cercaCondomino()">
 
 <div id="risultatiRicerca"></div>
@@ -128,6 +123,7 @@ border-radius:5px;
 <button class="btn-add" onclick="scansionaEtichetta()">📷 Scansiona etichetta</button>
 
 <video id="camera" autoplay style="width:100%;display:none;"></video>
+
 <canvas id="canvas" style="display:none;"></canvas>
 
 <h3 id="contatore"></h3>
@@ -171,11 +167,15 @@ function carica(){
 let db=JSON.parse(localStorage.getItem("portineria"))||[]
 
 let lista=document.getElementById("lista")
+
 let rubrica=document.getElementById("rubrica")
+
 let mass=document.getElementById("invioMassivo")
 
 lista.innerHTML=""
+
 rubrica.innerHTML=""
+
 mass.innerHTML=""
 
 db.forEach(c=>{
@@ -183,7 +183,7 @@ db.forEach(c=>{
 lista.innerHTML+=`
 <div class="riga">
 ${c.nome} (Scala ${c.scala})
-<button onclick="eliminaConferma(${c.id})">X</button>
+<button onclick="elimina(${c.id})">X</button>
 </div>
 `
 
@@ -192,7 +192,7 @@ rubrica.innerHTML+=`<option value="${c.tel}">${c.nome}</option>`
 mass.innerHTML+=`
 <div class="riga">
 ${c.nome}
-<button class="btn-mini" onclick="inviaMassivo('${c.tel}')">Invia</button>
+<button onclick="inviaMassivo('${c.tel}')">Invia</button>
 </div>
 `
 
@@ -203,7 +203,9 @@ ${c.nome}
 function aggiungi(){
 
 let nome=document.getElementById("nome").value
+
 let tel=document.getElementById("telefono").value
+
 let scala=document.getElementById("scala").value
 
 if(!nome||!tel)return
@@ -226,9 +228,9 @@ carica()
 
 }
 
-function eliminaConferma(id){
+function elimina(id){
 
-if(confirm("Cancellare questo condomino?")){
+if(!confirm("Cancellare condomino?"))return
 
 let db=JSON.parse(localStorage.getItem("portineria"))||[]
 
@@ -239,6 +241,64 @@ localStorage.setItem("portineria",JSON.stringify(db))
 carica()
 
 }
+
+function importaFile(event){
+
+let file=event.target.files[0]
+
+let reader=new FileReader()
+
+reader.onload=function(e){
+
+let testo=e.target.result
+
+try{
+
+let dati=JSON.parse(testo)
+
+if(dati.condomini){
+
+localStorage.setItem("portineria",JSON.stringify(dati.condomini))
+
+}
+
+if(dati.pacchi){
+
+localStorage.setItem("pacchi",JSON.stringify(dati.pacchi))
+
+}
+
+alert("Importazione completata")
+
+carica()
+
+mostraPacchi()
+
+}catch{
+
+alert("Formato file non valido")
+
+}
+
+}
+
+reader.readAsText(file)
+
+}
+
+function backup(){
+
+let data=localStorage.getItem("portineria")
+
+let blob=new Blob([data])
+
+let a=document.createElement("a")
+
+a.href=URL.createObjectURL(blob)
+
+a.download="backup_condomini.json"
+
+a.click()
 
 }
 
@@ -327,40 +387,27 @@ let div=document.getElementById("listaPacchi")
 
 div.innerHTML=""
 
-let oggi=0
-let vecchi=0
-
 lista.forEach((p,i)=>{
 
 let data=new Date(p.data)
 
-let diff=Math.floor((new Date()-data)/(1000*60*60*24))
+let giorni=Math.floor((new Date()-data)/(1000*60*60*24))
 
 let riga=document.createElement("div")
 
 riga.className="riga"
 
-let bottone=`<button onclick="ritirato(${i})">Ritirato</button>`
+riga.innerHTML=p.nome+" <button onclick='ritirato("+i+")'>Ritirato</button>"
 
-riga.innerHTML=p.nome+bottone
+if(giorni==0)riga.classList.add("verde")
 
-if(diff==0){
-riga.classList.add("verde")
-oggi++
-}
-else if(diff<=3){
-riga.classList.add("giallo")
-}
-else{
-riga.classList.add("rosso")
-vecchi++
-}
+else if(giorni<=3)riga.classList.add("giallo")
+
+else riga.classList.add("rosso")
 
 div.appendChild(riga)
 
 })
-
-document.getElementById("contatore").innerText="Pacchi oggi:"+oggi+" | Pacchi vecchi:"+vecchi
 
 }
 
@@ -380,7 +427,7 @@ function inviaMassivo(tel){
 
 let msg=document.getElementById("msg").value
 
-if(!msg)return alert("Scrivi messaggio")
+if(!msg)return
 
 window.location.href="https://wa.me/"+tel+"?text="+encodeURIComponent(msg)
 
@@ -406,168 +453,6 @@ window.open("https://wa.me/"+c.tel+"?text="+encodeURIComponent(msg))
 
 }
 
-function importaFile(event){
-
-let file = event.target.files[0]
-
-if(!file) return
-
-let reader = new FileReader()
-
-reader.onload = function(e){
-
-let testo = e.target.result
-
-try{
-
-let dati = JSON.parse(testo)
-
-if(dati.condomini){
-
-localStorage.setItem("portineria", JSON.stringify(dati.condomini))
-
-}
-
-if(dati.pacchi){
-
-localStorage.setItem("pacchi", JSON.stringify(dati.pacchi))
-
-}
-
-alert("Importazione completata")
-
-carica()
-mostraPacchi()
-
-}catch(err){
-
-alert("File non valido")
-
-}
-
-}
-
-reader.readAsText(file)
-
-}
-
-let file=event.target.files[0]
-
-let reader=new FileReader()
-
-reader.onload=function(e){
-
-let righe=e.target.result.split("\n")
-
-let db=JSON.parse(localStorage.getItem("portineria"))||[]
-
-righe.forEach(r=>{
-
-let dati=r.split(",")
-
-if(dati.length>=2){
-
-db.push({
-id:Date.now()+Math.random(),
-nome:dati[0],
-tel:dati[1],
-scala:dati[2]||"A"
-})
-
-}
-
-})
-
-localStorage.setItem("portineria",JSON.stringify(db))
-
-carica()
-
-}
-
-reader.readAsText(file)
-
-}
-
-function backup(){
-
-let data=localStorage.getItem("portineria")
-
-let blob=new Blob([data])
-
-let a=document.createElement("a")
-
-a.href=URL.createObjectURL(blob)
-
-a.download="backup_condomini.json"
-
-a.click()
-
-}
-
-async function scansionaEtichetta(){
-
-let video=document.getElementById("camera")
-
-video.style.display="block"
-
-let stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
-
-video.srcObject=stream
-
-setTimeout(catturaFoto,2000)
-
-}
-
-function catturaFoto(){
-
-let video=document.getElementById("camera")
-
-let canvas=document.getElementById("canvas")
-
-let ctx=canvas.getContext("2d")
-
-canvas.width=video.videoWidth
-
-canvas.height=video.videoHeight
-
-ctx.drawImage(video,0,0)
-
-let img=canvas.toDataURL()
-
-leggiTesto(img)
-
-}
-
-async function leggiTesto(img){
-
-let result=await Tesseract.recognize(img,"ita")
-
-let testo=result.data.text.toLowerCase()
-
-trovaCondomino(testo)
-
-}
-
-function trovaCondomino(testo){
-
-let db=JSON.parse(localStorage.getItem("portineria"))||[]
-
-let trovato=db.find(c=>testo.includes(c.nome.toLowerCase()))
-
-if(trovato){
-
-let msg="Buongiorno, è arrivato un pacco per "+trovato.nome+" in portineria."
-
-window.open("https://wa.me/"+trovato.tel+"?text="+encodeURIComponent(msg))
-
-}else{
-
-alert("Condomino non trovato")
-
-}
-
-}
-
 window.onload=function(){
 
 carica()
@@ -579,5 +464,5 @@ mostraPacchi()
 </script>
 
 </body>
-</html>
 
+</html>
