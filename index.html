@@ -110,9 +110,19 @@ border-bottom:1px solid #eee;
 
 </div>
 
+
 <div class="card">
 
-<h2>📦 Pacchi</h2>
+<h2>📦 Pacchi in giacenza</h2>
+
+<div id="listaPacchi"></div>
+
+</div>
+
+
+<div class="card">
+
+<h2>📦 Nuovo pacco</h2>
 
 <select id="rubrica"></select>
 
@@ -130,11 +140,8 @@ border-bottom:1px solid #eee;
 
 <canvas id="canvas" style="display:none;"></canvas>
 
-<h3 id="contatore"></h3>
-
-<div id="listaPacchi"></div>
-
 </div>
+
 
 <div class="card">
 
@@ -142,9 +149,12 @@ border-bottom:1px solid #eee;
 
 <textarea id="msg" placeholder="Scrivi avviso..."></textarea>
 
-<div id="invioMassivo"></div>
+<div id="invioMassivo" style="display:none;"></div>
+
+<button onclick="toggleMassivo()">Mostra / Nascondi lista condomini</button>
 
 </div>
+
 
 <div class="card">
 
@@ -168,6 +178,11 @@ border-bottom:1px solid #eee;
 
 function toggleCondomini(){
 let lista=document.getElementById("lista")
+lista.style.display=(lista.style.display==="none")?"block":"none"
+}
+
+function toggleMassivo(){
+let lista=document.getElementById("invioMassivo")
 lista.style.display=(lista.style.display==="none")?"block":"none"
 }
 
@@ -248,26 +263,13 @@ let reader=new FileReader()
 
 reader.onload=function(e){
 
-try{
-
 let dati=JSON.parse(e.target.result)
 
 if(dati.condomini){
 localStorage.setItem("portineria",JSON.stringify(dati.condomini))
 }
 
-if(dati.pacchi){
-localStorage.setItem("pacchi",JSON.stringify(dati.pacchi))
-}
-
-alert("Importazione completata")
-
 carica()
-mostraPacchi()
-
-}catch{
-alert("File non valido")
-}
 
 }
 
@@ -308,6 +310,7 @@ db.forEach(c=>{
 if(c.nome.toLowerCase().includes(testo)){
 
 let div=document.createElement("div")
+
 div.className="riga"
 div.innerHTML=c.nome
 
@@ -343,25 +346,12 @@ window.location.href="https://wa.me/"+tel+"?text="+encodeURIComponent(msg)
 
 }
 
-function inviaRac(){
-
-let sel=document.getElementById("rubrica")
-let tel=sel.value
-let nome=sel.options[sel.selectedIndex].text
-
-let msg="Buongiorno, è arrivata una raccomandata per "+nome+" in portineria."
-
-window.location.href="https://wa.me/"+tel+"?text="+encodeURIComponent(msg)
-
-}
-
 function mostraPacchi(){
 
 let lista=JSON.parse(localStorage.getItem("pacchi"))||[]
 
-lista.sort((a,b)=>new Date(a.data)-new Date(b.data))
-
 let div=document.getElementById("listaPacchi")
+
 div.innerHTML=""
 
 lista.forEach((p,i)=>{
@@ -401,8 +391,6 @@ function inviaMassivo(tel){
 
 let msg=document.getElementById("msg").value
 
-if(!msg)return
-
 window.location.href="https://wa.me/"+tel+"?text="+encodeURIComponent(msg)
 
 }
@@ -424,8 +412,6 @@ window.open("https://wa.me/"+c.tel+"?text="+encodeURIComponent(msg))
 
 async function scansionaEtichetta(){
 
-try{
-
 let video=document.getElementById("camera")
 let btn=document.getElementById("scattaBtn")
 
@@ -435,14 +421,6 @@ btn.style.display="block"
 let stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
 
 video.srcObject=stream
-
-video.setAttribute("playsinline",true)
-
-await video.play()
-
-}catch{
-alert("Fotocamera non disponibile")
-}
 
 }
 
@@ -457,13 +435,12 @@ canvas.height=video.videoHeight
 
 ctx.drawImage(video,0,0)
 
-let stream=video.srcObject
-if(stream)stream.getTracks().forEach(t=>t.stop())
+video.srcObject.getTracks().forEach(t=>t.stop())
 
 video.style.display="none"
 document.getElementById("scattaBtn").style.display="none"
 
-let img=canvas.toDataURL("image/png")
+let img=canvas.toDataURL()
 
 leggiTesto(img)
 
@@ -483,17 +460,15 @@ function trovaCondomino(testo){
 
 let db=JSON.parse(localStorage.getItem("portineria"))||[]
 
-testo=testo.toLowerCase()
-
 let trovato=null
 
 db.forEach(c=>{
 
-let parti=c.nome.toLowerCase().split(" ")
+let cognome=c.nome.toLowerCase().split(" ").pop()
 
-let cognome=parti[parti.length-1]
+let pezzo=cognome.substring(0,4)
 
-if(testo.includes(cognome)){
+if(testo.includes(cognome)||testo.includes(pezzo)){
 trovato=c
 }
 
