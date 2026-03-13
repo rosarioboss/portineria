@@ -495,6 +495,44 @@ trovaCondomino(testo)
 
 function trovaCondomino(testo){
 
+let db = JSON.parse(localStorage.getItem("portineria")) || []
+
+testo = testo.toLowerCase()
+
+let trovato = null
+
+db.forEach(c=>{
+
+let nome = c.nome.toLowerCase()
+
+let parti = nome.split(" ")
+
+let nome1 = parti[0] || ""
+let nome2 = parti[1] || ""
+
+if(
+testo.includes(nome) ||
+(testo.includes(nome1) && testo.includes(nome2))
+){
+trovato = c
+}
+
+})
+
+if(trovato){
+
+let msg = "Buongiorno, è arrivato un pacco per " + trovato.nome + " in portineria."
+
+window.open("https://wa.me/" + trovato.tel + "?text=" + encodeURIComponent(msg))
+
+}else{
+
+alert("Condomino non trovato")
+
+}
+
+}
+
 let db=JSON.parse(localStorage.getItem("portineria"))||[]
 
 let trovato=db.find(c=>testo.includes(c.nome.toLowerCase()))
@@ -525,3 +563,4 @@ mostraPacchi()
 </body>
 
 </html>
+
