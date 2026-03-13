@@ -309,6 +309,40 @@ carica()
 
 }
 
+async function importaFile(event){
+
+let file = event.target.files[0]
+
+if(!file) return
+
+let reader = new FileReader()
+
+reader.onload = async function(e){
+
+let dati = JSON.parse(e.target.result)
+
+let db = await caricaDB()
+
+if(Array.isArray(dati)){
+db.condomini = dati
+}
+
+if(dati.condomini){
+db.condomini = dati.condomini
+}
+
+await salvaDB(db)
+
+alert("Rubrica importata")
+
+carica()
+
+}
+
+reader.readAsText(file)
+
+}
+
 function cercaCondomino(){
 
 let testo=document.getElementById("cerca").value.toLowerCase()
