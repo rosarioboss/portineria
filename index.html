@@ -122,7 +122,7 @@ border-bottom:1px solid #eee;
 
 <button class="btn-add" onclick="scansionaEtichetta()">📷 Scansiona etichetta</button>
 
-<video id="camera" autoplay style="width:100%;display:none;"></video>
+<video id="camera" autoplay playsinline style="width:100%;display:none;"></video>
 
 <canvas id="canvas" style="display:none;"></canvas>
 
@@ -167,15 +167,11 @@ function carica(){
 let db=JSON.parse(localStorage.getItem("portineria"))||[]
 
 let lista=document.getElementById("lista")
-
 let rubrica=document.getElementById("rubrica")
-
 let mass=document.getElementById("invioMassivo")
 
 lista.innerHTML=""
-
 rubrica.innerHTML=""
-
 mass.innerHTML=""
 
 db.forEach(c=>{
@@ -203,9 +199,7 @@ ${c.nome}
 function aggiungi(){
 
 let nome=document.getElementById("nome").value
-
 let tel=document.getElementById("telefono").value
-
 let scala=document.getElementById("scala").value
 
 if(!nome||!tel)return
@@ -250,34 +244,25 @@ let reader=new FileReader()
 
 reader.onload=function(e){
 
-let testo=e.target.result
-
 try{
 
-let dati=JSON.parse(testo)
+let dati=JSON.parse(e.target.result)
 
 if(dati.condomini){
-
 localStorage.setItem("portineria",JSON.stringify(dati.condomini))
-
 }
 
 if(dati.pacchi){
-
 localStorage.setItem("pacchi",JSON.stringify(dati.pacchi))
-
 }
 
 alert("Importazione completata")
 
 carica()
-
 mostraPacchi()
 
 }catch{
-
-alert("Formato file non valido")
-
+alert("File non valido")
 }
 
 }
@@ -400,9 +385,7 @@ riga.className="riga"
 riga.innerHTML=p.nome+" <button onclick='ritirato("+i+")'>Ritirato</button>"
 
 if(giorni==0)riga.classList.add("verde")
-
 else if(giorni<=3)riga.classList.add("giallo")
-
 else riga.classList.add("rosso")
 
 div.appendChild(riga)
@@ -436,7 +419,6 @@ window.location.href="https://wa.me/"+tel+"?text="+encodeURIComponent(msg)
 function avvisoScala(){
 
 let scala=document.getElementById("scalaAvviso").value
-
 let msg=document.getElementById("msgScala").value
 
 let db=JSON.parse(localStorage.getItem("portineria"))||[]
@@ -453,10 +435,87 @@ window.open("https://wa.me/"+c.tel+"?text="+encodeURIComponent(msg))
 
 }
 
+async function scansionaEtichetta(){
+
+try{
+
+let video=document.getElementById("camera")
+
+video.style.display="block"
+
+let stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
+
+video.srcObject=stream
+
+video.setAttribute("playsinline",true)
+
+await video.play()
+
+setTimeout(catturaFoto,2500)
+
+}catch{
+
+alert("Fotocamera non disponibile")
+
+}
+
+}
+
+function catturaFoto(){
+
+let video=document.getElementById("camera")
+let canvas=document.getElementById("canvas")
+let ctx=canvas.getContext("2d")
+
+canvas.width=video.videoWidth
+canvas.height=video.videoHeight
+
+ctx.drawImage(video,0,0)
+
+let stream=video.srcObject
+if(stream)stream.getTracks().forEach(t=>t.stop())
+
+video.style.display="none"
+
+let img=canvas.toDataURL("image/png")
+
+leggiTesto(img)
+
+}
+
+async function leggiTesto(img){
+
+let result=await Tesseract.recognize(img,"ita")
+
+let testo=result.data.text.toLowerCase()
+
+trovaCondomino(testo)
+
+}
+
+function trovaCondomino(testo){
+
+let db=JSON.parse(localStorage.getItem("portineria"))||[]
+
+let trovato=db.find(c=>testo.includes(c.nome.toLowerCase()))
+
+if(trovato){
+
+let msg="Buongiorno, è arrivato un pacco per "+trovato.nome+" in portineria."
+
+window.open("https://wa.me/"+trovato.tel+"?text="+encodeURIComponent(msg))
+
+}else{
+
+alert("Condomino non trovato")
+
+}
+
+}
+
 window.onload=function(){
 
 carica()
-
 mostraPacchi()
 
 }
