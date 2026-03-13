@@ -408,6 +408,49 @@ window.open("https://wa.me/"+c.tel+"?text="+encodeURIComponent(msg))
 
 function importaFile(event){
 
+let file = event.target.files[0]
+
+if(!file) return
+
+let reader = new FileReader()
+
+reader.onload = function(e){
+
+let testo = e.target.result
+
+try{
+
+let dati = JSON.parse(testo)
+
+if(dati.condomini){
+
+localStorage.setItem("portineria", JSON.stringify(dati.condomini))
+
+}
+
+if(dati.pacchi){
+
+localStorage.setItem("pacchi", JSON.stringify(dati.pacchi))
+
+}
+
+alert("Importazione completata")
+
+carica()
+mostraPacchi()
+
+}catch(err){
+
+alert("File non valido")
+
+}
+
+}
+
+reader.readAsText(file)
+
+}
+
 let file=event.target.files[0]
 
 let reader=new FileReader()
@@ -537,3 +580,4 @@ mostraPacchi()
 
 </body>
 </html>
+
