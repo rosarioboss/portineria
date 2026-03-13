@@ -124,6 +124,10 @@ border-bottom:1px solid #eee;
 
 <video id="camera" autoplay playsinline style="width:100%;display:none;"></video>
 
+<button id="scattaBtn" onclick="catturaFoto()" style="display:none;">
+📸 Scatta foto etichetta
+</button>
+
 <canvas id="canvas" style="display:none;"></canvas>
 
 <h3 id="contatore"></h3>
@@ -163,15 +167,8 @@ border-bottom:1px solid #eee;
 <script>
 
 function toggleCondomini(){
-
 let lista=document.getElementById("lista")
-
-if(lista.style.display==="none"){
-lista.style.display="block"
-}else{
-lista.style.display="none"
-}
-
+lista.style.display=(lista.style.display==="none")?"block":"none"
 }
 
 function carica(){
@@ -218,12 +215,7 @@ if(!nome||!tel)return
 
 let db=JSON.parse(localStorage.getItem("portineria"))||[]
 
-db.push({
-id:Date.now(),
-nome:nome,
-tel:tel,
-scala:scala
-})
+db.push({id:Date.now(),nome:nome,tel:tel,scala:scala})
 
 localStorage.setItem("portineria",JSON.stringify(db))
 
@@ -274,9 +266,7 @@ carica()
 mostraPacchi()
 
 }catch{
-
 alert("File non valido")
-
 }
 
 }
@@ -318,9 +308,7 @@ db.forEach(c=>{
 if(c.nome.toLowerCase().includes(testo)){
 
 let div=document.createElement("div")
-
 div.className="riga"
-
 div.innerHTML=c.nome
 
 div.onclick=()=>{
@@ -345,10 +333,7 @@ let msg="Buongiorno, è arrivato un pacco per "+nome+" in portineria."
 
 let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
 
-pacchi.push({
-nome:nome,
-data:new Date().toISOString()
-})
+pacchi.push({nome:nome,data:new Date().toISOString()})
 
 localStorage.setItem("pacchi",JSON.stringify(pacchi))
 
@@ -377,7 +362,6 @@ let lista=JSON.parse(localStorage.getItem("pacchi"))||[]
 lista.sort((a,b)=>new Date(a.data)-new Date(b.data))
 
 let div=document.getElementById("listaPacchi")
-
 div.innerHTML=""
 
 lista.forEach((p,i)=>{
@@ -416,6 +400,7 @@ mostraPacchi()
 function inviaMassivo(tel){
 
 let msg=document.getElementById("msg").value
+
 if(!msg)return
 
 window.location.href="https://wa.me/"+tel+"?text="+encodeURIComponent(msg)
@@ -430,11 +415,9 @@ let msg=document.getElementById("msgScala").value
 let db=JSON.parse(localStorage.getItem("portineria"))||[]
 
 db.forEach(c=>{
-
 if(c.scala===scala){
 window.open("https://wa.me/"+c.tel+"?text="+encodeURIComponent(msg))
 }
-
 })
 
 }
@@ -444,8 +427,10 @@ async function scansionaEtichetta(){
 try{
 
 let video=document.getElementById("camera")
+let btn=document.getElementById("scattaBtn")
 
 video.style.display="block"
+btn.style.display="block"
 
 let stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
 
@@ -455,12 +440,8 @@ video.setAttribute("playsinline",true)
 
 await video.play()
 
-setTimeout(catturaFoto,2500)
-
 }catch{
-
 alert("Fotocamera non disponibile")
-
 }
 
 }
@@ -480,6 +461,7 @@ let stream=video.srcObject
 if(stream)stream.getTracks().forEach(t=>t.stop())
 
 video.style.display="none"
+document.getElementById("scattaBtn").style.display="none"
 
 let img=canvas.toDataURL("image/png")
 
@@ -507,20 +489,20 @@ let trovato=null
 
 db.forEach(c=>{
 
-let nome=c.nome.toLowerCase()
+let parti=c.nome.toLowerCase().split(" ")
 
-let parti=nome.split(" ")
+let cognome=parti[parti.length-1]
 
-let nome1=parti[0]||""
-let nome2=parti[1]||""
-
-if(testo.includes(nome)||(testo.includes(nome1)&&testo.includes(nome2))){
+if(testo.includes(cognome)){
 trovato=c
 }
 
 })
 
 if(trovato){
+
+let audio=new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg")
+audio.play()
 
 let msg="Buongiorno, è arrivato un pacco per "+trovato.nome+" in portineria."
 
