@@ -54,15 +54,9 @@ font-weight:bold;
 margin-top:5px;
 }
 
-.btn-add{background:#3498db;color:white;}
-.btn-wa{background:#25d366;color:white;}
-.btn-mass{background:#e67e22;color:white;}
-.btn-rac{background:#9b59b6;color:white;}
-
 .riga{
 display:flex;
 justify-content:space-between;
-align-items:center;
 padding:6px;
 border-bottom:1px solid #eee;
 }
@@ -87,17 +81,11 @@ border-bottom:1px solid #eee;
 
 <select id="rubrica"></select>
 
-<button class="btn-wa" onclick="inviaPacco()">Avviso pacco</button>
+<button onclick="inviaPacco()">Avviso pacco</button>
 
-<button class="btn-rac" onclick="inviaRac()">Raccomandata</button>
-
-<button class="btn-add" onclick="scansionaEtichetta()">📷 Scansiona etichetta</button>
+<button onclick="scansionaEtichetta()">📷 Scansiona etichetta</button>
 
 <video id="camera" autoplay playsinline style="width:100%;display:none;"></video>
-
-<button id="scattaBtn" onclick="catturaFoto()" style="display:none;">
-📸 Scatta foto etichetta
-</button>
 
 <canvas id="canvas" style="display:none;"></canvas>
 
@@ -113,60 +101,18 @@ border-bottom:1px solid #eee;
 
 <div class="card">
 
-<h2>📢 Avviso a tutti</h2>
-
-<textarea id="msg"></textarea>
-
-<div id="invioMassivo"></div>
-
-</div>
-
-<div class="card">
-
-<h2>🏢 Avviso per scala</h2>
-
-<select id="scalaAvviso">
-<option>A</option>
-<option>B</option>
-<option>C</option>
-</select>
-
-<textarea id="msgScala"></textarea>
-
-<button class="btn-mass" onclick="avvisoScala()">Invia</button>
-
-</div>
-
-<div class="card">
-
 <h2>👥 Gestione condomini</h2>
 
-<input id="cerca" placeholder="Cerca condomino..." onkeyup="cercaCondomino()">
-
-<div id="risultatiRicerca"></div>
-
-<button onclick="toggleCondomini()">👥 Mostra / Nascondi condomini</button>
+<button onclick="toggleCondomini()">Mostra / Nascondi condomini</button>
 
 <div id="lista" style="display:none;"></div>
-
-<h3>Aggiungi condomino</h3>
 
 <input id="nome" placeholder="Nome">
 <input id="telefono" placeholder="Telefono">
 
-<select id="scala">
-<option>A</option>
-<option>B</option>
-<option>C</option>
-</select>
-
-<button onclick="aggiungi()">Salva condomino</button>
-
-<h3>Importa rubrica</h3>
+<button onclick="aggiungi()">Aggiungi condomino</button>
 
 <input type="file" onchange="importaFile(event)">
-
-<button onclick="backup()">Scarica backup</button>
 
 </div>
 
@@ -180,28 +126,15 @@ let db=JSON.parse(localStorage.getItem("condomini"))||[]
 
 let rubrica=document.getElementById("rubrica")
 let lista=document.getElementById("lista")
-let mass=document.getElementById("invioMassivo")
 
 rubrica.innerHTML=""
 lista.innerHTML=""
-mass.innerHTML=""
 
 db.forEach(c=>{
 
 rubrica.innerHTML+=`<option value="${c.tel}">${c.nome}</option>`
 
-lista.innerHTML+=`
-<div class="riga">
-${c.nome} (${c.scala})
-</div>
-`
-
-mass.innerHTML+=`
-<div class="riga">
-${c.nome}
-<button onclick="inviaMassivo('${c.tel}')">Invia</button>
-</div>
-`
+lista.innerHTML+=`<div class="riga">${c.nome}</div>`
 
 })
 
@@ -209,15 +142,22 @@ mostraPacchi()
 
 }
 
+function toggleCondomini(){
+
+let lista=document.getElementById("lista")
+
+lista.style.display=(lista.style.display==="none")?"block":"none"
+
+}
+
 function aggiungi(){
 
 let nome=document.getElementById("nome").value
 let tel=document.getElementById("telefono").value
-let scala=document.getElementById("scala").value
 
 let db=JSON.parse(localStorage.getItem("condomini"))||[]
 
-db.push({nome:nome,tel:tel,scala:scala})
+db.push({nome:nome,tel:tel})
 
 localStorage.setItem("condomini",JSON.stringify(db))
 
@@ -247,36 +187,14 @@ reader.readAsText(file)
 
 }
 
-function toggleCondomini(){
-
-let lista=document.getElementById("lista")
-
-lista.style.display=(lista.style.display==="none")?"block":"none"
-
-}
-
-function cercaCondomino(){
-
-let testo=document.getElementById("cerca").value.toLowerCase()
-
-let righe=document.querySelectorAll("#lista .riga")
-
-righe.forEach(r=>{
-r.style.display=r.innerText.toLowerCase().includes(testo)?"flex":"none"
-})
-
-}
-
 function inviaPacco(){
 
 let sel=document.getElementById("rubrica")
 
 let tel=sel.value
-
 let nome=sel.options[sel.selectedIndex].text
 
 let msgBase=document.getElementById("msgPacco").value
-
 let msg=msgBase+" "+nome
 
 let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
@@ -288,18 +206,6 @@ localStorage.setItem("pacchi",JSON.stringify(pacchi))
 mostraPacchi()
 
 window.open("https://wa.me/"+tel+"?text="+encodeURIComponent(msg))
-
-}
-
-function inviaRac(){
-
-let sel=document.getElementById("rubrica")
-
-let tel=sel.value
-
-let nome=sel.options[sel.selectedIndex].text
-
-window.open("https://wa.me/"+tel+"?text="+encodeURIComponent("È arrivata una raccomandata per "+nome))
 
 }
 
@@ -343,40 +249,17 @@ mostraPacchi()
 
 }
 
-function inviaMassivo(tel){
-
-let msg=document.getElementById("msg").value
-
-window.open("https://wa.me/"+tel+"?text="+encodeURIComponent(msg))
-
-}
-
-function avvisoScala(){
-
-let scala=document.getElementById("scalaAvviso").value
-let msg=document.getElementById("msgScala").value
-
-let db=JSON.parse(localStorage.getItem("condomini"))||[]
-
-db.forEach(c=>{
-if(c.scala===scala){
-window.open("https://wa.me/"+c.tel+"?text="+encodeURIComponent(msg))
-}
-})
-
-}
-
 async function scansionaEtichetta(){
 
 let video=document.getElementById("camera")
-let btn=document.getElementById("scattaBtn")
 
 video.style.display="block"
-btn.style.display="block"
 
 let stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
 
 video.srcObject=stream
+
+setTimeout(catturaFoto,2000)
 
 }
 
@@ -394,7 +277,6 @@ ctx.drawImage(video,0,0)
 video.srcObject.getTracks().forEach(t=>t.stop())
 
 video.style.display="none"
-document.getElementById("scattaBtn").style.display="none"
 
 let img=canvas.toDataURL()
 
@@ -417,8 +299,8 @@ let db=JSON.parse(localStorage.getItem("condomini"))||[]
 testo=testo.toLowerCase()
 
 testo=testo.replace(/0/g,"o")
-testo=testo.replace(/5/g,"s")
 testo=testo.replace(/1/g,"i")
+testo=testo.replace(/5/g,"s")
 
 let trovato=null
 
@@ -431,19 +313,14 @@ let parti=nomeCompleto.split(" ")
 let nome=parti[0]
 let cognome=parti[parti.length-1]
 
-let n3=nome.substring(0,3)
-let c3=cognome.substring(0,3)
-
 if(
 testo.includes(nomeCompleto)||
 testo.includes(nome)||
 testo.includes(cognome)||
-testo.includes(n3)||
-testo.includes(c3)
+testo.includes(nome.substring(0,3))||
+testo.includes(cognome.substring(0,3))
 ){
-
 trovato=c
-
 }
 
 })
@@ -451,7 +328,6 @@ trovato=c
 if(trovato){
 
 let audio=new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg")
-
 audio.play()
 
 let msgBase=document.getElementById("msgPacco").value
