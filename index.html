@@ -52,6 +52,8 @@ border:none;
 border-radius:8px;
 font-weight:bold;
 margin-top:5px;
+background:#25d366;
+color:white;
 }
 
 .riga{
@@ -81,7 +83,7 @@ border-bottom:1px solid #eee;
 
 <select id="rubrica"></select>
 
-<button onclick="inviaPacco()">Avviso pacco</button>
+<button onclick="inviaPacco()">Invia avviso pacco</button>
 
 <button onclick="scansionaEtichetta()">📷 Scansiona etichetta</button>
 
@@ -101,18 +103,66 @@ border-bottom:1px solid #eee;
 
 <div class="card">
 
+<h2>📜 Registro pacchi</h2>
+
+<div id="registroPacchi"></div>
+
+</div>
+
+<div class="card">
+
+<h2>📢 Avviso a tutti</h2>
+
+<textarea id="msg"></textarea>
+
+<div id="invioMassivo"></div>
+
+</div>
+
+<div class="card">
+
+<h2>🏢 Avviso per scala</h2>
+
+<select id="scalaAvviso">
+<option>A</option>
+<option>B</option>
+<option>C</option>
+</select>
+
+<textarea id="msgScala"></textarea>
+
+<button onclick="avvisoScala()">Invia</button>
+
+</div>
+
+<div class="card">
+
 <h2>👥 Gestione condomini</h2>
+
+<input id="cerca" placeholder="Cerca condomino..." onkeyup="cercaCondomino()">
 
 <button onclick="toggleCondomini()">Mostra / Nascondi condomini</button>
 
 <div id="lista" style="display:none;"></div>
 
+<h3>Aggiungi condomino</h3>
+
 <input id="nome" placeholder="Nome">
 <input id="telefono" placeholder="Telefono">
 
-<button onclick="aggiungi()">Aggiungi condomino</button>
+<select id="scala">
+<option>A</option>
+<option>B</option>
+<option>C</option>
+</select>
+
+<button onclick="aggiungi()">Salva condomino</button>
+
+<h3>Importa rubrica</h3>
 
 <input type="file" onchange="importaFile(event)">
+
+<button onclick="backup()">Scarica backup</button>
 
 </div>
 
@@ -126,19 +176,24 @@ let db=JSON.parse(localStorage.getItem("condomini"))||[]
 
 let rubrica=document.getElementById("rubrica")
 let lista=document.getElementById("lista")
+let mass=document.getElementById("invioMassivo")
 
 rubrica.innerHTML=""
 lista.innerHTML=""
+mass.innerHTML=""
 
 db.forEach(c=>{
 
 rubrica.innerHTML+=`<option value="${c.tel}">${c.nome}</option>`
 
-lista.innerHTML+=`<div class="riga">${c.nome}</div>`
+lista.innerHTML+=`<div class="riga">${c.nome} (${c.scala})</div>`
+
+mass.innerHTML+=`<div class="riga">${c.nome}<button onclick="inviaMassivo('${c.tel}')">Invia</button></div>`
 
 })
 
 mostraPacchi()
+mostraRegistro()
 
 }
 
@@ -154,10 +209,11 @@ function aggiungi(){
 
 let nome=document.getElementById("nome").value
 let tel=document.getElementById("telefono").value
+let scala=document.getElementById("scala").value
 
 let db=JSON.parse(localStorage.getItem("condomini"))||[]
 
-db.push({nome:nome,tel:tel})
+db.push({nome:nome,tel:tel,scala:scala})
 
 localStorage.setItem("condomini",JSON.stringify(db))
 
@@ -187,6 +243,18 @@ reader.readAsText(file)
 
 }
 
+function cercaCondomino(){
+
+let testo=document.getElementById("cerca").value.toLowerCase()
+
+let righe=document.querySelectorAll("#lista .riga")
+
+righe.forEach(r=>{
+r.style.display=r.innerText.toLowerCase().includes(testo)?"flex":"none"
+})
+
+}
+
 function inviaPacco(){
 
 let sel=document.getElementById("rubrica")
@@ -195,6 +263,7 @@ let tel=sel.value
 let nome=sel.options[sel.selectedIndex].text
 
 let msgBase=document.getElementById("msgPacco").value
+
 let msg=msgBase+" "+nome
 
 let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
@@ -203,7 +272,14 @@ pacchi.push({nome:nome,data:new Date().toISOString()})
 
 localStorage.setItem("pacchi",JSON.stringify(pacchi))
 
+let registro=JSON.parse(localStorage.getItem("registro"))||[]
+
+registro.push({nome:nome,data:new Date().toLocaleString()})
+
+localStorage.setItem("registro",JSON.stringify(registro))
+
 mostraPacchi()
+mostraRegistro()
 
 window.open("https://wa.me/"+tel+"?text="+encodeURIComponent(msg))
 
@@ -237,6 +313,22 @@ div.appendChild(r)
 
 }
 
+function mostraRegistro(){
+
+let reg=JSON.parse(localStorage.getItem("registro"))||[]
+
+let div=document.getElementById("registroPacchi")
+
+div.innerHTML=""
+
+reg.slice().reverse().forEach(p=>{
+
+div.innerHTML+=`<div class="riga">${p.nome} - ${p.data}</div>`
+
+})
+
+}
+
 function ritirato(i){
 
 let lista=JSON.parse(localStorage.getItem("pacchi"))||[]
@@ -246,6 +338,29 @@ lista.splice(i,1)
 localStorage.setItem("pacchi",JSON.stringify(lista))
 
 mostraPacchi()
+
+}
+
+function inviaMassivo(tel){
+
+let msg=document.getElementById("msg").value
+
+window.open("https://wa.me/"+tel+"?text="+encodeURIComponent(msg))
+
+}
+
+function avvisoScala(){
+
+let scala=document.getElementById("scalaAvviso").value
+let msg=document.getElementById("msgScala").value
+
+let db=JSON.parse(localStorage.getItem("condomini"))||[]
+
+db.forEach(c=>{
+if(c.scala===scala){
+window.open("https://wa.me/"+c.tel+"?text="+encodeURIComponent(msg))
+}
+})
 
 }
 
@@ -269,10 +384,13 @@ let video=document.getElementById("camera")
 let canvas=document.getElementById("canvas")
 let ctx=canvas.getContext("2d")
 
-canvas.width=video.videoWidth
-canvas.height=video.videoHeight
+let w=video.videoWidth
+let h=video.videoHeight
 
-ctx.drawImage(video,0,0)
+canvas.width=w*0.6
+canvas.height=h*0.4
+
+ctx.drawImage(video,w*0.2,h*0.3,w*0.6,h*0.4,0,0,canvas.width,canvas.height)
 
 video.srcObject.getTracks().forEach(t=>t.stop())
 
