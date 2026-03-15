@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="it">
-
 <head>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Portineria Digitale</title>
+<title>App del Portiere</title>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 
@@ -20,7 +19,7 @@ padding:10px;
 }
 
 .container{
-max-width:500px;
+max-width:520px;
 margin:auto;
 }
 
@@ -67,6 +66,11 @@ border-bottom:1px solid #eee;
 .giallo{background:#fff59d}
 .rosso{background:#ff8a80}
 
+.counter{
+font-size:18px;
+font-weight:bold;
+}
+
 </style>
 
 </head>
@@ -74,6 +78,14 @@ border-bottom:1px solid #eee;
 <body>
 
 <div class="container">
+
+<div class="card">
+<h2>📊 Stato consegne</h2>
+<div class="counter">
+📦 Pacchi: <span id="countPacchi">0</span><br>
+✉️ Raccomandate: <span id="countRacc">0</span>
+</div>
+</div>
 
 <div class="card">
 
@@ -85,10 +97,13 @@ border-bottom:1px solid #eee;
 
 <button onclick="inviaPacco()">Invia avviso pacco</button>
 
-<button onclick="scansionaEtichetta()">📷 Scansiona etichetta</button>
+<button onclick="scansiona('pacco')">📷 Scansiona pacco</button>
+
+<button onclick="inviaRacc()">✉️ Raccomandata</button>
+
+<button onclick="scansiona('racc')">📷 Scansiona raccomandata</button>
 
 <video id="camera" autoplay playsinline style="width:100%;display:none;"></video>
-
 <canvas id="canvas" style="display:none;"></canvas>
 
 </div>
@@ -103,9 +118,17 @@ border-bottom:1px solid #eee;
 
 <div class="card">
 
-<h2>📜 Registro pacchi</h2>
+<h2>✉️ Raccomandate in giacenza</h2>
 
-<div id="registroPacchi"></div>
+<div id="listaRacc"></div>
+
+</div>
+
+<div class="card">
+
+<h2>📜 Registro consegne</h2>
+
+<div id="registro"></div>
 
 </div>
 
@@ -113,9 +136,11 @@ border-bottom:1px solid #eee;
 
 <h2>📢 Avviso a tutti</h2>
 
-<textarea id="msg"></textarea>
+<textarea id="msgAll"></textarea>
 
-<div id="invioMassivo"></div>
+<button onclick="avvisoTutti()">Invia messaggio</button>
+
+<input type="file" accept="image/*" onchange="fotoAvviso(event)">
 
 </div>
 
@@ -141,11 +166,9 @@ border-bottom:1px solid #eee;
 
 <input id="cerca" placeholder="Cerca condomino..." onkeyup="cercaCondomino()">
 
-<button onclick="toggleCondomini()">Mostra / Nascondi condomini</button>
+<div id="lista"></div>
 
-<div id="lista" style="display:none;"></div>
-
-<h3>Aggiungi condomino</h3>
+<h3>Aggiungi</h3>
 
 <input id="nome" placeholder="Nome">
 <input id="telefono" placeholder="Telefono">
@@ -156,13 +179,17 @@ border-bottom:1px solid #eee;
 <option>C</option>
 </select>
 
-<button onclick="aggiungi()">Salva condomino</button>
-
-<h3>Importa rubrica</h3>
+<button onclick="aggiungi()">Salva</button>
 
 <input type="file" onchange="importaFile(event)">
 
-<button onclick="backup()">Scarica backup</button>
+</div>
+
+<div class="card">
+
+<h2>📄 Contratto portieri</h2>
+
+<button onclick="window.open('https://www.confedilizia.it/wp-content/uploads/CCNL-Portieri.pdf')">Apri contratto</button>
 
 </div>
 
@@ -176,32 +203,31 @@ let db=JSON.parse(localStorage.getItem("condomini"))||[]
 
 let rubrica=document.getElementById("rubrica")
 let lista=document.getElementById("lista")
-let mass=document.getElementById("invioMassivo")
 
 rubrica.innerHTML=""
 lista.innerHTML=""
-mass.innerHTML=""
 
 db.forEach(c=>{
 
 rubrica.innerHTML+=`<option value="${c.tel}">${c.nome}</option>`
 
-lista.innerHTML+=`<div class="riga">${c.nome} (${c.scala})</div>`
-
-mass.innerHTML+=`<div class="riga">${c.nome}<button onclick="inviaMassivo('${c.tel}')">Invia</button></div>`
+lista.innerHTML+=`<div class="riga">${c.nome}</div>`
 
 })
 
 mostraPacchi()
+mostraRacc()
 mostraRegistro()
 
 }
 
-function toggleCondomini(){
+function aggiornaContatori(){
 
-let lista=document.getElementById("lista")
+let p=JSON.parse(localStorage.getItem("pacchi"))||[]
+let r=JSON.parse(localStorage.getItem("racc"))||[]
 
-lista.style.display=(lista.style.display==="none")?"block":"none"
+document.getElementById("countPacchi").innerText=p.length
+document.getElementById("countRacc").innerText=r.length
 
 }
 
@@ -221,40 +247,6 @@ carica()
 
 }
 
-function importaFile(event){
-
-let file=event.target.files[0]
-
-let reader=new FileReader()
-
-reader.onload=function(e){
-
-let dati=JSON.parse(e.target.result)
-
-localStorage.setItem("condomini",JSON.stringify(dati.condomini))
-
-alert("Rubrica importata")
-
-carica()
-
-}
-
-reader.readAsText(file)
-
-}
-
-function cercaCondomino(){
-
-let testo=document.getElementById("cerca").value.toLowerCase()
-
-let righe=document.querySelectorAll("#lista .riga")
-
-righe.forEach(r=>{
-r.style.display=r.innerText.toLowerCase().includes(testo)?"flex":"none"
-})
-
-}
-
 function inviaPacco(){
 
 let sel=document.getElementById("rubrica")
@@ -262,9 +254,9 @@ let sel=document.getElementById("rubrica")
 let tel=sel.value
 let nome=sel.options[sel.selectedIndex].text
 
-let msgBase=document.getElementById("msgPacco").value
+let msg=document.getElementById("msgPacco").value+" "+nome
 
-let msg=msgBase+" "+nome
+window.open("https://wa.me/"+tel+"?text="+encodeURIComponent(msg))
 
 let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
 
@@ -272,16 +264,32 @@ pacchi.push({nome:nome,data:new Date().toISOString()})
 
 localStorage.setItem("pacchi",JSON.stringify(pacchi))
 
-let registro=JSON.parse(localStorage.getItem("registro"))||[]
-
-registro.push({nome:nome,data:new Date().toLocaleString()})
-
-localStorage.setItem("registro",JSON.stringify(registro))
+salvaRegistro("Pacco",nome)
 
 mostraPacchi()
-mostraRegistro()
+
+}
+
+function inviaRacc(){
+
+let sel=document.getElementById("rubrica")
+
+let tel=sel.value
+let nome=sel.options[sel.selectedIndex].text
+
+let msg="Buongiorno, è arrivata una raccomandata per "+nome
 
 window.open("https://wa.me/"+tel+"?text="+encodeURIComponent(msg))
+
+let r=JSON.parse(localStorage.getItem("racc"))||[]
+
+r.push({nome:nome,data:new Date().toISOString()})
+
+localStorage.setItem("racc",JSON.stringify(r))
+
+salvaRegistro("Raccomandata",nome)
+
+mostraRacc()
 
 }
 
@@ -301,7 +309,7 @@ let r=document.createElement("div")
 
 r.className="riga"
 
-r.innerHTML=p.nome+" <button onclick='ritirato("+i+")'>Ritirato</button>"
+r.innerHTML=p.nome+" <button onclick='ritiraPacco("+i+")'>Ritirato</button>"
 
 if(giorni==0)r.classList.add("verde")
 else if(giorni<=3)r.classList.add("giallo")
@@ -311,25 +319,35 @@ div.appendChild(r)
 
 })
 
+aggiornaContatori()
+
 }
 
-function mostraRegistro(){
+function mostraRacc(){
 
-let reg=JSON.parse(localStorage.getItem("registro"))||[]
+let lista=JSON.parse(localStorage.getItem("racc"))||[]
 
-let div=document.getElementById("registroPacchi")
+let div=document.getElementById("listaRacc")
 
 div.innerHTML=""
 
-reg.slice().reverse().forEach(p=>{
+lista.forEach((p,i)=>{
 
-div.innerHTML+=`<div class="riga">${p.nome} - ${p.data}</div>`
+let r=document.createElement("div")
+
+r.className="riga"
+
+r.innerHTML=p.nome+" <button onclick='ritiraRacc("+i+")'>Ritirata</button>"
+
+div.appendChild(r)
 
 })
 
+aggiornaContatori()
+
 }
 
-function ritirato(i){
+function ritiraPacco(i){
 
 let lista=JSON.parse(localStorage.getItem("pacchi"))||[]
 
@@ -341,11 +359,67 @@ mostraPacchi()
 
 }
 
-function inviaMassivo(tel){
+function ritiraRacc(i){
 
-let msg=document.getElementById("msg").value
+let lista=JSON.parse(localStorage.getItem("racc"))||[]
 
-window.open("https://wa.me/"+tel+"?text="+encodeURIComponent(msg))
+lista.splice(i,1)
+
+localStorage.setItem("racc",JSON.stringify(lista))
+
+mostraRacc()
+
+}
+
+function salvaRegistro(tipo,nome){
+
+let reg=JSON.parse(localStorage.getItem("registro"))||[]
+
+reg.push({tipo:tipo,nome:nome,data:new Date().toLocaleString()})
+
+localStorage.setItem("registro",JSON.stringify(reg))
+
+mostraRegistro()
+
+}
+
+function mostraRegistro(){
+
+let reg=JSON.parse(localStorage.getItem("registro"))||[]
+
+let div=document.getElementById("registro")
+
+div.innerHTML=""
+
+reg.slice().reverse().forEach(p=>{
+
+div.innerHTML+=`<div class="riga">${p.tipo} - ${p.nome} - ${p.data}</div>`
+
+})
+
+}
+
+function cercaCondomino(){
+
+let testo=document.getElementById("cerca").value.toLowerCase()
+
+let righe=document.querySelectorAll("#lista .riga")
+
+righe.forEach(r=>{
+r.style.display=r.innerText.toLowerCase().includes(testo)?"flex":"none"
+})
+
+}
+
+function avvisoTutti(){
+
+let msg=document.getElementById("msgAll").value
+
+let db=JSON.parse(localStorage.getItem("condomini"))||[]
+
+db.forEach(c=>{
+window.open("https://wa.me/"+c.tel+"?text="+encodeURIComponent(msg))
+})
 
 }
 
@@ -364,7 +438,17 @@ window.open("https://wa.me/"+c.tel+"?text="+encodeURIComponent(msg))
 
 }
 
-async function scansionaEtichetta(){
+function fotoAvviso(e){
+
+let file=e.target.files[0]
+
+let url=URL.createObjectURL(file)
+
+window.open(url)
+
+}
+
+async function scansiona(tipo){
 
 let video=document.getElementById("camera")
 
@@ -374,23 +458,20 @@ let stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environ
 
 video.srcObject=stream
 
-setTimeout(catturaFoto,2000)
+setTimeout(()=>cattura(tipo),2000)
 
 }
 
-function catturaFoto(){
+function cattura(tipo){
 
 let video=document.getElementById("camera")
 let canvas=document.getElementById("canvas")
 let ctx=canvas.getContext("2d")
 
-let w=video.videoWidth
-let h=video.videoHeight
+canvas.width=video.videoWidth
+canvas.height=video.videoHeight
 
-canvas.width=w*0.6
-canvas.height=h*0.4
-
-ctx.drawImage(video,w*0.2,h*0.3,w*0.6,h*0.4,0,0,canvas.width,canvas.height)
+ctx.drawImage(video,0,0)
 
 video.srcObject.getTracks().forEach(t=>t.stop())
 
@@ -398,19 +479,19 @@ video.style.display="none"
 
 let img=canvas.toDataURL()
 
-leggiTesto(img)
+leggiTesto(img,tipo)
 
 }
 
-async function leggiTesto(img){
+async function leggiTesto(img,tipo){
 
 let r=await Tesseract.recognize(img,"ita")
 
-trovaCondomino(r.data.text)
+trovaCondomino(r.data.text,tipo)
 
 }
 
-function trovaCondomino(testo){
+function trovaCondomino(testo,tipo){
 
 let db=JSON.parse(localStorage.getItem("condomini"))||[]
 
@@ -419,24 +500,17 @@ testo=testo.toLowerCase()
 testo=testo.replace(/0/g,"o")
 testo=testo.replace(/1/g,"i")
 testo=testo.replace(/5/g,"s")
+testo=testo.replace(/8/g,"b")
 
 let trovato=null
 
 db.forEach(c=>{
 
-let nomeCompleto=c.nome.toLowerCase()
-
-let parti=nomeCompleto.split(" ")
-
-let nome=parti[0]
-let cognome=parti[parti.length-1]
+let nome=c.nome.toLowerCase()
 
 if(
-testo.includes(nomeCompleto)||
 testo.includes(nome)||
-testo.includes(cognome)||
-testo.includes(nome.substring(0,3))||
-testo.includes(cognome.substring(0,3))
+testo.includes(nome.substring(0,3))
 ){
 trovato=c
 }
@@ -448,11 +522,19 @@ if(trovato){
 let audio=new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg")
 audio.play()
 
-let msgBase=document.getElementById("msgPacco").value
+if(tipo==="pacco"){
 
-let msg=msgBase+" "+trovato.nome
+let msg=document.getElementById("msgPacco").value+" "+trovato.nome
 
 window.open("https://wa.me/"+trovato.tel+"?text="+encodeURIComponent(msg))
+
+}else{
+
+let msg="Buongiorno, è arrivata una raccomandata per "+trovato.nome
+
+window.open("https://wa.me/"+trovato.tel+"?text="+encodeURIComponent(msg))
+
+}
 
 }else{
 
