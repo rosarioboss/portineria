@@ -1,768 +1,447 @@
 <!DOCTYPE html>
 <html lang="it">
-
 <head>
-
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Portineria Digitale</title>
 
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
-
 <style>
-
-font-family:Arial;
-background:#f0f0f0;
-margin:0;
-padding:10px;
-}
-
-.dark{
-background:#1e1e1e;
-color:white;
-}
-
-.card{
-background:white;
-padding:15px;
-margin-bottom:12px;
-border-radius:10px;
-box-shadow:0 3px 8px rgba(0,0,0,0.15);
-}
-
-.dark .card{
-background:#2a2a2a;
-}
-
-button{
-width:100%;
-padding:12px;
-margin-top:6px;
-border:none;
-border-radius:8px;
-background:#25D366;
-color:white;
-font-weight:bold;
-}
-
-input,select,textarea{
-width:100%;
-padding:10px;
-margin-top:6px;
-border-radius:6px;
-border:1px solid #ccc;
-}
-
-video{
-width:100%;
-border-radius:10px;
-}
-
-.overlay{
-position:absolute;
-border:3px solid red;
-width:60%;
-height:25%;
-top:40%;
-left:20%;
-}
-
-footer{
-text-align:center;
-font-size:12px;
-color:gray;
-margin-top:20px;
-}
-
+body{font-family:Arial;margin:0;background:#f2f2f2;padding:10px}
+.dark{background:#1e1e1e;color:white}
+.card{background:white;padding:14px;border-radius:10px;margin-bottom:10px;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+.dark .card{background:#2a2a2a}
+button{width:100%;padding:12px;border:none;border-radius:8px;background:#25D366;color:white;font-weight:bold;margin-top:6px}
+input{width:100%;padding:10px;border-radius:6px;border:1px solid #ccc;margin-top:6px}
+.small{background:#555}
+.delete{background:#e53935}
+.riga{padding:8px;border-bottom:1px solid #eee}
+img{width:100%;border-radius:8px;margin-top:6px}
+canvas{border:1px solid #ccc;width:100%;height:160px}
 </style>
-
 </head>
 
-
-
-<div id="login">
-
-<h2>🔐 Portineria Digitale</h2>
-
-<input type="password" id="password">
-
-<button onclick="login()">Accedi</button>
-
-</div>
-
-<div id="app" style="display:none">
+<body>
 
 <div class="card">
-
-<h3>📷 Scanner pacchi</h3>
-
-<button onclick="startScanner()">Avvia scanner</button>
-
-<div style="position:relative">
-
-<video id="video" autoplay playsinline style="display:none"></video>
-
-<div class="overlay"></div>
-
-</div>
-
+<h3>📊 Dashboard</h3>
+<div id="stats"></div>
 </div>
 
 <div class="card">
+<h3>📦 Registra pacco</h3>
+<input id="nomePacco" placeholder="Nome condomino">
+<input id="corriere" placeholder="Corriere">
+<input type="file" accept="image/*" capture="environment" id="fotoPacco">
+<button onclick="registraPacco()">Registra pacco</button>
+</div>
 
-<h3>📦 Pacchi in giacenza</h3>
-
+<div class="card">
+<h3>📦 Pacchi presenti</h3>
+<input id="searchPacchi" placeholder="Cerca" oninput="mostraPacchi()">
 <div id="listaPacchi"></div>
-
 </div>
 
 <div class="card">
+<h3>📬 Raccomandate</h3>
+<input id="nomeRacc" placeholder="Nome">
+<input id="numeroRacc" placeholder="Numero raccomandata">
+<button onclick="registraRacc()">Registra</button>
+<div id="listaRacc"></div>
+</div>
 
-<h3>👥 Gestione condomini</h3>
-
+<div class="card">
+<h3>👥 Rubrica Condomini</h3>
 <input id="nome" placeholder="Nome">
-
 <input id="telefono" placeholder="Telefono">
-
-<select id="scala">
-<option>A</option>
-<option>B</option>
-<option>C</option>
-</select>
-
-<button onclick="aggiungi()">Aggiungi condomino</button>
-
-<div id="lista"></div>
-
+<input id="scala" placeholder="Scala">
+<input id="interno" placeholder="Interno">
+<button onclick="aggiungiCondomino()">Aggiungi</button>
+<button class="small" onclick="sbloccaRubrica()">🔒 Sblocca rubrica</button>
+<div id="listaCondomini" style="display:none"></div>
 </div>
 
 <div class="card">
+<h3>✍ Firma ritiro</h3>
+<canvas id="firma"></canvas>
+<button onclick="pulisciFirma()">Pulisci</button>
+</div>
 
+<div class="card">
+<h3>📜 Storico consegne</h3>
+<button onclick="mostraStorico()">Apri storico</button>
+<div id="storico"></div>
+</div>
+
+<div class="card">
+<h3>📁 Backup dati</h3>
+<button onclick="backup()">Esporta backup</button>
+<input type="file" onchange="restore(event)">
+</div>
+
+<div class="card">
 <button onclick="toggleNight()">🌙 Modalità notte</button>
-
 </div>
 
-<footer>
-
-<hr>
-Portineria Digitale<br>
-Sviluppata da Rosario Bossis
-
-</footer>
-
-</div>
 <script>
 
-let password="portiere123"
+const PIN="1234"
 
-function login(){
+function oggi(){
+return new Date().toISOString().slice(0,10)
+}
 
-let p=document.getElementById("password").value
+function stats(){
 
-if(p===password){
+let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
+let racc=JSON.parse(localStorage.getItem("raccomandate"))||[]
+let storico=JSON.parse(localStorage.getItem("storico"))||[]
 
-document.getElementById("login").style.display="none"
-document.getElementById("app").style.display="block"
+let oggiCount=storico.filter(s=>s.data.slice(0,10)==oggi()).length
 
-carica()
-
-}else{
-
-alert("Password errata")
+document.getElementById("stats").innerHTML=
+"Pacchi presenti: "+pacchi.length+"<br>"+
+"Raccomandate: "+racc.length+"<br>"+
+"Consegnati oggi: "+oggiCount
 
 }
 
-}
+function registraPacco(){
 
-function toggleNight(){
+let nome=document.getElementById("nomePacco").value
+let corriere=document.getElementById("corriere").value
+let foto=document.getElementById("fotoPacco").files[0]
 
-document.body.classList.toggle("dark")
+if(!nome) return alert("Inserisci nome")
 
-}
+let reader=new FileReader()
 
-function carica(){
-
-let db=JSON.parse(localStorage.getItem("condomini"))||[]
-
-let lista=document.getElementById("lista")
-
-lista.innerHTML=""
-
-db.forEach(c=>{
-
-lista.innerHTML+=`<div>${c.nome} - Scala ${c.scala}</div>`
-
-})
-
-mostraPacchi()
-
-}
-
-function aggiungi(){
-
-let nome=document.getElementById("nome").value
-let tel=document.getElementById("telefono").value
-let scala=document.getElementById("scala").value
-
-let db=JSON.parse(localStorage.getItem("condomini"))||[]
-
-db.push({nome:nome,tel:tel,scala:scala})
-
-localStorage.setItem("condomini",JSON.stringify(db))
-
-carica()
-
-}
-
-</script>
-<script>
-
-let stream=null
-let scanning=false
-
-async function startScanner(){
-
-let video=document.getElementById("video")
-
-video.style.display="block"
-
-stream=await navigator.mediaDevices.getUserMedia({
-
-video:{facingMode:"environment"}
-
-})
-
-video.srcObject=stream
-
-scanning=true
-
-scanLoop()
-
-}
-
-async function scanLoop(){
-
-if(!scanning)return
-
-let video=document.getElementById("video")
-
-let canvas=document.createElement("canvas")
-
-canvas.width=video.videoWidth
-canvas.height=video.videoHeight
-
-let ctx=canvas.getContext("2d")
-
-ctx.drawImage(video,0,0)
-
-let img=canvas.toDataURL()
-
-let result=await Tesseract.recognize(img,"ita")
-
-let text=result.data.text.toLowerCase()
-
-let db=JSON.parse(localStorage.getItem("condomini"))||[]
-
-db.forEach(c=>{
-
-if(text.includes(c.nome.toLowerCase())){
-
-new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play()
-
-window.open("https://wa.me/"+c.tel+"?text=È arrivato un pacco per lei")
-
-}
-
-})
-
-setTimeout(scanLoop,2000)
-
-}
-
-</script>
-
-</html>
-<script>
-
-function registraPacco(nome,corriere){
+reader.onload=function(){
 
 let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
 
 pacchi.push({
 nome:nome,
 corriere:corriere,
-data:new Date().toISOString()
+foto:reader.result,
+data:new Date().toISOString(),
+firma:firmaCanvas.toDataURL()
 })
 
 localStorage.setItem("pacchi",JSON.stringify(pacchi))
 
 mostraPacchi()
+stats()
+
+}
+
+if(foto) reader.readAsDataURL(foto)
 
 }
 
 function mostraPacchi(){
 
-let lista=JSON.parse(localStorage.getItem("pacchi"))||[]
-
+let filtro=document.getElementById("searchPacchi").value.toLowerCase()
+let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
 let div=document.getElementById("listaPacchi")
 
 div.innerHTML=""
 
-lista.forEach((p,i)=>{
+pacchi.forEach((p,i)=>{
 
-let giorni=Math.floor((Date.now()-new Date(p.data))/(86400000))
-
-let colore=""
-
-if(giorni<=1)colore="verde"
-else if(giorni<=3)colore="giallo"
-else colore="rosso"
+if(!p.nome.toLowerCase().includes(filtro)) return
 
 div.innerHTML+=`
-<div class="${colore}">
-${p.nome} - ${p.corriere}
-</div>
-`
+<div class="riga">
+<b>${p.nome}</b> - ${p.corriere}<br>
+${new Date(p.data).toLocaleString()}
+<img src="${p.foto}">
+<button onclick="whatsapp('${p.nome}')">📲 Avvisa WhatsApp</button>
+<button onclick="consegna(${i})">Consegnato</button>
+<button class="delete" onclick="eliminaPacco(${i})">Elimina</button>
+</div>`
 
 })
 
 }
 
-</script>
-<script>
-
-function riconosciCorriere(testo){
-
-let corriere="Altro"
-
-if(testo.includes("amazon"))corriere="Amazon"
-if(testo.includes("gls"))corriere="GLS"
-if(testo.includes("poste"))corriere="Poste"
-if(testo.includes("dhl"))corriere="DHL"
-if(testo.includes("ups"))corriere="UPS"
-if(testo.includes("bartolini"))corriere="Bartolini"
-
-return corriere
-
-}
-
-</script>
-<script>
-
-function avvisoTutti(){
-
-let db=JSON.parse(localStorage.getItem("condomini"))||[]
-
-let messaggio=prompt("Scrivi avviso per tutti")
-
-if(!messaggio)return
-
-db.forEach(c=>{
-
-window.open(
-"https://wa.me/"+c.tel+
-"?text="+encodeURIComponent(messaggio)
-)
-
-})
-
-}
-
-</script>
-<script>
-
-function avvisoScala(){
-
-let scala=prompt("Inserisci scala A B C")
-
-let db=JSON.parse(localStorage.getItem("condomini"))||[]
-
-let messaggio=prompt("Messaggio")
-
-db.forEach(c=>{
-
-if(c.scala===scala){
-
-window.open(
-"https://wa.me/"+c.tel+
-"?text="+encodeURIComponent(messaggio)
-)
-
-}
-
-})
-
-}
-
-</script>
-<script>
-
-function cercaPacco(){
-
-let nome=prompt("Nome da cercare")
+function consegna(i){
 
 let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
+let storico=JSON.parse(localStorage.getItem("storico"))||[]
 
-let risultati=pacchi.filter(p=>
-p.nome.toLowerCase().includes(nome.toLowerCase())
-)
+storico.push(pacchi[i])
+pacchi.splice(i,1)
 
-alert(JSON.stringify(risultati,null,2))
+localStorage.setItem("pacchi",JSON.stringify(pacchi))
+localStorage.setItem("storico",JSON.stringify(storico))
+
+mostraPacchi()
+stats()
 
 }
 
-</script>
-<script>
+function eliminaPacco(i){
 
-function salvaRegistro(tipo,nome){
+let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
+pacchi.splice(i,1)
+localStorage.setItem("pacchi",JSON.stringify(pacchi))
+mostraPacchi()
+stats()
 
-let registro=JSON.parse(localStorage.getItem("registro"))||[]
+}
 
-registro.push({
-tipo:tipo,
+function whatsapp(nome){
+
+let db=JSON.parse(localStorage.getItem("condomini"))||[]
+let c=db.find(x=>x.nome.toLowerCase()==nome.toLowerCase())
+
+if(!c) return alert("Telefono non trovato")
+
+let msg="Portineria: è arrivato un pacco per te."
+
+window.open("https://wa.me/"+c.telefono+"?text="+encodeURIComponent(msg))
+
+}
+
+function registraRacc(){
+
+let nome=document.getElementById("nomeRacc").value
+let numero=document.getElementById("numeroRacc").value
+
+let racc=JSON.parse(localStorage.getItem("raccomandate"))||[]
+
+racc.push({
 nome:nome,
-data:new Date().toLocaleString()
+numero:numero,
+data:new Date().toISOString()
 })
 
-localStorage.setItem("registro",JSON.stringify(registro))
+localStorage.setItem("raccomandate",JSON.stringify(racc))
+
+mostraRacc()
+stats()
 
 }
 
-</script>
-<script>
+function mostraRacc(){
 
-function contatori(){
+let racc=JSON.parse(localStorage.getItem("raccomandate"))||[]
+let div=document.getElementById("listaRacc")
 
-let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
+div.innerHTML=""
 
-let registro=JSON.parse(localStorage.getItem("registro"))||[]
+racc.forEach((r,i)=>{
 
-console.log("Pacchi:",pacchi.length)
-console.log("Operazioni:",registro.length)
+div.innerHTML+=`
+<div class="riga">
+<b>${r.nome}</b><br>
+Raccomandata: ${r.numero}
+<button onclick="ritiraR(${i})">Ritirata</button>
+</div>`
 
-}
-
-</script>
-<script>
-
-function scanOttimizzato(video){
-
-let canvas=document.createElement("canvas")
-
-canvas.width=video.videoWidth
-canvas.height=video.videoHeight
-
-let ctx=canvas.getContext("2d")
-
-ctx.drawImage(video,0,0)
-
-let w=canvas.width
-let h=canvas.height
-
-let cropW=w*0.6
-let cropH=h*0.25
-let cropX=w*0.2
-let cropY=h*0.4
-
-let imageData=ctx.getImageData(cropX,cropY,cropW,cropH)
-
-let cropCanvas=document.createElement("canvas")
-cropCanvas.width=cropW
-cropCanvas.height=cropH
-
-cropCanvas.getContext("2d").putImageData(imageData,0,0)
-
-return cropCanvas.toDataURL()
-
-}
-
-</script>
-<script>
-
-function accendiTorcia(){
-
-let track=stream.getVideoTracks()[0]
-
-let capabilities=track.getCapabilities()
-
-if(capabilities.torch){
-
-track.applyConstraints({
-advanced:[{torch:true}]
 })
 
 }
 
-}
+function ritiraR(i){
 
-</script>
-<script>
+let racc=JSON.parse(localStorage.getItem("raccomandate"))||[]
+let storico=JSON.parse(localStorage.getItem("storico"))||[]
 
-function rafficaPacchi(){
+storico.push(racc[i])
+racc.splice(i,1)
 
-scanning=true
+localStorage.setItem("raccomandate",JSON.stringify(racc))
+localStorage.setItem("storico",JSON.stringify(storico))
 
-scanLoop()
-
-}
-
-</script>
-<script>
-
-function salvaFirma(){
-
-let canvas=document.getElementById("firma")
-
-let img=canvas.toDataURL()
-
-localStorage.setItem("firma",img)
+mostraRacc()
+stats()
 
 }
 
-</script>
-<script>
-
-let deferredPrompt
-
-window.addEventListener("beforeinstallprompt",(e)=>{
-
-e.preventDefault()
-
-deferredPrompt=e
-
-})
-
-function installaApp(){
-
-if(deferredPrompt){
-
-deferredPrompt.prompt()
-
-}
-
-}
-
-</script>
-<script>
-
-function trovaNome(testo){
+function aggiungiCondomino(){
 
 let db=JSON.parse(localStorage.getItem("condomini"))||[]
 
-for(let i=0;i<db.length;i++){
+db.push({
+nome:document.getElementById("nome").value,
+telefono:document.getElementById("telefono").value,
+scala:document.getElementById("scala").value,
+interno:document.getElementById("interno").value
+})
 
-let nome=db[i].nome.toLowerCase()
+localStorage.setItem("condomini",JSON.stringify(db))
 
-let parti=nome.split(" ")
+caricaCondomini()
 
-if(
-testo.includes(nome) ||
-testo.includes(parti[0]) ||
-testo.includes(parti[1])
-){
+}
 
-return db[i]
+function sbloccaRubrica(){
+
+let p=prompt("PIN")
+
+if(p==PIN){
+
+document.getElementById("listaCondomini").style.display="block"
+caricaCondomini()
 
 }
 
 }
 
-return null
+function caricaCondomini(){
 
-}
+let db=JSON.parse(localStorage.getItem("condomini"))||[]
+let div=document.getElementById("listaCondomini")
 
-</script>
-<script>
+div.innerHTML=""
 
-function beep(){
+db.forEach((c,i)=>{
 
-new Audio(
-"https://actions.google.com/sounds/v1/alarms/beep_short.ogg"
-).play()
-
-}
-
-</script>
-<script>
-
-function pausaScanner(){
-
-scanning=false
-
-setTimeout(()=>{
-
-scanning=true
-scanLoop()
-
-},3000)
-
-}
-
-</script>
-<script>
-
-function mostraRegistro(){
-
-let registro=JSON.parse(localStorage.getItem("registro"))||[]
-
-let html=""
-
-registro.slice().reverse().forEach(r=>{
-
-html+=`
-<div>
-${r.tipo} - ${r.nome} - ${r.data}
-</div>
-`
+div.innerHTML+=`
+<div class="riga">
+${c.nome} - scala ${c.scala} interno ${c.interno}
+<button class="delete" onclick="eliminaCondomino(${i})">Elimina</button>
+</div>`
 
 })
 
-document.getElementById("registro").innerHTML=html
+}
+
+function eliminaCondomino(i){
+
+let db=JSON.parse(localStorage.getItem("condomini"))||[]
+db.splice(i,1)
+localStorage.setItem("condomini",JSON.stringify(db))
+caricaCondomini()
 
 }
 
-</script>
-<script>
+function mostraStorico(){
 
-function backupAuto(){
+let storico=JSON.parse(localStorage.getItem("storico"))||[]
+let div=document.getElementById("storico")
 
-let db=localStorage.getItem("condomini")
+div.innerHTML=""
 
-if(!db)return
+storico.forEach(s=>{
 
-let blob=new Blob([db],{type:"application/json"})
+div.innerHTML+=`
+<div class="riga">
+${s.nome} - ${s.corriere||""}<br>
+${new Date(s.data).toLocaleString()}
+</div>`
 
+})
+
+}
+
+function backup(){
+
+let data={
+condomini:localStorage.getItem("condomini"),
+pacchi:localStorage.getItem("pacchi"),
+raccomandate:localStorage.getItem("raccomandate"),
+storico:localStorage.getItem("storico")
+}
+
+let blob=new Blob([JSON.stringify(data)],{type:"application/json"})
 let a=document.createElement("a")
 
 a.href=URL.createObjectURL(blob)
-
-a.download="rubrica.json"
+a.download="backup_portineria.json"
+a.click()
 
 }
+
+function restore(e){
+
+let file=e.target.files[0]
+let reader=new FileReader()
+
+reader.onload=function(){
+
+let data=JSON.parse(reader.result)
+
+for(let k in data){
+localStorage.setItem(k,data[k])
+}
+
+mostraPacchi()
+mostraRacc()
+stats()
+
+}
+
+reader.readAsText(file)
+
+}
+
+function toggleNight(){
+document.body.classList.toggle("dark")
+}
+
+/* FIRMA */
+
+let firmaCanvas=document.getElementById("firma")
+let ctx=firmaCanvas.getContext("2d")
+
+firmaCanvas.width=firmaCanvas.offsetWidth
+firmaCanvas.height=firmaCanvas.offsetHeight
+
+let draw=false
+
+firmaCanvas.addEventListener("mousedown",()=>draw=true)
+firmaCanvas.addEventListener("mouseup",()=>draw=false)
+firmaCanvas.addEventListener("mousemove",drawFirma)
+
+firmaCanvas.addEventListener("touchstart",()=>draw=true)
+firmaCanvas.addEventListener("touchend",()=>draw=false)
+firmaCanvas.addEventListener("touchmove",drawFirmaTouch)
+
+function drawFirma(e){
+
+if(!draw) return
+
+ctx.lineWidth=2
+ctx.lineCap="round"
+
+ctx.lineTo(e.offsetX,e.offsetY)
+ctx.stroke()
+
+ctx.beginPath()
+ctx.moveTo(e.offsetX,e.offsetY)
+
+}
+
+function drawFirmaTouch(e){
+
+if(!draw) return
+
+let rect=firmaCanvas.getBoundingClientRect()
+let x=e.touches[0].clientX-rect.left
+let y=e.touches[0].clientY-rect.top
+
+ctx.lineWidth=2
+ctx.lineCap="round"
+
+ctx.lineTo(x,y)
+ctx.stroke()
+
+ctx.beginPath()
+ctx.moveTo(x,y)
+
+}
+
+function pulisciFirma(){
+ctx.clearRect(0,0,firmaCanvas.width,firmaCanvas.height)
+}
+
+stats()
+mostraPacchi()
+mostraRacc()
 
 </script>
-<script>
 
-function ritaglioEtichetta(video){
-
-let canvas=document.createElement("canvas")
-
-canvas.width=video.videoWidth
-canvas.height=video.videoHeight
-
-let ctx=canvas.getContext("2d")
-
-ctx.drawImage(video,0,0)
-
-let w=canvas.width
-let h=canvas.height
-
-let cropW=w*0.6
-let cropH=h*0.25
-
-let cropX=w*0.2
-let cropY=h*0.35
-
-let data=ctx.getImageData(cropX,cropY,cropW,cropH)
-
-let cropCanvas=document.createElement("canvas")
-
-cropCanvas.width=cropW
-cropCanvas.height=cropH
-
-cropCanvas.getContext("2d").putImageData(data,0,0)
-
-return cropCanvas.toDataURL()
-
-}
-
-</script>
-<script>
-
-function pulisciTestoOCR(testo){
-
-return testo
-.toLowerCase()
-.replace(/0/g,"o")
-.replace(/1/g,"i")
-.replace(/5/g,"s")
-.replace(/[^a-z\s]/g," ")
-
-}
-
-</script>
-<script>
-
-async function scanLoop(){
-
-if(!scanning)return
-
-let video=document.getElementById("video")
-
-let img=ritaglioEtichetta(video)
-
-let result=await Tesseract.recognize(img,"ita")
-
-let text=pulisciTestoOCR(result.data.text)
-
-let condomino=trovaNome(text)
-
-if(condomino){
-
-beep()
-
-let corriere=riconosciCorriere(text)
-
-registraPacco(condomino.nome,corriere)
-
-window.open(
-"https://wa.me/"+condomino.tel+
-"?text=Buongiorno è arrivato un pacco "+corriere+" per lei"
-)
-
-pausaScanner()
-
-}
-
-setTimeout(scanLoop,1200)
-
-}
-
-</script>
-<script>
-
-async function startScanner(){
-
-let video=document.getElementById("video")
-
-video.style.display="block"
-
-stream=await navigator.mediaDevices.getUserMedia({
-video:{
-facingMode:"environment",
-width:{ideal:1280},
-height:{ideal:720}
-}
-})
-
-video.srcObject=stream
-
-scanning=true
-
-scanLoop()
-
-}
-
-</script>
-<script>
-
-function paccoDuplicato(nome){
-
-let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
-
-return pacchi.some(p=>p.nome===nome)
-
-}
-
-</script>
+</body>
+</html>
