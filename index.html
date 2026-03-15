@@ -3,9 +3,9 @@
 <head>
 
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>App del Portiere</title>
+<title>Portineria Digitale</title>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 
@@ -13,7 +13,7 @@
 
 body{
 font-family:Arial;
-background:#f2f2f2;
+background:#f0f0f0;
 margin:0;
 padding:10px;
 }
@@ -23,40 +23,50 @@ background:#1e1e1e;
 color:white;
 }
 
-.container{
-max-width:520px;
-margin:auto;
-}
-
 .card{
 background:white;
 padding:15px;
+margin-bottom:12px;
 border-radius:10px;
-margin-bottom:15px;
-box-shadow:0 3px 8px rgba(0,0,0,0.1);
+box-shadow:0 3px 8px rgba(0,0,0,0.15);
 }
 
 .dark .card{
-background:#2b2b2b;
+background:#2a2a2a;
 }
 
 button{
 width:100%;
 padding:12px;
+margin-top:6px;
 border:none;
 border-radius:8px;
-margin-top:6px;
-background:#25d366;
+background:#25D366;
 color:white;
 font-weight:bold;
 }
 
-input,select,textarea{
+input,select{
 width:100%;
 padding:10px;
-margin-top:5px;
+margin-top:6px;
 border-radius:6px;
 border:1px solid #ccc;
+}
+
+video{
+width:100%;
+border-radius:10px;
+}
+
+.overlay{
+position:absolute;
+border:3px solid red;
+width:60%;
+height:25%;
+top:40%;
+left:20%;
+pointer-events:none;
 }
 
 .riga{
@@ -66,9 +76,16 @@ padding:6px;
 border-bottom:1px solid #eee;
 }
 
-.verde{background:#b9f6ca}
+.verde{background:#c8f7c5}
 .giallo{background:#fff59d}
 .rosso{background:#ff8a80}
+
+footer{
+text-align:center;
+font-size:12px;
+color:gray;
+margin-top:20px;
+}
 
 </style>
 
@@ -78,80 +95,45 @@ border-bottom:1px solid #eee;
 
 <div id="login">
 
-<h2>🔐 Accesso portiere</h2>
+<h2>🔐 Portineria Digitale</h2>
 
-<input type="password" id="pass">
+<input type="password" id="password">
 
-<button onclick="login()">Entra</button>
-
-</div>
-
-<div class="container" id="app" style="display:none">
-
-<div class="card">
-
-<h2>📊 Stato consegne</h2>
-
-📦 Pacchi: <span id="countPacchi">0</span><br>
-✉️ Raccomandate: <span id="countRacc">0</span>
-
-<button onclick="toggleNight()">🌙 Modalità notte</button>
+<button onclick="login()">Accedi</button>
 
 </div>
 
+<div id="app" style="display:none">
+
 <div class="card">
 
-<h2>📦 Nuovo pacco</h2>
+<h3>📷 Scanner</h3>
 
-<select id="rubrica"></select>
+<button onclick="startScanner()">Apri Scanner</button>
 
-<select id="corriere">
-<option>Amazon</option>
-<option>GLS</option>
-<option>Bartolini</option>
-<option>Poste</option>
-<option>Altro</option>
-</select>
+<button onclick="toggleTorch()">🔦 Torcia</button>
 
-<textarea id="msgPacco">Buongiorno, è arrivato un pacco per</textarea>
+<div style="position:relative">
 
-<button onclick="inviaPacco()">Invia avviso</button>
+<video id="video" autoplay playsinline style="display:none"></video>
 
-<button onclick="scanner()">📷 Scansiona etichetta</button>
+<div class="overlay"></div>
 
-<video id="camera" autoplay playsinline style="width:100%;display:none"></video>
-
-<canvas id="canvas" style="display:none"></canvas>
+</div>
 
 </div>
 
 <div class="card">
 
-<h2>✉️ Raccomandata</h2>
+<h3>📦 Pacchi in giacenza</h3>
 
-<button onclick="inviaRacc()">Invia raccomandata</button>
-
-</div>
-
-<div class="card">
-
-<h2>📦 Pacchi in giacenza</h2>
-
-<div id="listaPacchi"></div>
+<div id="pacchi"></div>
 
 </div>
 
 <div class="card">
 
-<h2>✉️ Raccomandate in giacenza</h2>
-
-<div id="listaRacc"></div>
-
-</div>
-
-<div class="card">
-
-<h2>📜 Registro consegne</h2>
+<h3>📜 Registro</h3>
 
 <div id="registro"></div>
 
@@ -159,96 +141,47 @@ border-bottom:1px solid #eee;
 
 <div class="card">
 
-<h2>📢 Avviso a tutti</h2>
+<h3>👥 Condomini</h3>
 
-<textarea id="msgAll"></textarea>
+<button onclick="toggleLista()">Mostra / Nascondi</button>
 
-<button onclick="avvisoTutti()">Invia avviso</button>
-
-<input type="file" accept="image/*">
-
-</div>
-
-<div class="card">
-
-<h2>🏢 Avviso per scala</h2>
-
-<select id="scalaAvviso">
-<option>A</option>
-<option>B</option>
-<option>C</option>
-</select>
-
-<textarea id="msgScala"></textarea>
-
-<button onclick="avvisoScala()">Invia</button>
-
-</div>
-
-<div class="card">
-
-<h2>👥 Gestione condomini</h2>
-
-<button onclick="toggleCondomini()">Mostra / Nascondi condomini</button>
-
-<input id="cerca" placeholder="Cerca..." onkeyup="cercaCondomino()">
+<input id="cerca" placeholder="Cerca..." onkeyup="cerca()">
 
 <div id="lista" style="display:none"></div>
 
 <input id="nome" placeholder="Nome">
+
 <input id="telefono" placeholder="Telefono">
 
-<select id="scala">
-<option>A</option>
-<option>B</option>
-<option>C</option>
-</select>
-
-<button onclick="aggiungi()">Aggiungi condomino</button>
+<button onclick="aggiungi()">Aggiungi</button>
 
 </div>
 
 <div class="card">
 
-<h2>📄 Contratto portieri</h2>
-
-<button onclick="window.open('https://www.confedilizia.it/wp-content/uploads/CCNL-Portieri.pdf')">Apri contratto</button>
+<button onclick="toggleNight()">🌙 Modalità notte</button>
 
 </div>
 
-<div class="card">
+<footer>
 
-<h2>⚙️ Strumenti portiere</h2>
+<hr>
+Portineria Digitale<br>
+Sviluppata da Rosario Bossis
 
-<button onclick="ferie()">Calcolo ferie</button>
-
-<button onclick="tredicesima()">Calcolo tredicesima</button>
-
-<div id="ris"></div>
-
-</div>
-
-<div class="card">
-
-<h2>📰 News portieri</h2>
-
-<a href="https://www.confedilizia.it" target="_blank">News contratto</a><br><br>
-
-<a href="https://www.filcams.cgil.it" target="_blank">News sindacali</a>
-
-</div>
+</footer>
 
 </div>
 
 <script>
 
-let password="portiere123"
+let pass="portiere123"
+
+let stream=null
 
 function login(){
 
-let p=document.getElementById("pass").value
-
-if(p===password){
+if(document.getElementById("password").value===pass){
 
 document.getElementById("login").style.display="none"
 
@@ -270,7 +203,7 @@ document.body.classList.toggle("dark")
 
 }
 
-function toggleCondomini(){
+function toggleLista(){
 
 let l=document.getElementById("lista")
 
@@ -282,25 +215,17 @@ function carica(){
 
 let db=JSON.parse(localStorage.getItem("condomini"))||[]
 
-let rubrica=document.getElementById("rubrica")
-
 let lista=document.getElementById("lista")
-
-rubrica.innerHTML=""
 
 lista.innerHTML=""
 
 db.forEach(c=>{
-
-rubrica.innerHTML+=`<option value="${c.tel}">${c.nome}</option>`
 
 lista.innerHTML+=`<div class="riga">${c.nome}</div>`
 
 })
 
 mostraPacchi()
-
-mostraRacc()
 
 mostraRegistro()
 
@@ -312,11 +237,9 @@ let nome=document.getElementById("nome").value
 
 let tel=document.getElementById("telefono").value
 
-let scala=document.getElementById("scala").value
-
 let db=JSON.parse(localStorage.getItem("condomini"))||[]
 
-db.push({nome:nome,tel:tel,scala:scala})
+db.push({nome:nome,tel:tel})
 
 localStorage.setItem("condomini",JSON.stringify(db))
 
@@ -324,121 +247,146 @@ carica()
 
 }
 
-function inviaPacco(){
+function startScanner(){
 
-let sel=document.getElementById("rubrica")
+let video=document.getElementById("video")
 
-let tel=sel.value
+video.style.display="block"
 
-let nome=sel.options[sel.selectedIndex].text
+navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
 
-let corriere=document.getElementById("corriere").value
+.then(s=>{
 
-let msg=document.getElementById("msgPacco").value+" "+nome
+stream=s
 
-window.open("https://wa.me/"+tel+"?text="+encodeURIComponent(msg))
+video.srcObject=s
 
-let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
+setInterval(scanFrame,2000)
 
-pacchi.push({nome:nome,corriere:corriere,data:new Date().toISOString()})
-
-localStorage.setItem("pacchi",JSON.stringify(pacchi))
-
-salvaRegistro("Pacco",nome,corriere)
-
-mostraPacchi()
+})
 
 }
 
-function inviaRacc(){
+function scanFrame(){
 
-let sel=document.getElementById("rubrica")
+let video=document.getElementById("video")
 
-let tel=sel.value
+let canvas=document.createElement("canvas")
 
-let nome=sel.options[sel.selectedIndex].text
+canvas.width=video.videoWidth
 
-let msg="È arrivata una raccomandata per "+nome
+canvas.height=video.videoHeight
 
-window.open("https://wa.me/"+tel+"?text="+encodeURIComponent(msg))
+let ctx=canvas.getContext("2d")
 
-let r=JSON.parse(localStorage.getItem("racc"))||[]
+ctx.drawImage(video,0,0)
 
-r.push({nome:nome,data:new Date().toISOString()})
+let img=canvas.toDataURL()
 
-localStorage.setItem("racc",JSON.stringify(r))
+Tesseract.recognize(img,"ita")
 
-salvaRegistro("Raccomandata",nome,"Poste")
+.then(r=>{
 
-mostraRacc()
+let text=r.data.text.toLowerCase()
+
+text=text.replace(/0/g,"o").replace(/1/g,"i").replace(/5/g,"s")
+
+let db=JSON.parse(localStorage.getItem("condomini"))||[]
+
+db.forEach(c=>{
+
+let nome=c.nome.toLowerCase()
+
+let parti=nome.split(" ")
+
+if(text.includes(nome)||text.includes(parti[0])||text.includes(parti[1])){
+
+beep()
+
+window.open("https://wa.me/"+c.tel+"?text=Buongiorno è arrivato un pacco per lei in portineria")
+
+registraPacco(c.nome)
+
+}
+
+})
+
+})
+
+}
+
+function beep(){
+
+new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play()
+
+}
+
+function registraPacco(nome){
+
+let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
+
+pacchi.push({nome:nome,data:new Date().toISOString()})
+
+localStorage.setItem("pacchi",JSON.stringify(pacchi))
+
+salvaRegistro("Pacco",nome)
+
+mostraPacchi()
 
 }
 
 function mostraPacchi(){
 
-let lista=JSON.parse(localStorage.getItem("pacchi"))||[]
+let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
 
-let div=document.getElementById("listaPacchi")
-
-div.innerHTML=""
-
-lista.forEach((p,i)=>{
-
-div.innerHTML+=`<div class="riga">${p.nome} ${p.corriere} <button onclick="ritiraPacco(${i})">Ritirato</button></div>`
-
-})
-
-document.getElementById("countPacchi").innerText=lista.length
-
-}
-
-function mostraRacc(){
-
-let lista=JSON.parse(localStorage.getItem("racc"))||[]
-
-let div=document.getElementById("listaRacc")
+let div=document.getElementById("pacchi")
 
 div.innerHTML=""
 
-lista.forEach((p,i)=>{
+pacchi.forEach((p,i)=>{
 
-div.innerHTML+=`<div class="riga">${p.nome} <button onclick="ritiraRacc(${i})">Ritirata</button></div>`
+let giorni=Math.floor((Date.now()-new Date(p.data))/(86400000))
+
+let colore="verde"
+
+if(giorni>3)colore="rosso"
+
+else if(giorni>1)colore="giallo"
+
+div.innerHTML+=`<div class="riga ${colore}">
+${p.nome}
+<button onclick="ritira(${i})">Ritirato</button>
+</div>`
 
 })
 
-document.getElementById("countRacc").innerText=lista.length
-
 }
 
-function ritiraPacco(i){
+function ritira(i){
 
-let lista=JSON.parse(localStorage.getItem("pacchi"))
+let pacchi=JSON.parse(localStorage.getItem("pacchi"))
 
-lista.splice(i,1)
+pacchi.splice(i,1)
 
-localStorage.setItem("pacchi",JSON.stringify(lista))
+localStorage.setItem("pacchi",JSON.stringify(pacchi))
 
 mostraPacchi()
 
 }
 
-function ritiraRacc(i){
-
-let lista=JSON.parse(localStorage.getItem("racc"))
-
-lista.splice(i,1)
-
-localStorage.setItem("racc",JSON.stringify(lista))
-
-mostraRacc()
-
-}
-
-function salvaRegistro(tipo,nome,corriere){
+function salvaRegistro(tipo,nome){
 
 let reg=JSON.parse(localStorage.getItem("registro"))||[]
 
-reg.push({tipo:tipo,nome:nome,corriere:corriere,data:new Date().toLocaleString()})
+reg.push({
+
+tipo:tipo,
+
+nome:nome,
+
+data:new Date().toLocaleString()
+
+})
 
 localStorage.setItem("registro",JSON.stringify(reg))
 
@@ -456,43 +404,23 @@ div.innerHTML=""
 
 reg.slice().reverse().forEach(r=>{
 
-div.innerHTML+=`<div class="riga">${r.tipo} ${r.nome} ${r.corriere} ${r.data}</div>`
+div.innerHTML+=`<div class="riga">
+${r.tipo} ${r.nome} ${r.data}
+</div>`
 
 })
 
 }
 
-function ferie(){
+function cerca(){
 
-let mesi=prompt("Mesi lavorati")
-
-let f=(26/12)*mesi
-
-document.getElementById("ris").innerText="Ferie: "+f.toFixed(1)+" giorni"
-
-}
-
-function tredicesima(){
-
-let s=prompt("Stipendio mensile")
-
-let m=prompt("Mesi lavorati")
-
-let t=(s/12)*m
-
-document.getElementById("ris").innerText="Tredicesima: € "+t.toFixed(2)
-
-}
-
-function cercaCondomino(){
-
-let testo=document.getElementById("cerca").value.toLowerCase()
+let t=document.getElementById("cerca").value.toLowerCase()
 
 let righe=document.querySelectorAll("#lista .riga")
 
 righe.forEach(r=>{
 
-r.style.display=r.innerText.toLowerCase().includes(testo)?"flex":"none"
+r.style.display=r.innerText.toLowerCase().includes(t)?"flex":"none"
 
 })
 
