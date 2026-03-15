@@ -1,55 +1,27 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>Portineria Digitale</title>
+<title>Portineria Digitale PRO</title>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+<script src="https://unpkg.com/@zxing/library@latest"></script>
 
 <style>
-
 body{font-family:Arial;margin:0;background:#f2f2f2;padding:10px}
-
-.card{
-background:white;
-padding:14px;
-border-radius:10px;
-margin-bottom:10px;
-box-shadow:0 2px 6px rgba(0,0,0,.15)
-}
-
-button{
-width:100%;
-padding:12px;
-border:none;
-border-radius:8px;
-background:#25D366;
-color:white;
-font-weight:bold;
-margin-top:6px
-}
-
-input{
-width:100%;
-padding:10px;
-margin-top:6px
-}
-
-video{width:100%}
-
+.card{background:white;padding:14px;border-radius:10px;margin-bottom:10px;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+button{width:100%;padding:12px;border:none;border-radius:8px;background:#25D366;color:white;font-weight:bold;margin-top:6px}
+input{width:100%;padding:10px;margin-top:6px}
+video{width:100%;margin-top:10px;border-radius:8px}
 .green{color:green;font-weight:bold}
 .yellow{color:orange;font-weight:bold}
 .red{color:red;font-weight:bold}
-
-canvas{
-border:1px solid #ccc;
-width:100%;
-height:160px
-}
-
+canvas{border:1px solid #ccc;width:100%;height:160px}
+.small{font-size:12px;color:#666}
+img{max-width:100%;border-radius:6px;margin-top:5px}
+.alert{color:red;font-size:12px}
 </style>
 </head>
 
@@ -61,55 +33,89 @@ height:160px
 </div>
 
 <div class="card">
-<h3>📦 Scanner Pacchi</h3>
-<button onclick="startScanner('pacco')">Avvia scanner pacchi</button>
+<h3>📦 Scanner Pacchi OCR</h3>
+<button onclick="startScanner('pacco')">Scanner pacchi</button>
+</div>
+
+<div class="card">
+<h3>📦 Scanner Barcode</h3>
+<button onclick="startBarcode()">Scanner Barcode</button>
 </div>
 
 <div class="card">
 <h3>📬 Scanner Raccomandate</h3>
-<button onclick="startScanner('raccomandata')">Avvia scanner raccomandate</button>
+<button onclick="startScanner('raccomandata')">Scanner raccomandate</button>
 </div>
 
 <video id="video" autoplay></video>
 
 <div class="card">
-<h3>📦 Registra pacco manuale</h3>
-<input id="nomePacco">
-<input id="corriere">
+<h3>📦 Inserisci pacco</h3>
+
+<input id="nomePacco" placeholder="Nome destinatario">
+<input id="corriere" placeholder="Corriere">
+<input id="tracking" placeholder="Tracking">
+
+<input type="file" id="foto" accept="image/*" capture="environment">
+
 <button onclick="registraPaccoManuale()">Registra</button>
+
 </div>
 
 <div class="card">
-<h3>📬 Registra raccomandata manuale</h3>
-<input id="nomeRacc">
-<input id="numeroRacc">
+
+<h3>📬 Inserisci raccomandata</h3>
+
+<input id="nomeRacc" placeholder="Nome destinatario">
+<input id="numeroRacc" placeholder="Numero raccomandata">
+
 <button onclick="registraRaccManuale()">Registra</button>
+
 </div>
 
 <div class="card">
+
 <h3>📦 Pacchi</h3>
+
 <input id="searchPacchi" placeholder="Cerca pacco" oninput="mostraPacchi()">
+
 <div id="pacchi"></div>
+
 </div>
 
 <div class="card">
+
 <h3>📬 Raccomandate</h3>
+
+<input id="searchRacc" placeholder="Cerca raccomandata" oninput="mostraRacc()">
+
 <div id="racc"></div>
+
 </div>
 
 <div class="card">
-<h3>📜 Storico</h3>
+
+<h3>📜 Storico consegne</h3>
+
 <div id="storico"></div>
+
 </div>
 
 <div class="card">
-<h3>👥 Rubrica</h3>
+
+<h3>👥 Rubrica condomini</h3>
+
 <button onclick="sbloccaRubrica()">Apri rubrica</button>
 
 <div id="rubrica" style="display:none">
 
+<input id="searchCondomino" placeholder="Cerca condomino" oninput="caricaCondomini()">
+
 <input id="nome">
 <input id="telefono">
+<input id="scala">
+<input id="piano">
+<input id="interno">
 
 <button onclick="aggiungiCondomino()">Aggiungi</button>
 
@@ -119,15 +125,23 @@ height:160px
 </div>
 
 <div class="card">
+
 <h3>✍ Firma ritiro</h3>
+
 <canvas id="firma"></canvas>
-<button onclick="pulisciFirma()">Pulisci</button>
+
+<button onclick="pulisciFirma()">Pulisci firma</button>
+
 </div>
 
 <div class="card">
+
 <h3>💾 Backup</h3>
-<button onclick="backup()">Esporta dati</button>
-<input type="file" onchange="restore(event)">
+
+<button onclick="esporta()">Esporta dati</button>
+
+<input type="file" onchange="importa(event)">
+
 </div>
 
 <script>
@@ -135,6 +149,7 @@ height:160px
 let tipoScanner="pacco"
 let scannerAttivo=false
 let streamCamera=null
+let barcodeReader=null
 
 function beep(){
 new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play()
@@ -170,15 +185,18 @@ canvas.height=video.videoHeight
 
 let ctx=canvas.getContext("2d")
 
-ctx.drawImage(video,0,0)
+let sx=canvas.width*0.2
+let sy=canvas.height*0.3
+let sw=canvas.width*0.6
+let sh=canvas.height*0.4
+
+ctx.drawImage(video,sx,sy,sw,sh,0,0,sw,sh)
 
 let result=await Tesseract.recognize(canvas,'ita')
 
-let testo=result.data.text.toLowerCase()
+trovaDestinatario(result.data.text)
 
-trovaDestinatario(testo)
-
-setTimeout(scanLoop,1000)
+setTimeout(scanLoop,1200)
 
 }
 
@@ -186,55 +204,98 @@ function stopScanner(){
 
 scannerAttivo=false
 
-if(streamCamera){
-streamCamera.getTracks().forEach(track=>track.stop())
+if(streamCamera)
+streamCamera.getTracks().forEach(t=>t.stop())
+
 }
 
+function startBarcode(){
+
+barcodeReader = new ZXing.BrowserBarcodeReader()
+
+barcodeReader.decodeFromVideoDevice(null,'video',(result,err)=>{
+
+if(result){
+
+let codice=result.text
+
+document.getElementById("tracking").value=codice
+
+alert("Tracking rilevato: "+codice)
+
+barcodeReader.reset()
+
+}
+
+})
+
+}
+
+function normalizza(t){
+return t.toLowerCase().replace(/\s+/g,"")
 }
 
 function trovaDestinatario(testo){
 
 let db=JSON.parse(localStorage.getItem("condomini"))||[]
 
+let testoNorm=normalizza(testo)
+
 for(let c of db){
 
-let cognome=c.nome.toLowerCase().split(" ")[1]
+let nomeNorm=normalizza(c.nome)
 
-if(!cognome)continue
-
-if(testo.includes(cognome)){
+if(testoNorm.includes(nomeNorm)){
 
 beep()
 
 stopScanner()
 
-if(tipoScanner=="pacco"){
+let msg="Salve "+c.nome+", è arrivato un pacco per lei in portineria."
 
+window.open("https://wa.me/"+c.telefono+"?text="+encodeURIComponent(msg))
+
+if(tipoScanner=="pacco")
 registraPaccoAuto(c.nome)
-
-window.open("https://wa.me/"+c.telefono+"?text="+encodeURIComponent("Salve è arrivato un pacco per "+c.nome))
-
-}else{
-
+else
 registraRaccAuto(c.nome)
 
-window.open("https://wa.me/"+c.telefono+"?text="+encodeURIComponent("Salve è arrivata una raccomandata per "+c.nome))
-
-}
-
-return
-
 }
 
 }
 
 }
 
-function registraPaccoAuto(nome){
+function fileToBase64(file){
+return new Promise(resolve=>{
+let reader=new FileReader()
+reader.onload=()=>resolve(reader.result)
+reader.readAsDataURL(file)
+})
+}
+
+async function registraPaccoManuale(){
+
+let nome=document.getElementById("nomePacco").value
+let corriere=document.getElementById("corriere").value
+let tracking=document.getElementById("tracking").value
+
+let fotoFile=document.getElementById("foto").files[0]
+
+let foto=null
+
+if(fotoFile)
+foto=await fileToBase64(fotoFile)
 
 let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
 
-pacchi.push({nome:nome,data:new Date().toISOString()})
+pacchi.unshift({
+nome,
+corriere,
+tracking,
+foto,
+data:new Date().toISOString()
+})
 
 localStorage.setItem("pacchi",JSON.stringify(pacchi))
 
@@ -243,27 +304,14 @@ stats()
 
 }
 
-function registraRaccAuto(nome){
-
-let racc=JSON.parse(localStorage.getItem("raccomandate"))||[]
-
-racc.push({nome:nome})
-
-localStorage.setItem("raccomandate",JSON.stringify(racc))
-
-mostraRacc()
-stats()
-
-}
-
-function registraPaccoManuale(){
-
-let nome=document.getElementById("nomePacco").value
-let corriere=document.getElementById("corriere").value
+function registraPaccoAuto(nome){
 
 let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
 
-pacchi.push({nome:nome,corriere:corriere,data:new Date().toISOString()})
+pacchi.unshift({
+nome,
+data:new Date().toISOString()
+})
 
 localStorage.setItem("pacchi",JSON.stringify(pacchi))
 
@@ -279,7 +327,11 @@ let numero=document.getElementById("numeroRacc").value
 
 let racc=JSON.parse(localStorage.getItem("raccomandate"))||[]
 
-racc.push({nome:nome,numero:numero})
+racc.unshift({
+nome,
+numero,
+data:new Date().toISOString()
+})
 
 localStorage.setItem("raccomandate",JSON.stringify(racc))
 
@@ -288,12 +340,32 @@ stats()
 
 }
 
+function registraRaccAuto(nome){
+
+let racc=JSON.parse(localStorage.getItem("raccomandate"))||[]
+
+racc.unshift({
+nome,
+data:new Date().toISOString()
+})
+
+localStorage.setItem("raccomandate",JSON.stringify(racc))
+
+mostraRacc()
+stats()
+
+}
+
+function giorni(data){
+return Math.floor((Date.now()-new Date(data))/86400000)
+}
+
 function giacenza(data){
 
-let giorni=(Date.now()-new Date(data))/86400000
+let g=giorni(data)
 
-if(giorni<3)return"green"
-if(giorni<6)return"yellow"
+if(g<3)return"green"
+if(g<6)return"yellow"
 return"red"
 
 }
@@ -310,26 +382,84 @@ div.innerHTML=""
 
 pacchi.forEach((p,i)=>{
 
-if(!p.nome.toLowerCase().includes(filtro))return
+if(!(p.nome||"").toLowerCase().includes(filtro))return
 
 let colore=giacenza(p.data)
+let giorniP=giorni(p.data)
 
-div.innerHTML+=
-"<div class='"+colore+"'>"+
-p.nome+
-"<button onclick='consegna("+i+")'>Consegnato</button>"+
-"</div>"
+div.innerHTML+=`
+
+<div class="${colore}">
+
+<b>${p.nome}</b>
+
+<div class="small">${giorniP} giorni</div>
+
+${giorniP>7?"<div class='alert'>⚠ Pacco in giacenza da "+giorniP+" giorni</div>":""}
+
+${p.corriere||""}
+
+${p.tracking?"<div class='small'>Tracking: "+p.tracking+"</div>":""}
+
+${p.foto?"<img src='"+p.foto+"'>":""}
+
+<button onclick="consegnaPacco(${i})">Consegnato</button>
+
+<button onclick="eliminaPacco(${i})">Elimina</button>
+
+</div>
+
+`
 
 })
 
 }
 
-function consegna(i){
+function mostraRacc(){
+
+let filtro=document.getElementById("searchRacc").value.toLowerCase()
+
+let racc=JSON.parse(localStorage.getItem("raccomandate"))||[]
+
+let div=document.getElementById("racc")
+
+div.innerHTML=""
+
+racc.forEach((r,i)=>{
+
+if(!(r.nome||"").toLowerCase().includes(filtro))return
+
+let colore=giacenza(r.data)
+
+div.innerHTML+=`
+
+<div class="${colore}">
+
+${r.nome}
+
+<button onclick="consegnaRacc(${i})">Consegnato</button>
+
+<button onclick="eliminaRacc(${i})">Elimina</button>
+
+</div>
+
+`
+
+})
+
+}
+
+function consegnaPacco(i){
 
 let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
 let storico=JSON.parse(localStorage.getItem("storico"))||[]
 
-storico.push(pacchi[i])
+let firma=document.getElementById("firma").toDataURL()
+
+pacchi[i].firma=firma
+pacchi[i].ritiro=new Date().toLocaleString()
+
+storico.unshift(pacchi[i])
 
 pacchi.splice(i,1)
 
@@ -342,17 +472,45 @@ stats()
 
 }
 
-function mostraRacc(){
+function consegnaRacc(i){
+
+let racc=JSON.parse(localStorage.getItem("raccomandate"))||[]
+let storico=JSON.parse(localStorage.getItem("storico"))||[]
+
+storico.unshift(racc[i])
+
+racc.splice(i,1)
+
+localStorage.setItem("raccomandate",JSON.stringify(racc))
+localStorage.setItem("storico",JSON.stringify(storico))
+
+mostraRacc()
+mostraStorico()
+stats()
+
+}
+
+function eliminaPacco(i){
+
+let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
+
+pacchi.splice(i,1)
+
+localStorage.setItem("pacchi",JSON.stringify(pacchi))
+
+mostraPacchi()
+
+}
+
+function eliminaRacc(i){
 
 let racc=JSON.parse(localStorage.getItem("raccomandate"))||[]
 
-let div=document.getElementById("racc")
+racc.splice(i,1)
 
-div.innerHTML=""
+localStorage.setItem("raccomandate",JSON.stringify(racc))
 
-racc.forEach(r=>{
-div.innerHTML+=r.nome+"<br>"
-})
+mostraRacc()
 
 }
 
@@ -365,7 +523,21 @@ let div=document.getElementById("storico")
 div.innerHTML=""
 
 storico.forEach(s=>{
-div.innerHTML+=s.nome+"<br>"
+
+div.innerHTML+=`
+
+<div class="card">
+
+<b>${s.nome}</b>
+
+${s.ritiro?"<div class='small'>Ritirato: "+s.ritiro+"</div>":""}
+
+${s.firma?"<img src='"+s.firma+"'>":""}
+
+</div>
+
+`
+
 })
 
 }
@@ -377,9 +549,10 @@ let racc=JSON.parse(localStorage.getItem("raccomandate"))||[]
 let storico=JSON.parse(localStorage.getItem("storico"))||[]
 
 document.getElementById("stats").innerHTML=
-"Pacchi: "+pacchi.length+"<br>"+
-"Raccomandate: "+racc.length+"<br>"+
-"Consegnati: "+storico.length
+
+"Pacchi presenti: "+pacchi.length+
+"<br>Raccomandate: "+racc.length+
+"<br>Consegnati: "+storico.length
 
 }
 
@@ -389,7 +562,10 @@ let db=JSON.parse(localStorage.getItem("condomini"))||[]
 
 db.push({
 nome:document.getElementById("nome").value,
-telefono:document.getElementById("telefono").value
+telefono:document.getElementById("telefono").value,
+scala:document.getElementById("scala").value,
+piano:document.getElementById("piano").value,
+interno:document.getElementById("interno").value
 })
 
 localStorage.setItem("condomini",JSON.stringify(db))
@@ -400,6 +576,8 @@ caricaCondomini()
 
 function caricaCondomini(){
 
+let filtro=(document.getElementById("searchCondomino").value||"").toLowerCase()
+
 let db=JSON.parse(localStorage.getItem("condomini"))||[]
 
 let div=document.getElementById("condomini")
@@ -407,7 +585,16 @@ let div=document.getElementById("condomini")
 div.innerHTML=""
 
 db.forEach(c=>{
-div.innerHTML+=c.nome+" "+c.telefono+"<br>"
+
+if(!c.nome.toLowerCase().includes(filtro))return
+
+div.innerHTML+=`
+<b>${c.nome}</b>  
+${c.scala}-${c.piano}-${c.interno}  
+📞 ${c.telefono}
+<br><br>
+`
+
 })
 
 }
@@ -417,22 +604,20 @@ function sbloccaRubrica(){
 let pin=prompt("PIN")
 
 if(pin=="1234"){
+
 document.getElementById("rubrica").style.display="block"
+
 caricaCondomini()
-}
 
 }
 
-function backup(){
-
-let data={
-pacchi:localStorage.getItem("pacchi"),
-raccomandate:localStorage.getItem("raccomandate"),
-condomini:localStorage.getItem("condomini"),
-storico:localStorage.getItem("storico")
 }
 
-let blob=new Blob([JSON.stringify(data)])
+function esporta(){
+
+let data=JSON.stringify(localStorage)
+
+let blob=new Blob([data])
 
 let a=document.createElement("a")
 
@@ -444,7 +629,7 @@ a.click()
 
 }
 
-function restore(e){
+function importa(e){
 
 let file=e.target.files[0]
 
@@ -454,14 +639,10 @@ reader.onload=function(){
 
 let data=JSON.parse(reader.result)
 
-for(let k in data){
+for(let k in data)
 localStorage.setItem(k,data[k])
-}
 
-mostraPacchi()
-mostraRacc()
-mostraStorico()
-stats()
+location.reload()
 
 }
 
@@ -475,6 +656,7 @@ let draw=false
 
 canvas.addEventListener("mousedown",()=>draw=true)
 canvas.addEventListener("mouseup",()=>draw=false)
+
 canvas.addEventListener("mousemove",e=>{
 
 if(!draw)return
@@ -483,9 +665,11 @@ ctx.lineWidth=2
 ctx.lineCap="round"
 
 ctx.lineTo(e.offsetX,e.offsetY)
+
 ctx.stroke()
 
 ctx.beginPath()
+
 ctx.moveTo(e.offsetX,e.offsetY)
 
 })
