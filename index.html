@@ -18,6 +18,11 @@ margin:0;
 padding:10px;
 }
 
+.dark{
+background:#1e1e1e;
+color:white;
+}
+
 .container{
 max-width:520px;
 margin:auto;
@@ -31,17 +36,8 @@ margin-bottom:15px;
 box-shadow:0 3px 8px rgba(0,0,0,0.1);
 }
 
-h2{
-margin-top:0;
-color:#075e54;
-}
-
-input,select,textarea{
-width:100%;
-padding:10px;
-margin-bottom:10px;
-border-radius:6px;
-border:1px solid #ccc;
+.dark .card{
+background:#2b2b2b;
 }
 
 button{
@@ -49,10 +45,18 @@ width:100%;
 padding:12px;
 border:none;
 border-radius:8px;
-font-weight:bold;
-margin-top:5px;
+margin-top:6px;
 background:#25d366;
 color:white;
+font-weight:bold;
+}
+
+input,select,textarea{
+width:100%;
+padding:10px;
+margin-top:5px;
+border-radius:6px;
+border:1px solid #ccc;
 }
 
 .riga{
@@ -66,45 +70,66 @@ border-bottom:1px solid #eee;
 .giallo{background:#fff59d}
 .rosso{background:#ff8a80}
 
-.counter{
-font-size:18px;
-font-weight:bold;
-}
-
 </style>
 
 </head>
 
 <body>
 
-<div class="container">
+<div id="login">
+
+<h2>🔐 Accesso portiere</h2>
+
+<input type="password" id="pass">
+
+<button onclick="login()">Entra</button>
+
+</div>
+
+<div class="container" id="app" style="display:none">
 
 <div class="card">
+
 <h2>📊 Stato consegne</h2>
-<div class="counter">
+
 📦 Pacchi: <span id="countPacchi">0</span><br>
 ✉️ Raccomandate: <span id="countRacc">0</span>
-</div>
+
+<button onclick="toggleNight()">🌙 Modalità notte</button>
+
 </div>
 
 <div class="card">
 
 <h2>📦 Nuovo pacco</h2>
 
-<textarea id="msgPacco">Buongiorno, è arrivato un pacco per</textarea>
-
 <select id="rubrica"></select>
 
-<button onclick="inviaPacco()">Invia avviso pacco</button>
+<select id="corriere">
+<option>Amazon</option>
+<option>GLS</option>
+<option>Bartolini</option>
+<option>Poste</option>
+<option>Altro</option>
+</select>
 
-<button onclick="scansiona('pacco')">📷 Scansiona pacco</button>
+<textarea id="msgPacco">Buongiorno, è arrivato un pacco per</textarea>
 
-<button onclick="inviaRacc()">✉️ Raccomandata</button>
+<button onclick="inviaPacco()">Invia avviso</button>
 
-<button onclick="scansiona('racc')">📷 Scansiona raccomandata</button>
+<button onclick="scanner()">📷 Scansiona etichetta</button>
 
-<video id="camera" autoplay playsinline style="width:100%;display:none;"></video>
-<canvas id="canvas" style="display:none;"></canvas>
+<video id="camera" autoplay playsinline style="width:100%;display:none"></video>
+
+<canvas id="canvas" style="display:none"></canvas>
+
+</div>
+
+<div class="card">
+
+<h2>✉️ Raccomandata</h2>
+
+<button onclick="inviaRacc()">Invia raccomandata</button>
 
 </div>
 
@@ -138,9 +163,9 @@ font-weight:bold;
 
 <textarea id="msgAll"></textarea>
 
-<button onclick="avvisoTutti()">Invia messaggio</button>
+<button onclick="avvisoTutti()">Invia avviso</button>
 
-<input type="file" accept="image/*" onchange="fotoAvviso(event)">
+<input type="file" accept="image/*">
 
 </div>
 
@@ -164,11 +189,11 @@ font-weight:bold;
 
 <h2>👥 Gestione condomini</h2>
 
-<input id="cerca" placeholder="Cerca condomino..." onkeyup="cercaCondomino()">
+<button onclick="toggleCondomini()">Mostra / Nascondi condomini</button>
 
-<div id="lista"></div>
+<input id="cerca" placeholder="Cerca..." onkeyup="cercaCondomino()">
 
-<h3>Aggiungi</h3>
+<div id="lista" style="display:none"></div>
 
 <input id="nome" placeholder="Nome">
 <input id="telefono" placeholder="Telefono">
@@ -179,9 +204,7 @@ font-weight:bold;
 <option>C</option>
 </select>
 
-<button onclick="aggiungi()">Salva</button>
-
-<input type="file" onchange="importaFile(event)">
+<button onclick="aggiungi()">Aggiungi condomino</button>
 
 </div>
 
@@ -193,18 +216,78 @@ font-weight:bold;
 
 </div>
 
+<div class="card">
+
+<h2>⚙️ Strumenti portiere</h2>
+
+<button onclick="ferie()">Calcolo ferie</button>
+
+<button onclick="tredicesima()">Calcolo tredicesima</button>
+
+<div id="ris"></div>
+
+</div>
+
+<div class="card">
+
+<h2>📰 News portieri</h2>
+
+<a href="https://www.confedilizia.it" target="_blank">News contratto</a><br><br>
+
+<a href="https://www.filcams.cgil.it" target="_blank">News sindacali</a>
+
+</div>
+
 </div>
 
 <script>
+
+let password="portiere123"
+
+function login(){
+
+let p=document.getElementById("pass").value
+
+if(p===password){
+
+document.getElementById("login").style.display="none"
+
+document.getElementById("app").style.display="block"
+
+carica()
+
+}else{
+
+alert("Password errata")
+
+}
+
+}
+
+function toggleNight(){
+
+document.body.classList.toggle("dark")
+
+}
+
+function toggleCondomini(){
+
+let l=document.getElementById("lista")
+
+l.style.display=l.style.display==="none"?"block":"none"
+
+}
 
 function carica(){
 
 let db=JSON.parse(localStorage.getItem("condomini"))||[]
 
 let rubrica=document.getElementById("rubrica")
+
 let lista=document.getElementById("lista")
 
 rubrica.innerHTML=""
+
 lista.innerHTML=""
 
 db.forEach(c=>{
@@ -216,25 +299,19 @@ lista.innerHTML+=`<div class="riga">${c.nome}</div>`
 })
 
 mostraPacchi()
+
 mostraRacc()
+
 mostraRegistro()
-
-}
-
-function aggiornaContatori(){
-
-let p=JSON.parse(localStorage.getItem("pacchi"))||[]
-let r=JSON.parse(localStorage.getItem("racc"))||[]
-
-document.getElementById("countPacchi").innerText=p.length
-document.getElementById("countRacc").innerText=r.length
 
 }
 
 function aggiungi(){
 
 let nome=document.getElementById("nome").value
+
 let tel=document.getElementById("telefono").value
+
 let scala=document.getElementById("scala").value
 
 let db=JSON.parse(localStorage.getItem("condomini"))||[]
@@ -252,7 +329,10 @@ function inviaPacco(){
 let sel=document.getElementById("rubrica")
 
 let tel=sel.value
+
 let nome=sel.options[sel.selectedIndex].text
+
+let corriere=document.getElementById("corriere").value
 
 let msg=document.getElementById("msgPacco").value+" "+nome
 
@@ -260,11 +340,11 @@ window.open("https://wa.me/"+tel+"?text="+encodeURIComponent(msg))
 
 let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
 
-pacchi.push({nome:nome,data:new Date().toISOString()})
+pacchi.push({nome:nome,corriere:corriere,data:new Date().toISOString()})
 
 localStorage.setItem("pacchi",JSON.stringify(pacchi))
 
-salvaRegistro("Pacco",nome)
+salvaRegistro("Pacco",nome,corriere)
 
 mostraPacchi()
 
@@ -275,9 +355,10 @@ function inviaRacc(){
 let sel=document.getElementById("rubrica")
 
 let tel=sel.value
+
 let nome=sel.options[sel.selectedIndex].text
 
-let msg="Buongiorno, è arrivata una raccomandata per "+nome
+let msg="È arrivata una raccomandata per "+nome
 
 window.open("https://wa.me/"+tel+"?text="+encodeURIComponent(msg))
 
@@ -287,7 +368,7 @@ r.push({nome:nome,data:new Date().toISOString()})
 
 localStorage.setItem("racc",JSON.stringify(r))
 
-salvaRegistro("Raccomandata",nome)
+salvaRegistro("Raccomandata",nome,"Poste")
 
 mostraRacc()
 
@@ -303,23 +384,11 @@ div.innerHTML=""
 
 lista.forEach((p,i)=>{
 
-let giorni=Math.floor((Date.now()-new Date(p.data))/(1000*60*60*24))
-
-let r=document.createElement("div")
-
-r.className="riga"
-
-r.innerHTML=p.nome+" <button onclick='ritiraPacco("+i+")'>Ritirato</button>"
-
-if(giorni==0)r.classList.add("verde")
-else if(giorni<=3)r.classList.add("giallo")
-else r.classList.add("rosso")
-
-div.appendChild(r)
+div.innerHTML+=`<div class="riga">${p.nome} ${p.corriere} <button onclick="ritiraPacco(${i})">Ritirato</button></div>`
 
 })
 
-aggiornaContatori()
+document.getElementById("countPacchi").innerText=lista.length
 
 }
 
@@ -333,23 +402,17 @@ div.innerHTML=""
 
 lista.forEach((p,i)=>{
 
-let r=document.createElement("div")
-
-r.className="riga"
-
-r.innerHTML=p.nome+" <button onclick='ritiraRacc("+i+")'>Ritirata</button>"
-
-div.appendChild(r)
+div.innerHTML+=`<div class="riga">${p.nome} <button onclick="ritiraRacc(${i})">Ritirata</button></div>`
 
 })
 
-aggiornaContatori()
+document.getElementById("countRacc").innerText=lista.length
 
 }
 
 function ritiraPacco(i){
 
-let lista=JSON.parse(localStorage.getItem("pacchi"))||[]
+let lista=JSON.parse(localStorage.getItem("pacchi"))
 
 lista.splice(i,1)
 
@@ -361,7 +424,7 @@ mostraPacchi()
 
 function ritiraRacc(i){
 
-let lista=JSON.parse(localStorage.getItem("racc"))||[]
+let lista=JSON.parse(localStorage.getItem("racc"))
 
 lista.splice(i,1)
 
@@ -371,11 +434,11 @@ mostraRacc()
 
 }
 
-function salvaRegistro(tipo,nome){
+function salvaRegistro(tipo,nome,corriere){
 
 let reg=JSON.parse(localStorage.getItem("registro"))||[]
 
-reg.push({tipo:tipo,nome:nome,data:new Date().toLocaleString()})
+reg.push({tipo:tipo,nome:nome,corriere:corriere,data:new Date().toLocaleString()})
 
 localStorage.setItem("registro",JSON.stringify(reg))
 
@@ -391,11 +454,33 @@ let div=document.getElementById("registro")
 
 div.innerHTML=""
 
-reg.slice().reverse().forEach(p=>{
+reg.slice().reverse().forEach(r=>{
 
-div.innerHTML+=`<div class="riga">${p.tipo} - ${p.nome} - ${p.data}</div>`
+div.innerHTML+=`<div class="riga">${r.tipo} ${r.nome} ${r.corriere} ${r.data}</div>`
 
 })
+
+}
+
+function ferie(){
+
+let mesi=prompt("Mesi lavorati")
+
+let f=(26/12)*mesi
+
+document.getElementById("ris").innerText="Ferie: "+f.toFixed(1)+" giorni"
+
+}
+
+function tredicesima(){
+
+let s=prompt("Stipendio mensile")
+
+let m=prompt("Mesi lavorati")
+
+let t=(s/12)*m
+
+document.getElementById("ris").innerText="Tredicesima: € "+t.toFixed(2)
 
 }
 
@@ -406,145 +491,12 @@ let testo=document.getElementById("cerca").value.toLowerCase()
 let righe=document.querySelectorAll("#lista .riga")
 
 righe.forEach(r=>{
+
 r.style.display=r.innerText.toLowerCase().includes(testo)?"flex":"none"
-})
-
-}
-
-function avvisoTutti(){
-
-let msg=document.getElementById("msgAll").value
-
-let db=JSON.parse(localStorage.getItem("condomini"))||[]
-
-db.forEach(c=>{
-window.open("https://wa.me/"+c.tel+"?text="+encodeURIComponent(msg))
-})
-
-}
-
-function avvisoScala(){
-
-let scala=document.getElementById("scalaAvviso").value
-let msg=document.getElementById("msgScala").value
-
-let db=JSON.parse(localStorage.getItem("condomini"))||[]
-
-db.forEach(c=>{
-if(c.scala===scala){
-window.open("https://wa.me/"+c.tel+"?text="+encodeURIComponent(msg))
-}
-})
-
-}
-
-function fotoAvviso(e){
-
-let file=e.target.files[0]
-
-let url=URL.createObjectURL(file)
-
-window.open(url)
-
-}
-
-async function scansiona(tipo){
-
-let video=document.getElementById("camera")
-
-video.style.display="block"
-
-let stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
-
-video.srcObject=stream
-
-setTimeout(()=>cattura(tipo),2000)
-
-}
-
-function cattura(tipo){
-
-let video=document.getElementById("camera")
-let canvas=document.getElementById("canvas")
-let ctx=canvas.getContext("2d")
-
-canvas.width=video.videoWidth
-canvas.height=video.videoHeight
-
-ctx.drawImage(video,0,0)
-
-video.srcObject.getTracks().forEach(t=>t.stop())
-
-video.style.display="none"
-
-let img=canvas.toDataURL()
-
-leggiTesto(img,tipo)
-
-}
-
-async function leggiTesto(img,tipo){
-
-let r=await Tesseract.recognize(img,"ita")
-
-trovaCondomino(r.data.text,tipo)
-
-}
-
-function trovaCondomino(testo,tipo){
-
-let db=JSON.parse(localStorage.getItem("condomini"))||[]
-
-testo=testo.toLowerCase()
-
-testo=testo.replace(/0/g,"o")
-testo=testo.replace(/1/g,"i")
-testo=testo.replace(/5/g,"s")
-testo=testo.replace(/8/g,"b")
-
-let trovato=null
-
-db.forEach(c=>{
-
-let nome=c.nome.toLowerCase()
-
-if(
-testo.includes(nome)||
-testo.includes(nome.substring(0,3))
-){
-trovato=c
-}
 
 })
 
-if(trovato){
-
-let audio=new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg")
-audio.play()
-
-if(tipo==="pacco"){
-
-let msg=document.getElementById("msgPacco").value+" "+trovato.nome
-
-window.open("https://wa.me/"+trovato.tel+"?text="+encodeURIComponent(msg))
-
-}else{
-
-let msg="Buongiorno, è arrivata una raccomandata per "+trovato.nome
-
-window.open("https://wa.me/"+trovato.tel+"?text="+encodeURIComponent(msg))
-
 }
-
-}else{
-
-alert("Condomino non trovato")
-
-}
-
-}
-
-window.onload=carica
 
 </script>
 
