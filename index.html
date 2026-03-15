@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Portineria Digitale</title>
 
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+
 <style>
 body{font-family:Arial;margin:0;background:#f2f2f2;padding:10px}
 .dark{background:#1e1e1e;color:white}
@@ -12,10 +14,8 @@ body{font-family:Arial;margin:0;background:#f2f2f2;padding:10px}
 .dark .card{background:#2a2a2a}
 button{width:100%;padding:12px;border:none;border-radius:8px;background:#25D366;color:white;font-weight:bold;margin-top:6px}
 input{width:100%;padding:10px;border-radius:6px;border:1px solid #ccc;margin-top:6px}
-.small{background:#555}
-.delete{background:#e53935}
 .riga{padding:8px;border-bottom:1px solid #eee}
-img{width:100%;border-radius:8px;margin-top:6px}
+.delete{background:#e53935}
 canvas{border:1px solid #ccc;width:100%;height:160px}
 </style>
 </head>
@@ -23,22 +23,22 @@ canvas{border:1px solid #ccc;width:100%;height:160px}
 <body>
 
 <div class="card">
-<h3>📊 Dashboard</h3>
-<div id="stats"></div>
+<h3>📷 Scansione etichetta pacco</h3>
+<input type="file" accept="image/*" capture="environment" onchange="scanEtichetta(event)">
+<div id="ocr"></div>
 </div>
 
 <div class="card">
 <h3>📦 Registra pacco</h3>
 <input id="nomePacco" placeholder="Nome condomino">
 <input id="corriere" placeholder="Corriere">
-<input type="file" accept="image/*" capture="environment" id="fotoPacco">
 <button onclick="registraPacco()">Registra pacco</button>
 </div>
 
 <div class="card">
 <h3>📦 Pacchi presenti</h3>
 <input id="searchPacchi" placeholder="Cerca" oninput="mostraPacchi()">
-<div id="listaPacchi"></div>
+<div id="pacchi"></div>
 </div>
 
 <div class="card">
@@ -46,30 +46,23 @@ canvas{border:1px solid #ccc;width:100%;height:160px}
 <input id="nomeRacc" placeholder="Nome">
 <input id="numeroRacc" placeholder="Numero raccomandata">
 <button onclick="registraRacc()">Registra</button>
-<div id="listaRacc"></div>
+<div id="racc"></div>
 </div>
 
 <div class="card">
-<h3>👥 Rubrica Condomini</h3>
-<input id="nome" placeholder="Nome">
+<h3>👥 Rubrica condomini</h3>
+<input id="nome" placeholder="Nome Cognome">
 <input id="telefono" placeholder="Telefono">
 <input id="scala" placeholder="Scala">
 <input id="interno" placeholder="Interno">
 <button onclick="aggiungiCondomino()">Aggiungi</button>
-<button class="small" onclick="sbloccaRubrica()">🔒 Sblocca rubrica</button>
-<div id="listaCondomini" style="display:none"></div>
+<div id="condomini"></div>
 </div>
 
 <div class="card">
 <h3>✍ Firma ritiro</h3>
 <canvas id="firma"></canvas>
-<button onclick="pulisciFirma()">Pulisci</button>
-</div>
-
-<div class="card">
-<h3>📜 Storico consegne</h3>
-<button onclick="mostraStorico()">Apri storico</button>
-<div id="storico"></div>
+<button onclick="pulisciFirma()">Pulisci firma</button>
 </div>
 
 <div class="card">
@@ -84,65 +77,94 @@ canvas{border:1px solid #ccc;width:100%;height:160px}
 
 <script>
 
-const PIN="1234"
+/* BIP */
 
-function oggi(){
-return new Date().toISOString().slice(0,10)
+function beep(){
+let audio=new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg")
+audio.play()
 }
 
-function stats(){
+/* OCR */
 
-let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
-let racc=JSON.parse(localStorage.getItem("raccomandate"))||[]
-let storico=JSON.parse(localStorage.getItem("storico"))||[]
+function scanEtichetta(e){
 
-let oggiCount=storico.filter(s=>s.data.slice(0,10)==oggi()).length
+let file=e.target.files[0]
+if(!file) return
 
-document.getElementById("stats").innerHTML=
-"Pacchi presenti: "+pacchi.length+"<br>"+
-"Raccomandate: "+racc.length+"<br>"+
-"Consegnati oggi: "+oggiCount
+document.getElementById("ocr").innerHTML="lettura etichetta..."
+
+Tesseract.recognize(file,'ita').then(res=>{
+
+let testo=res.data.text.toLowerCase()
+
+document.getElementById("ocr").innerHTML=testo
+
+trovaDestinatario(testo)
+
+})
 
 }
+
+/* TROVA DESTINATARIO */
+
+function trovaDestinatario(testo){
+
+let db=JSON.parse(localStorage.getItem("condomini"))||[]
+
+for(let c of db){
+
+let nome=c.nome.toLowerCase()
+
+let cognome=nome.split(" ")[1]||""
+
+if(testo.includes(nome)||testo.includes(cognome)){
+
+beep()
+
+let msg="Salve è arrivato un pacco per "+c.nome
+
+window.open("https://wa.me/"+c.telefono+"?text="+encodeURIComponent(msg))
+
+return
+
+}
+
+}
+
+alert("Destinatario non trovato")
+
+}
+
+/* PACCHI */
 
 function registraPacco(){
 
 let nome=document.getElementById("nomePacco").value
 let corriere=document.getElementById("corriere").value
-let foto=document.getElementById("fotoPacco").files[0]
 
 if(!nome) return alert("Inserisci nome")
-
-let reader=new FileReader()
-
-reader.onload=function(){
 
 let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
 
 pacchi.push({
 nome:nome,
 corriere:corriere,
-foto:reader.result,
-data:new Date().toISOString(),
-firma:firmaCanvas.toDataURL()
+data:new Date().toISOString()
 })
 
 localStorage.setItem("pacchi",JSON.stringify(pacchi))
 
 mostraPacchi()
-stats()
-
-}
-
-if(foto) reader.readAsDataURL(foto)
 
 }
 
 function mostraPacchi(){
 
 let filtro=document.getElementById("searchPacchi").value.toLowerCase()
+
 let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
-let div=document.getElementById("listaPacchi")
+
+let div=document.getElementById("pacchi")
 
 div.innerHTML=""
 
@@ -152,10 +174,7 @@ if(!p.nome.toLowerCase().includes(filtro)) return
 
 div.innerHTML+=`
 <div class="riga">
-<b>${p.nome}</b> - ${p.corriere}<br>
-${new Date(p.data).toLocaleString()}
-<img src="${p.foto}">
-<button onclick="whatsapp('${p.nome}')">📲 Avvisa WhatsApp</button>
+<b>${p.nome}</b> - ${p.corriere}
 <button onclick="consegna(${i})">Consegnato</button>
 <button class="delete" onclick="eliminaPacco(${i})">Elimina</button>
 </div>`
@@ -167,16 +186,11 @@ ${new Date(p.data).toLocaleString()}
 function consegna(i){
 
 let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
-let storico=JSON.parse(localStorage.getItem("storico"))||[]
-
-storico.push(pacchi[i])
 pacchi.splice(i,1)
 
 localStorage.setItem("pacchi",JSON.stringify(pacchi))
-localStorage.setItem("storico",JSON.stringify(storico))
 
 mostraPacchi()
-stats()
 
 }
 
@@ -184,24 +198,14 @@ function eliminaPacco(i){
 
 let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
 pacchi.splice(i,1)
+
 localStorage.setItem("pacchi",JSON.stringify(pacchi))
+
 mostraPacchi()
-stats()
 
 }
 
-function whatsapp(nome){
-
-let db=JSON.parse(localStorage.getItem("condomini"))||[]
-let c=db.find(x=>x.nome.toLowerCase()==nome.toLowerCase())
-
-if(!c) return alert("Telefono non trovato")
-
-let msg="Portineria: è arrivato un pacco per te."
-
-window.open("https://wa.me/"+c.telefono+"?text="+encodeURIComponent(msg))
-
-}
+/* RACCOMANDATE */
 
 function registraRacc(){
 
@@ -212,21 +216,20 @@ let racc=JSON.parse(localStorage.getItem("raccomandate"))||[]
 
 racc.push({
 nome:nome,
-numero:numero,
-data:new Date().toISOString()
+numero:numero
 })
 
 localStorage.setItem("raccomandate",JSON.stringify(racc))
 
 mostraRacc()
-stats()
 
 }
 
 function mostraRacc(){
 
 let racc=JSON.parse(localStorage.getItem("raccomandate"))||[]
-let div=document.getElementById("listaRacc")
+
+let div=document.getElementById("racc")
 
 div.innerHTML=""
 
@@ -234,8 +237,7 @@ racc.forEach((r,i)=>{
 
 div.innerHTML+=`
 <div class="riga">
-<b>${r.nome}</b><br>
-Raccomandata: ${r.numero}
+${r.nome} - ${r.numero}
 <button onclick="ritiraR(${i})">Ritirata</button>
 </div>`
 
@@ -246,18 +248,15 @@ Raccomandata: ${r.numero}
 function ritiraR(i){
 
 let racc=JSON.parse(localStorage.getItem("raccomandate"))||[]
-let storico=JSON.parse(localStorage.getItem("storico"))||[]
-
-storico.push(racc[i])
 racc.splice(i,1)
 
 localStorage.setItem("raccomandate",JSON.stringify(racc))
-localStorage.setItem("storico",JSON.stringify(storico))
 
 mostraRacc()
-stats()
 
 }
+
+/* RUBRICA */
 
 function aggiungiCondomino(){
 
@@ -276,78 +275,38 @@ caricaCondomini()
 
 }
 
-function sbloccaRubrica(){
-
-let p=prompt("PIN")
-
-if(p==PIN){
-
-document.getElementById("listaCondomini").style.display="block"
-caricaCondomini()
-
-}
-
-}
-
 function caricaCondomini(){
 
 let db=JSON.parse(localStorage.getItem("condomini"))||[]
-let div=document.getElementById("listaCondomini")
+
+let div=document.getElementById("condomini")
 
 div.innerHTML=""
 
-db.forEach((c,i)=>{
+db.forEach(c=>{
 
 div.innerHTML+=`
 <div class="riga">
 ${c.nome} - scala ${c.scala} interno ${c.interno}
-<button class="delete" onclick="eliminaCondomino(${i})">Elimina</button>
 </div>`
 
 })
 
 }
 
-function eliminaCondomino(i){
-
-let db=JSON.parse(localStorage.getItem("condomini"))||[]
-db.splice(i,1)
-localStorage.setItem("condomini",JSON.stringify(db))
-caricaCondomini()
-
-}
-
-function mostraStorico(){
-
-let storico=JSON.parse(localStorage.getItem("storico"))||[]
-let div=document.getElementById("storico")
-
-div.innerHTML=""
-
-storico.forEach(s=>{
-
-div.innerHTML+=`
-<div class="riga">
-${s.nome} - ${s.corriere||""}<br>
-${new Date(s.data).toLocaleString()}
-</div>`
-
-})
-
-}
+/* BACKUP */
 
 function backup(){
 
 let data={
 condomini:localStorage.getItem("condomini"),
 pacchi:localStorage.getItem("pacchi"),
-raccomandate:localStorage.getItem("raccomandate"),
-storico:localStorage.getItem("storico")
+raccomandate:localStorage.getItem("raccomandate")
 }
 
-let blob=new Blob([JSON.stringify(data)],{type:"application/json"})
-let a=document.createElement("a")
+let blob=new Blob([JSON.stringify(data)])
 
+let a=document.createElement("a")
 a.href=URL.createObjectURL(blob)
 a.download="backup_portineria.json"
 a.click()
@@ -357,6 +316,7 @@ a.click()
 function restore(e){
 
 let file=e.target.files[0]
+
 let reader=new FileReader()
 
 reader.onload=function(){
@@ -369,7 +329,7 @@ localStorage.setItem(k,data[k])
 
 mostraPacchi()
 mostraRacc()
-stats()
+caricaCondomini()
 
 }
 
@@ -377,29 +337,21 @@ reader.readAsText(file)
 
 }
 
-function toggleNight(){
-document.body.classList.toggle("dark")
-}
-
 /* FIRMA */
 
-let firmaCanvas=document.getElementById("firma")
-let ctx=firmaCanvas.getContext("2d")
-
-firmaCanvas.width=firmaCanvas.offsetWidth
-firmaCanvas.height=firmaCanvas.offsetHeight
-
+let canvas=document.getElementById("firma")
+let ctx=canvas.getContext("2d")
 let draw=false
 
-firmaCanvas.addEventListener("mousedown",()=>draw=true)
-firmaCanvas.addEventListener("mouseup",()=>draw=false)
-firmaCanvas.addEventListener("mousemove",drawFirma)
+canvas.addEventListener("mousedown",()=>draw=true)
+canvas.addEventListener("mouseup",()=>draw=false)
+canvas.addEventListener("mousemove",disegna)
 
-firmaCanvas.addEventListener("touchstart",()=>draw=true)
-firmaCanvas.addEventListener("touchend",()=>draw=false)
-firmaCanvas.addEventListener("touchmove",drawFirmaTouch)
+canvas.addEventListener("touchstart",()=>draw=true)
+canvas.addEventListener("touchend",()=>draw=false)
+canvas.addEventListener("touchmove",disegnaTouch)
 
-function drawFirma(e){
+function disegna(e){
 
 if(!draw) return
 
@@ -414,16 +366,14 @@ ctx.moveTo(e.offsetX,e.offsetY)
 
 }
 
-function drawFirmaTouch(e){
+function disegnaTouch(e){
 
 if(!draw) return
 
-let rect=firmaCanvas.getBoundingClientRect()
+let rect=canvas.getBoundingClientRect()
+
 let x=e.touches[0].clientX-rect.left
 let y=e.touches[0].clientY-rect.top
-
-ctx.lineWidth=2
-ctx.lineCap="round"
 
 ctx.lineTo(x,y)
 ctx.stroke()
@@ -434,12 +384,18 @@ ctx.moveTo(x,y)
 }
 
 function pulisciFirma(){
-ctx.clearRect(0,0,firmaCanvas.width,firmaCanvas.height)
+ctx.clearRect(0,0,canvas.width,canvas.height)
 }
 
-stats()
+/* NOTTE */
+
+function toggleNight(){
+document.body.classList.toggle("dark")
+}
+
 mostraPacchi()
 mostraRacc()
+caricaCondomini()
 
 </script>
 
