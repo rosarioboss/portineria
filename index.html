@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 
-<title>Portineria Digitale PRO</title>
+<title>Portineria Digitale</title>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 <script src="https://unpkg.com/@zxing/library@latest"></script>
@@ -12,7 +13,17 @@
 
 <style>
 
-body{font-family:Arial;background:#f2f2f2;margin:0;padding:10px}
+body{
+font-family:Arial;
+background:#f2f2f2;
+margin:0;
+padding:10px
+}
+
+.titolo{
+text-align:center;
+margin-bottom:15px
+}
 
 .card{
 background:white;
@@ -39,14 +50,32 @@ padding:10px;
 margin-top:6px
 }
 
-video{width:100%;border-radius:8px;margin-top:10px}
+video{
+width:100%;
+border-radius:8px;
+margin-top:10px
+}
 
-.alert{color:red;font-size:12px}
+.alert{
+color:red;
+font-size:12px
+}
+
+.footer{
+text-align:center;
+margin-top:30px;
+font-size:12px;
+color:gray
+}
 
 </style>
 </head>
 
 <body>
+
+<div class="titolo">
+<h1>🏢 Portineria Digitale</h1>
+</div>
 
 <div class="card">
 <h3>📊 Dashboard</h3>
@@ -66,6 +95,10 @@ video{width:100%;border-radius:8px;margin-top:10px}
 <div class="card">
 <h3>📦 Scanner Barcode</h3>
 <button onclick="startBarcode()">Scanner barcode</button>
+</div>
+
+<div class="card">
+<button onclick="avvisaPacchiOggi()">📦 Avvisa tutti i pacchi di oggi</button>
 </div>
 
 <video id="video" autoplay></video>
@@ -93,18 +126,25 @@ video{width:100%;border-radius:8px;margin-top:10px}
 
 <div class="card">
 <h3>📦 Pacchi</h3>
+
 <input id="searchPacchi" placeholder="Cerca pacco" oninput="mostraPacchi()">
+
 <div id="pacchi"></div>
+
 </div>
 
 <div class="card">
 <h3>📬 Raccomandate</h3>
+
 <div id="racc"></div>
+
 </div>
 
 <div class="card">
 <h3>📜 Storico consegne</h3>
+
 <div id="storico"></div>
+
 </div>
 
 <div class="card">
@@ -113,11 +153,11 @@ video{width:100%;border-radius:8px;margin-top:10px}
 
 <input id="searchCondomino" placeholder="Cerca condomino" oninput="caricaCondomini()">
 
-<input id="nome">
-<input id="telefono">
-<input id="scala">
-<input id="piano">
-<input id="interno">
+<input id="nome" placeholder="Nome e cognome">
+<input id="telefono" placeholder="Telefono">
+<input id="scala" placeholder="Scala">
+<input id="piano" placeholder="Piano">
+<input id="interno" placeholder="Interno">
 
 <button onclick="aggiungiCondomino()">Aggiungi</button>
 
@@ -126,9 +166,18 @@ video{width:100%;border-radius:8px;margin-top:10px}
 </div>
 
 <div class="card">
+
 <h3>💾 Backup dati</h3>
+
 <button onclick="esporta()">Esporta</button>
+
 <input type="file" onchange="importa(event)">
+
+</div>
+
+<div class="footer">
+Portineria Digitale<br>
+Creato da Rosario Bossis
 </div>
 
 <script>
@@ -150,13 +199,67 @@ function beep(){
 new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play()
 }
 
+function avvisaWhatsApp(nome,tipo){
+
+let db=safeParse("condomini")
+
+let condomino=db.find(c=>c.nome && c.nome.toLowerCase()===nome.toLowerCase())
+
+if(!condomino)return
+if(!condomino.telefono)return
+
+let telefono=condomino.telefono.replace(/\D/g,'')
+
+let messaggio="Salve, è arrivato "+tipo+" per: "+condomino.nome+". Può ritirarlo in portineria."
+
+let url="https://wa.me/"+telefono+"?text="+encodeURIComponent(messaggio)
+
+window.open(url)
+
+}
+
+function avvisaPacchiOggi(){
+
+let pacchi=safeParse("pacchi")
+
+let oggi=new Date().toDateString()
+
+pacchi.forEach(p=>{
+
+if(!p.data)return
+
+let d=new Date(p.data).toDateString()
+
+if(d===oggi){
+
+avvisaWhatsApp(p.nome,"un pacco")
+
+}
+
+})
+
+}
+
 function normalizza(t){
+
 return (t||"")
 .toLowerCase()
 .replace(/0/g,"o")
 .replace(/1/g,"i")
 .replace(/5/g,"s")
 .replace(/[^a-z]/g,"")
+
+}
+
+function similar(a,b){
+
+if(!a||!b)return false
+
+a=normalizza(a)
+b=normalizza(b)
+
+return a.includes(b) || b.includes(a)
+
 }
 
 function riconosciCorriere(tracking){
@@ -239,17 +342,11 @@ function trovaDestinatario(testo){
 
 let db=safeParse("condomini")
 
-let testoNorm=normalizza(testo)
-
 for(let c of db){
-
-if(!c.nome)continue
 
 let cognome=c.nome.split(" ").pop()
 
-let cognomeNorm=normalizza(cognome)
-
-if(testoNorm.includes(cognomeNorm)){
+if(similar(testo,cognome)){
 
 if(scannerLock)return
 
@@ -261,13 +358,7 @@ stopScanner()
 
 registraPaccoAuto(c.nome)
 
-if(c.telefono){
-
-let msg="Salve "+c.nome+", è arrivato un pacco."
-
-window.open("https://wa.me/"+c.telefono+"?text="+encodeURIComponent(msg))
-
-}
+avvisaWhatsApp(c.nome,"un pacco")
 
 }
 
@@ -324,6 +415,8 @@ data:new Date().toISOString()
 
 localStorage.setItem("pacchi",JSON.stringify(pacchi))
 
+avvisaWhatsApp(nome,"un pacco")
+
 document.getElementById("nomePacco").value=""
 document.getElementById("corriere").value=""
 document.getElementById("tracking").value=""
@@ -367,6 +460,11 @@ data:new Date().toISOString()
 })
 
 localStorage.setItem("raccomandate",JSON.stringify(racc))
+
+avvisaWhatsApp(nome,"una raccomandata")
+
+document.getElementById("nomeRacc").value=""
+document.getElementById("numeroRacc").value=""
 
 mostraRacc()
 
@@ -440,8 +538,13 @@ let pacchi=safeParse("pacchi")
 let storico=safeParse("storico")
 
 if(pacchi[i]){
+
+pacchi[i].consegnato=new Date().toISOString()
+
 storico.unshift(pacchi[i])
+
 pacchi.splice(i,1)
+
 }
 
 localStorage.setItem("pacchi",JSON.stringify(pacchi))
@@ -460,8 +563,13 @@ let racc=safeParse("raccomandate")
 let storico=safeParse("storico")
 
 if(racc[i]){
+
+racc[i].consegnato=new Date().toISOString()
+
 storico.unshift(racc[i])
+
 racc.splice(i,1)
+
 }
 
 localStorage.setItem("raccomandate",JSON.stringify(racc))
@@ -485,7 +593,17 @@ storico.forEach(s=>{
 
 if(!s.nome)return
 
-div.innerHTML+=`<div><b>${s.nome}</b></div>`
+let data=""
+
+if(s.consegnato){
+
+let d=new Date(s.consegnato)
+
+data=" - consegnato "+d.toLocaleString()
+
+}
+
+div.innerHTML+=`<div><b>${s.nome}</b>${data}</div>`
 
 })
 
