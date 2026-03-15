@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="it">
+
 <head>
 
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 
 <title>Portineria Digitale</title>
 
@@ -46,7 +47,7 @@ color:white;
 font-weight:bold;
 }
 
-input,select{
+input,select,textarea{
 width:100%;
 padding:10px;
 margin-top:6px;
@@ -66,19 +67,7 @@ width:60%;
 height:25%;
 top:40%;
 left:20%;
-pointer-events:none;
 }
-
-.riga{
-display:flex;
-justify-content:space-between;
-padding:6px;
-border-bottom:1px solid #eee;
-}
-
-.verde{background:#c8f7c5}
-.giallo{background:#fff59d}
-.rosso{background:#ff8a80}
 
 footer{
 text-align:center;
@@ -107,11 +96,9 @@ margin-top:20px;
 
 <div class="card">
 
-<h3>📷 Scanner</h3>
+<h3>📷 Scanner pacchi</h3>
 
-<button onclick="startScanner()">Apri Scanner</button>
-
-<button onclick="toggleTorch()">🔦 Torcia</button>
+<button onclick="startScanner()">Avvia scanner</button>
 
 <div style="position:relative">
 
@@ -127,33 +114,27 @@ margin-top:20px;
 
 <h3>📦 Pacchi in giacenza</h3>
 
-<div id="pacchi"></div>
+<div id="listaPacchi"></div>
 
 </div>
 
 <div class="card">
 
-<h3>📜 Registro</h3>
-
-<div id="registro"></div>
-
-</div>
-
-<div class="card">
-
-<h3>👥 Condomini</h3>
-
-<button onclick="toggleLista()">Mostra / Nascondi</button>
-
-<input id="cerca" placeholder="Cerca..." onkeyup="cerca()">
-
-<div id="lista" style="display:none"></div>
+<h3>👥 Gestione condomini</h3>
 
 <input id="nome" placeholder="Nome">
 
 <input id="telefono" placeholder="Telefono">
 
-<button onclick="aggiungi()">Aggiungi</button>
+<select id="scala">
+<option>A</option>
+<option>B</option>
+<option>C</option>
+</select>
+
+<button onclick="aggiungi()">Aggiungi condomino</button>
+
+<div id="lista"></div>
 
 </div>
 
@@ -172,19 +153,17 @@ Sviluppata da Rosario Bossis
 </footer>
 
 </div>
-
 <script>
 
-let pass="portiere123"
-
-let stream=null
+let password="portiere123"
 
 function login(){
 
-if(document.getElementById("password").value===pass){
+let p=document.getElementById("password").value
+
+if(p===password){
 
 document.getElementById("login").style.display="none"
-
 document.getElementById("app").style.display="block"
 
 carica()
@@ -203,14 +182,6 @@ document.body.classList.toggle("dark")
 
 }
 
-function toggleLista(){
-
-let l=document.getElementById("lista")
-
-l.style.display=l.style.display==="none"?"block":"none"
-
-}
-
 function carica(){
 
 let db=JSON.parse(localStorage.getItem("condomini"))||[]
@@ -221,25 +192,23 @@ lista.innerHTML=""
 
 db.forEach(c=>{
 
-lista.innerHTML+=`<div class="riga">${c.nome}</div>`
+lista.innerHTML+=`<div>${c.nome} - Scala ${c.scala}</div>`
 
 })
 
 mostraPacchi()
-
-mostraRegistro()
 
 }
 
 function aggiungi(){
 
 let nome=document.getElementById("nome").value
-
 let tel=document.getElementById("telefono").value
+let scala=document.getElementById("scala").value
 
 let db=JSON.parse(localStorage.getItem("condomini"))||[]
 
-db.push({nome:nome,tel:tel})
+db.push({nome:nome,tel:tel,scala:scala})
 
 localStorage.setItem("condomini",JSON.stringify(db))
 
@@ -247,34 +216,41 @@ carica()
 
 }
 
-function startScanner(){
+</script>
+<script>
+
+let stream=null
+let scanning=false
+
+async function startScanner(){
 
 let video=document.getElementById("video")
 
 video.style.display="block"
 
-navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
+stream=await navigator.mediaDevices.getUserMedia({
 
-.then(s=>{
-
-stream=s
-
-video.srcObject=s
-
-setInterval(scanFrame,2000)
+video:{facingMode:"environment"}
 
 })
 
+video.srcObject=stream
+
+scanning=true
+
+scanLoop()
+
 }
 
-function scanFrame(){
+async function scanLoop(){
+
+if(!scanning)return
 
 let video=document.getElementById("video")
 
 let canvas=document.createElement("canvas")
 
 canvas.width=video.videoWidth
-
 canvas.height=video.videoHeight
 
 let ctx=canvas.getContext("2d")
@@ -283,146 +259,25 @@ ctx.drawImage(video,0,0)
 
 let img=canvas.toDataURL()
 
-Tesseract.recognize(img,"ita")
+let result=await Tesseract.recognize(img,"ita")
 
-.then(r=>{
-
-let text=r.data.text.toLowerCase()
-
-text=text.replace(/0/g,"o").replace(/1/g,"i").replace(/5/g,"s")
+let text=result.data.text.toLowerCase()
 
 let db=JSON.parse(localStorage.getItem("condomini"))||[]
 
 db.forEach(c=>{
 
-let nome=c.nome.toLowerCase()
-
-let parti=nome.split(" ")
-
-if(text.includes(nome)||text.includes(parti[0])||text.includes(parti[1])){
-
-beep()
-
-window.open("https://wa.me/"+c.tel+"?text=Buongiorno è arrivato un pacco per lei in portineria")
-
-registraPacco(c.nome)
-
-}
-
-})
-
-})
-
-}
-
-function beep(){
+if(text.includes(c.nome.toLowerCase())){
 
 new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play()
 
-}
-
-function registraPacco(nome){
-
-let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
-
-pacchi.push({nome:nome,data:new Date().toISOString()})
-
-localStorage.setItem("pacchi",JSON.stringify(pacchi))
-
-salvaRegistro("Pacco",nome)
-
-mostraPacchi()
+window.open("https://wa.me/"+c.tel+"?text=È arrivato un pacco per lei")
 
 }
-
-function mostraPacchi(){
-
-let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
-
-let div=document.getElementById("pacchi")
-
-div.innerHTML=""
-
-pacchi.forEach((p,i)=>{
-
-let giorni=Math.floor((Date.now()-new Date(p.data))/(86400000))
-
-let colore="verde"
-
-if(giorni>3)colore="rosso"
-
-else if(giorni>1)colore="giallo"
-
-div.innerHTML+=`<div class="riga ${colore}">
-${p.nome}
-<button onclick="ritira(${i})">Ritirato</button>
-</div>`
 
 })
 
-}
-
-function ritira(i){
-
-let pacchi=JSON.parse(localStorage.getItem("pacchi"))
-
-pacchi.splice(i,1)
-
-localStorage.setItem("pacchi",JSON.stringify(pacchi))
-
-mostraPacchi()
-
-}
-
-function salvaRegistro(tipo,nome){
-
-let reg=JSON.parse(localStorage.getItem("registro"))||[]
-
-reg.push({
-
-tipo:tipo,
-
-nome:nome,
-
-data:new Date().toLocaleString()
-
-})
-
-localStorage.setItem("registro",JSON.stringify(reg))
-
-mostraRegistro()
-
-}
-
-function mostraRegistro(){
-
-let reg=JSON.parse(localStorage.getItem("registro"))||[]
-
-let div=document.getElementById("registro")
-
-div.innerHTML=""
-
-reg.slice().reverse().forEach(r=>{
-
-div.innerHTML+=`<div class="riga">
-${r.tipo} ${r.nome} ${r.data}
-</div>`
-
-})
-
-}
-
-function cerca(){
-
-let t=document.getElementById("cerca").value.toLowerCase()
-
-let righe=document.querySelectorAll("#lista .riga")
-
-righe.forEach(r=>{
-
-r.style.display=r.innerText.toLowerCase().includes(t)?"flex":"none"
-
-})
+setTimeout(scanLoop,2000)
 
 }
 
@@ -430,3 +285,486 @@ r.style.display=r.innerText.toLowerCase().includes(t)?"flex":"none"
 
 </body>
 </html>
+<script>
+
+function registraPacco(nome,corriere){
+
+let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
+
+pacchi.push({
+nome:nome,
+corriere:corriere,
+data:new Date().toISOString()
+})
+
+localStorage.setItem("pacchi",JSON.stringify(pacchi))
+
+mostraPacchi()
+
+}
+
+function mostraPacchi(){
+
+let lista=JSON.parse(localStorage.getItem("pacchi"))||[]
+
+let div=document.getElementById("listaPacchi")
+
+div.innerHTML=""
+
+lista.forEach((p,i)=>{
+
+let giorni=Math.floor((Date.now()-new Date(p.data))/(86400000))
+
+let colore=""
+
+if(giorni<=1)colore="verde"
+else if(giorni<=3)colore="giallo"
+else colore="rosso"
+
+div.innerHTML+=`
+<div class="${colore}">
+${p.nome} - ${p.corriere}
+</div>
+`
+
+})
+
+}
+
+</script>
+<script>
+
+function riconosciCorriere(testo){
+
+let corriere="Altro"
+
+if(testo.includes("amazon"))corriere="Amazon"
+if(testo.includes("gls"))corriere="GLS"
+if(testo.includes("poste"))corriere="Poste"
+if(testo.includes("dhl"))corriere="DHL"
+if(testo.includes("ups"))corriere="UPS"
+if(testo.includes("bartolini"))corriere="Bartolini"
+
+return corriere
+
+}
+
+</script>
+<script>
+
+function avvisoTutti(){
+
+let db=JSON.parse(localStorage.getItem("condomini"))||[]
+
+let messaggio=prompt("Scrivi avviso per tutti")
+
+if(!messaggio)return
+
+db.forEach(c=>{
+
+window.open(
+"https://wa.me/"+c.tel+
+"?text="+encodeURIComponent(messaggio)
+)
+
+})
+
+}
+
+</script>
+<script>
+
+function avvisoScala(){
+
+let scala=prompt("Inserisci scala A B C")
+
+let db=JSON.parse(localStorage.getItem("condomini"))||[]
+
+let messaggio=prompt("Messaggio")
+
+db.forEach(c=>{
+
+if(c.scala===scala){
+
+window.open(
+"https://wa.me/"+c.tel+
+"?text="+encodeURIComponent(messaggio)
+)
+
+}
+
+})
+
+}
+
+</script>
+<script>
+
+function cercaPacco(){
+
+let nome=prompt("Nome da cercare")
+
+let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
+
+let risultati=pacchi.filter(p=>
+p.nome.toLowerCase().includes(nome.toLowerCase())
+)
+
+alert(JSON.stringify(risultati,null,2))
+
+}
+
+</script>
+<script>
+
+function salvaRegistro(tipo,nome){
+
+let registro=JSON.parse(localStorage.getItem("registro"))||[]
+
+registro.push({
+tipo:tipo,
+nome:nome,
+data:new Date().toLocaleString()
+})
+
+localStorage.setItem("registro",JSON.stringify(registro))
+
+}
+
+</script>
+<script>
+
+function contatori(){
+
+let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
+
+let registro=JSON.parse(localStorage.getItem("registro"))||[]
+
+console.log("Pacchi:",pacchi.length)
+console.log("Operazioni:",registro.length)
+
+}
+
+</script>
+<script>
+
+function scanOttimizzato(video){
+
+let canvas=document.createElement("canvas")
+
+canvas.width=video.videoWidth
+canvas.height=video.videoHeight
+
+let ctx=canvas.getContext("2d")
+
+ctx.drawImage(video,0,0)
+
+let w=canvas.width
+let h=canvas.height
+
+let cropW=w*0.6
+let cropH=h*0.25
+let cropX=w*0.2
+let cropY=h*0.4
+
+let imageData=ctx.getImageData(cropX,cropY,cropW,cropH)
+
+let cropCanvas=document.createElement("canvas")
+cropCanvas.width=cropW
+cropCanvas.height=cropH
+
+cropCanvas.getContext("2d").putImageData(imageData,0,0)
+
+return cropCanvas.toDataURL()
+
+}
+
+</script>
+<script>
+
+function accendiTorcia(){
+
+let track=stream.getVideoTracks()[0]
+
+let capabilities=track.getCapabilities()
+
+if(capabilities.torch){
+
+track.applyConstraints({
+advanced:[{torch:true}]
+})
+
+}
+
+}
+
+</script>
+<script>
+
+function rafficaPacchi(){
+
+scanning=true
+
+scanLoop()
+
+}
+
+</script>
+<script>
+
+function salvaFirma(){
+
+let canvas=document.getElementById("firma")
+
+let img=canvas.toDataURL()
+
+localStorage.setItem("firma",img)
+
+}
+
+</script>
+<script>
+
+let deferredPrompt
+
+window.addEventListener("beforeinstallprompt",(e)=>{
+
+e.preventDefault()
+
+deferredPrompt=e
+
+})
+
+function installaApp(){
+
+if(deferredPrompt){
+
+deferredPrompt.prompt()
+
+}
+
+}
+
+</script>
+<script>
+
+function trovaNome(testo){
+
+let db=JSON.parse(localStorage.getItem("condomini"))||[]
+
+for(let i=0;i<db.length;i++){
+
+let nome=db[i].nome.toLowerCase()
+
+let parti=nome.split(" ")
+
+if(
+testo.includes(nome) ||
+testo.includes(parti[0]) ||
+testo.includes(parti[1])
+){
+
+return db[i]
+
+}
+
+}
+
+return null
+
+}
+
+</script>
+<script>
+
+function beep(){
+
+new Audio(
+"https://actions.google.com/sounds/v1/alarms/beep_short.ogg"
+).play()
+
+}
+
+</script>
+<script>
+
+function pausaScanner(){
+
+scanning=false
+
+setTimeout(()=>{
+
+scanning=true
+scanLoop()
+
+},3000)
+
+}
+
+</script>
+<script>
+
+function mostraRegistro(){
+
+let registro=JSON.parse(localStorage.getItem("registro"))||[]
+
+let html=""
+
+registro.slice().reverse().forEach(r=>{
+
+html+=`
+<div>
+${r.tipo} - ${r.nome} - ${r.data}
+</div>
+`
+
+})
+
+document.getElementById("registro").innerHTML=html
+
+}
+
+</script>
+<script>
+
+function backupAuto(){
+
+let db=localStorage.getItem("condomini")
+
+if(!db)return
+
+let blob=new Blob([db],{type:"application/json"})
+
+let a=document.createElement("a")
+
+a.href=URL.createObjectURL(blob)
+
+a.download="rubrica.json"
+
+}
+
+</script>
+<script>
+
+function ritaglioEtichetta(video){
+
+let canvas=document.createElement("canvas")
+
+canvas.width=video.videoWidth
+canvas.height=video.videoHeight
+
+let ctx=canvas.getContext("2d")
+
+ctx.drawImage(video,0,0)
+
+let w=canvas.width
+let h=canvas.height
+
+let cropW=w*0.6
+let cropH=h*0.25
+
+let cropX=w*0.2
+let cropY=h*0.35
+
+let data=ctx.getImageData(cropX,cropY,cropW,cropH)
+
+let cropCanvas=document.createElement("canvas")
+
+cropCanvas.width=cropW
+cropCanvas.height=cropH
+
+cropCanvas.getContext("2d").putImageData(data,0,0)
+
+return cropCanvas.toDataURL()
+
+}
+
+</script>
+<script>
+
+function pulisciTestoOCR(testo){
+
+return testo
+.toLowerCase()
+.replace(/0/g,"o")
+.replace(/1/g,"i")
+.replace(/5/g,"s")
+.replace(/[^a-z\s]/g," ")
+
+}
+
+</script>
+<script>
+
+async function scanLoop(){
+
+if(!scanning)return
+
+let video=document.getElementById("video")
+
+let img=ritaglioEtichetta(video)
+
+let result=await Tesseract.recognize(img,"ita")
+
+let text=pulisciTestoOCR(result.data.text)
+
+let condomino=trovaNome(text)
+
+if(condomino){
+
+beep()
+
+let corriere=riconosciCorriere(text)
+
+registraPacco(condomino.nome,corriere)
+
+window.open(
+"https://wa.me/"+condomino.tel+
+"?text=Buongiorno è arrivato un pacco "+corriere+" per lei"
+)
+
+pausaScanner()
+
+}
+
+setTimeout(scanLoop,1200)
+
+}
+
+</script>
+<script>
+
+async function startScanner(){
+
+let video=document.getElementById("video")
+
+video.style.display="block"
+
+stream=await navigator.mediaDevices.getUserMedia({
+video:{
+facingMode:"environment",
+width:{ideal:1280},
+height:{ideal:720}
+}
+})
+
+video.srcObject=stream
+
+scanning=true
+
+scanLoop()
+
+}
+
+</script>
+<script>
+
+function paccoDuplicato(nome){
+
+let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
+
+return pacchi.some(p=>p.nome===nome)
+
+}
+
+</script>
