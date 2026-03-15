@@ -1,111 +1,227 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Portineria Digitale</title>
+
+<title>Portineria Digitale PRO</title>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 
 <style>
-body{font-family:Arial;margin:0;background:#f2f2f2;padding:10px}
-.dark{background:#1e1e1e;color:white}
-.card{background:white;padding:14px;border-radius:10px;margin-bottom:10px;box-shadow:0 2px 6px rgba(0,0,0,.15)}
-.dark .card{background:#2a2a2a}
-button{width:100%;padding:12px;border:none;border-radius:8px;background:#25D366;color:white;font-weight:bold;margin-top:6px}
-input{width:100%;padding:10px;border-radius:6px;border:1px solid #ccc;margin-top:6px}
-.riga{padding:8px;border-bottom:1px solid #eee}
-.delete{background:#e53935}
-canvas{border:1px solid #ccc;width:100%;height:160px}
+
+body{
+font-family:Arial;
+margin:0;
+background:#f2f2f2;
+padding:10px
+}
+
+.dark{
+background:#1e1e1e;
+color:white
+}
+
+.card{
+background:white;
+padding:14px;
+border-radius:10px;
+margin-bottom:10px;
+box-shadow:0 2px 6px rgba(0,0,0,.15)
+}
+
+.dark .card{
+background:#2a2a2a
+}
+
+button{
+width:100%;
+padding:12px;
+border:none;
+border-radius:8px;
+background:#25D366;
+color:white;
+font-weight:bold;
+margin-top:6px
+}
+
+input{
+width:100%;
+padding:10px;
+border-radius:6px;
+border:1px solid #ccc;
+margin-top:6px
+}
+
+video{
+width:100%;
+border-radius:8px
+}
+
+.riga{
+padding:6px;
+border-bottom:1px solid #eee
+}
+
+canvas{
+border:1px solid #ccc;
+width:100%;
+height:160px
+}
+
+.counter{
+font-weight:bold;
+color:#555
+}
+
 </style>
+
 </head>
 
 <body>
 
 <div class="card">
-<h3>📷 Scansione etichetta pacco</h3>
-<input type="file" accept="image/*" capture="environment" onchange="scanEtichetta(event)">
-<div id="ocr"></div>
+
+<h3>📷 Scanner etichetta</h3>
+
+<button onclick="startScanner()">Avvia scanner</button>
+
+<video id="video" autoplay></video>
+
+<div id="risultato"></div>
+
 </div>
 
 <div class="card">
-<h3>📦 Registra pacco</h3>
+
+<h3>📦 Pacchi</h3>
+
+<input id="searchPacchi" placeholder="Cerca pacco" oninput="mostraPacchi()">
+
 <input id="nomePacco" placeholder="Nome condomino">
+
 <input id="corriere" placeholder="Corriere">
+
 <button onclick="registraPacco()">Registra pacco</button>
-</div>
 
-<div class="card">
-<h3>📦 Pacchi presenti</h3>
-<input id="searchPacchi" placeholder="Cerca" oninput="mostraPacchi()">
 <div id="pacchi"></div>
+
 </div>
 
 <div class="card">
+
 <h3>📬 Raccomandate</h3>
+
 <input id="nomeRacc" placeholder="Nome">
+
 <input id="numeroRacc" placeholder="Numero raccomandata">
+
 <button onclick="registraRacc()">Registra</button>
+
 <div id="racc"></div>
+
 </div>
 
 <div class="card">
+
 <h3>👥 Rubrica condomini</h3>
+
+<button onclick="sbloccaRubrica()">🔒 Sblocca rubrica</button>
+
+<div id="rubrica" style="display:none">
+
 <input id="nome" placeholder="Nome Cognome">
+
 <input id="telefono" placeholder="Telefono">
+
 <input id="scala" placeholder="Scala">
+
 <input id="interno" placeholder="Interno">
+
 <button onclick="aggiungiCondomino()">Aggiungi</button>
+
 <div id="condomini"></div>
+
+</div>
+
 </div>
 
 <div class="card">
+
 <h3>✍ Firma ritiro</h3>
+
 <canvas id="firma"></canvas>
+
 <button onclick="pulisciFirma()">Pulisci firma</button>
+
 </div>
 
 <div class="card">
+
 <h3>📁 Backup dati</h3>
+
 <button onclick="backup()">Esporta backup</button>
+
 <input type="file" onchange="restore(event)">
+
 </div>
 
 <div class="card">
+
 <button onclick="toggleNight()">🌙 Modalità notte</button>
+
 </div>
 
 <script>
 
-/* BIP */
+let scanning=false
 
 function beep(){
 let audio=new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg")
 audio.play()
 }
 
-/* OCR */
+async function startScanner(){
 
-function scanEtichetta(e){
+let video=document.getElementById("video")
 
-let file=e.target.files[0]
-if(!file) return
-
-document.getElementById("ocr").innerHTML="lettura etichetta..."
-
-Tesseract.recognize(file,'ita').then(res=>{
-
-let testo=res.data.text.toLowerCase()
-
-document.getElementById("ocr").innerHTML=testo
-
-trovaDestinatario(testo)
-
+let stream=await navigator.mediaDevices.getUserMedia({
+video:{facingMode:"environment"}
 })
+
+video.srcObject=stream
+
+scanning=true
+
+scanFrame()
 
 }
 
-/* TROVA DESTINATARIO */
+async function scanFrame(){
+
+if(!scanning) return
+
+let video=document.getElementById("video")
+
+let canvas=document.createElement("canvas")
+
+canvas.width=video.videoWidth
+canvas.height=video.videoHeight
+
+let ctx=canvas.getContext("2d")
+
+ctx.drawImage(video,0,0)
+
+let result=await Tesseract.recognize(canvas,'ita')
+
+let testo=result.data.text.toLowerCase()
+
+trovaDestinatario(testo)
+
+setTimeout(scanFrame,2000)
+
+}
 
 function trovaDestinatario(testo){
 
@@ -114,16 +230,21 @@ let db=JSON.parse(localStorage.getItem("condomini"))||[]
 for(let c of db){
 
 let nome=c.nome.toLowerCase()
-
 let cognome=nome.split(" ")[1]||""
 
-if(testo.includes(nome)||testo.includes(cognome)){
+if(testo.includes(cognome)){
 
 beep()
 
-let msg="Salve è arrivato un pacco per "+c.nome
+scanning=false
 
-window.open("https://wa.me/"+c.telefono+"?text="+encodeURIComponent(msg))
+document.getElementById("risultato").innerHTML=
+
+"Possibile destinatario:<br><b>"+c.nome+"</b><br><br>"+
+
+"<button onclick='mandaPacco(\""+c.telefono+"\",\""+c.nome+"\")'>📦 Pacco</button>"+
+
+"<button onclick='mandaRacc(\""+c.telefono+"\",\""+c.nome+"\")'>📬 Raccomandata</button>"
 
 return
 
@@ -131,26 +252,36 @@ return
 
 }
 
-alert("Destinatario non trovato")
+}
+
+function mandaPacco(tel,nome){
+
+let msg="Salve è arrivato un pacco per "+nome
+
+window.open(
+"https://wa.me/"+tel+"?text="+encodeURIComponent(msg)
+)
 
 }
 
-/* PACCHI */
+function mandaRacc(tel,nome){
+
+let msg="Salve è arrivata una raccomandata per "+nome
+
+window.open(
+"https://wa.me/"+tel+"?text="+encodeURIComponent(msg)
+)
+
+}
 
 function registraPacco(){
 
 let nome=document.getElementById("nomePacco").value
 let corriere=document.getElementById("corriere").value
 
-if(!nome) return alert("Inserisci nome")
-
 let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
 
-pacchi.push({
-nome:nome,
-corriere:corriere,
-data:new Date().toISOString()
-})
+pacchi.push({nome,corriere})
 
 localStorage.setItem("pacchi",JSON.stringify(pacchi))
 
@@ -168,44 +299,19 @@ let div=document.getElementById("pacchi")
 
 div.innerHTML=""
 
-pacchi.forEach((p,i)=>{
+pacchi.forEach(p=>{
 
 if(!p.nome.toLowerCase().includes(filtro)) return
 
-div.innerHTML+=`
-<div class="riga">
-<b>${p.nome}</b> - ${p.corriere}
-<button onclick="consegna(${i})">Consegnato</button>
-<button class="delete" onclick="eliminaPacco(${i})">Elimina</button>
-</div>`
+let count=pacchi.filter(x=>x.nome===p.nome).length
+
+div.innerHTML+=
+"<div class='riga'>"+p.nome+" - "+p.corriere+
+" <span class='counter'>("+count+" pacchi)</span></div>"
 
 })
 
 }
-
-function consegna(i){
-
-let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
-pacchi.splice(i,1)
-
-localStorage.setItem("pacchi",JSON.stringify(pacchi))
-
-mostraPacchi()
-
-}
-
-function eliminaPacco(i){
-
-let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
-pacchi.splice(i,1)
-
-localStorage.setItem("pacchi",JSON.stringify(pacchi))
-
-mostraPacchi()
-
-}
-
-/* RACCOMANDATE */
 
 function registraRacc(){
 
@@ -214,10 +320,7 @@ let numero=document.getElementById("numeroRacc").value
 
 let racc=JSON.parse(localStorage.getItem("raccomandate"))||[]
 
-racc.push({
-nome:nome,
-numero:numero
-})
+racc.push({nome,numero})
 
 localStorage.setItem("raccomandate",JSON.stringify(racc))
 
@@ -233,30 +336,11 @@ let div=document.getElementById("racc")
 
 div.innerHTML=""
 
-racc.forEach((r,i)=>{
-
-div.innerHTML+=`
-<div class="riga">
-${r.nome} - ${r.numero}
-<button onclick="ritiraR(${i})">Ritirata</button>
-</div>`
-
+racc.forEach(r=>{
+div.innerHTML+=r.nome+" - "+r.numero+"<br>"
 })
 
 }
-
-function ritiraR(i){
-
-let racc=JSON.parse(localStorage.getItem("raccomandate"))||[]
-racc.splice(i,1)
-
-localStorage.setItem("raccomandate",JSON.stringify(racc))
-
-mostraRacc()
-
-}
-
-/* RUBRICA */
 
 function aggiungiCondomino(){
 
@@ -284,17 +368,21 @@ let div=document.getElementById("condomini")
 div.innerHTML=""
 
 db.forEach(c=>{
-
-div.innerHTML+=`
-<div class="riga">
-${c.nome} - scala ${c.scala} interno ${c.interno}
-</div>`
-
+div.innerHTML+=c.nome+" - scala "+c.scala+" interno "+c.interno+"<br>"
 })
 
 }
 
-/* BACKUP */
+function sbloccaRubrica(){
+
+let pin=prompt("PIN")
+
+if(pin=="1234"){
+document.getElementById("rubrica").style.display="block"
+caricaCondomini()
+}
+
+}
 
 function backup(){
 
@@ -337,6 +425,10 @@ reader.readAsText(file)
 
 }
 
+function toggleNight(){
+document.body.classList.toggle("dark")
+}
+
 /* FIRMA */
 
 let canvas=document.getElementById("firma")
@@ -345,13 +437,13 @@ let draw=false
 
 canvas.addEventListener("mousedown",()=>draw=true)
 canvas.addEventListener("mouseup",()=>draw=false)
-canvas.addEventListener("mousemove",disegna)
+canvas.addEventListener("mousemove",drawFirma)
 
 canvas.addEventListener("touchstart",()=>draw=true)
 canvas.addEventListener("touchend",()=>draw=false)
-canvas.addEventListener("touchmove",disegnaTouch)
+canvas.addEventListener("touchmove",drawFirmaTouch)
 
-function disegna(e){
+function drawFirma(e){
 
 if(!draw) return
 
@@ -366,7 +458,7 @@ ctx.moveTo(e.offsetX,e.offsetY)
 
 }
 
-function disegnaTouch(e){
+function drawFirmaTouch(e){
 
 if(!draw) return
 
@@ -387,15 +479,8 @@ function pulisciFirma(){
 ctx.clearRect(0,0,canvas.width,canvas.height)
 }
 
-/* NOTTE */
-
-function toggleNight(){
-document.body.classList.toggle("dark")
-}
-
 mostraPacchi()
 mostraRacc()
-caricaCondomini()
 
 </script>
 
