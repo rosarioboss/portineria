@@ -2,26 +2,47 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 
 <title>Portineria Digitale PRO</title>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 <script src="https://unpkg.com/@zxing/library@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body{font-family:Arial;margin:0;background:#f2f2f2;padding:10px}
-.card{background:white;padding:14px;border-radius:10px;margin-bottom:10px;box-shadow:0 2px 6px rgba(0,0,0,.2)}
-button{width:100%;padding:12px;border:none;border-radius:8px;background:#25D366;color:white;font-weight:bold;margin-top:6px}
-input{width:100%;padding:10px;margin-top:6px}
-video{width:100%;margin-top:10px;border-radius:8px}
-.green{color:green;font-weight:bold}
-.yellow{color:orange;font-weight:bold}
-.red{color:red;font-weight:bold}
-canvas{border:1px solid #ccc;width:100%;height:160px}
-.small{font-size:12px;color:#666}
-img{max-width:100%;border-radius:6px;margin-top:5px}
+
+body{font-family:Arial;background:#f2f2f2;margin:0;padding:10px}
+
+.card{
+background:white;
+padding:14px;
+border-radius:10px;
+margin-bottom:10px;
+box-shadow:0 2px 6px rgba(0,0,0,.2)
+}
+
+button{
+width:100%;
+padding:12px;
+border:none;
+border-radius:8px;
+background:#25D366;
+color:white;
+font-weight:bold;
+margin-top:6px
+}
+
+input{
+width:100%;
+padding:10px;
+margin-top:6px
+}
+
+video{width:100%;border-radius:8px;margin-top:10px}
+
 .alert{color:red;font-size:12px}
+
 </style>
 </head>
 
@@ -33,18 +54,18 @@ img{max-width:100%;border-radius:6px;margin-top:5px}
 </div>
 
 <div class="card">
-<h3>📦 Scanner Pacchi OCR</h3>
-<button onclick="startScanner('pacco')">Scanner pacchi</button>
+<h3>📊 Pacchi mensili</h3>
+<canvas id="grafico"></canvas>
+</div>
+
+<div class="card">
+<h3>📦 Scanner OCR</h3>
+<button onclick="startScanner()">Scanner pacco</button>
 </div>
 
 <div class="card">
 <h3>📦 Scanner Barcode</h3>
-<button onclick="startBarcode()">Scanner Barcode</button>
-</div>
-
-<div class="card">
-<h3>📬 Scanner Raccomandate</h3>
-<button onclick="startScanner('raccomandata')">Scanner raccomandate</button>
+<button onclick="startBarcode()">Scanner barcode</button>
 </div>
 
 <video id="video" autoplay></video>
@@ -56,14 +77,11 @@ img{max-width:100%;border-radius:6px;margin-top:5px}
 <input id="corriere" placeholder="Corriere">
 <input id="tracking" placeholder="Tracking">
 
-<input type="file" id="foto" accept="image/*" capture="environment">
-
 <button onclick="registraPaccoManuale()">Registra</button>
 
 </div>
 
 <div class="card">
-
 <h3>📬 Inserisci raccomandata</h3>
 
 <input id="nomeRacc" placeholder="Nome destinatario">
@@ -74,40 +92,24 @@ img{max-width:100%;border-radius:6px;margin-top:5px}
 </div>
 
 <div class="card">
-
 <h3>📦 Pacchi</h3>
-
 <input id="searchPacchi" placeholder="Cerca pacco" oninput="mostraPacchi()">
-
 <div id="pacchi"></div>
-
 </div>
 
 <div class="card">
-
 <h3>📬 Raccomandate</h3>
-
-<input id="searchRacc" placeholder="Cerca raccomandata" oninput="mostraRacc()">
-
 <div id="racc"></div>
-
 </div>
 
 <div class="card">
-
 <h3>📜 Storico consegne</h3>
-
 <div id="storico"></div>
-
 </div>
 
 <div class="card">
 
 <h3>👥 Rubrica condomini</h3>
-
-<button onclick="sbloccaRubrica()">Apri rubrica</button>
-
-<div id="rubrica" style="display:none">
 
 <input id="searchCondomino" placeholder="Cerca condomino" oninput="caricaCondomini()">
 
@@ -122,45 +124,62 @@ img{max-width:100%;border-radius:6px;margin-top:5px}
 <div id="condomini"></div>
 
 </div>
-</div>
 
 <div class="card">
-
-<h3>✍ Firma ritiro</h3>
-
-<canvas id="firma"></canvas>
-
-<button onclick="pulisciFirma()">Pulisci firma</button>
-
-</div>
-
-<div class="card">
-
-<h3>💾 Backup</h3>
-
-<button onclick="esporta()">Esporta dati</button>
-
+<h3>💾 Backup dati</h3>
+<button onclick="esporta()">Esporta</button>
 <input type="file" onchange="importa(event)">
-
 </div>
 
 <script>
 
-let tipoScanner="pacco"
 let scannerAttivo=false
 let streamCamera=null
-let barcodeReader=null
+let chart=null
+let scannerLock=false
+
+function safeParse(k){
+try{
+return JSON.parse(localStorage.getItem(k))||[]
+}catch{
+return[]
+}
+}
 
 function beep(){
 new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play()
 }
 
-async function startScanner(tipo){
+function normalizza(t){
+return (t||"")
+.toLowerCase()
+.replace(/0/g,"o")
+.replace(/1/g,"i")
+.replace(/5/g,"s")
+.replace(/[^a-z]/g,"")
+}
 
-tipoScanner=tipo
+function riconosciCorriere(tracking){
+
+if(!tracking)return""
+
+if(tracking.startsWith("TBA"))return"Amazon"
+if(tracking.startsWith("1Z"))return"UPS"
+if(tracking.startsWith("JD"))return"DHL"
+if(tracking.startsWith("GLS"))return"GLS"
+
+return""
+
+}
+
+async function startScanner(){
+
 scannerAttivo=true
+scannerLock=false
 
 let video=document.getElementById("video")
+
+try{
 
 streamCamera=await navigator.mediaDevices.getUserMedia({
 video:{facingMode:"environment"}
@@ -170,13 +189,25 @@ video.srcObject=streamCamera
 
 scanLoop()
 
+}catch{
+
+alert("Fotocamera non disponibile")
+
+}
+
 }
 
 async function scanLoop(){
 
 if(!scannerAttivo)return
+if(scannerLock)return
 
 let video=document.getElementById("video")
+
+if(!video.videoWidth){
+setTimeout(scanLoop,1500)
+return
+}
 
 let canvas=document.createElement("canvas")
 
@@ -185,18 +216,13 @@ canvas.height=video.videoHeight
 
 let ctx=canvas.getContext("2d")
 
-let sx=canvas.width*0.2
-let sy=canvas.height*0.3
-let sw=canvas.width*0.6
-let sh=canvas.height*0.4
-
-ctx.drawImage(video,sx,sy,sw,sh,0,0,sw,sh)
+ctx.drawImage(video,0,0)
 
 let result=await Tesseract.recognize(canvas,'ita')
 
-trovaDestinatario(result.data.text)
+trovaDestinatario(result.data.text||"")
 
-setTimeout(scanLoop,1200)
+setTimeout(scanLoop,2000)
 
 }
 
@@ -209,56 +235,39 @@ streamCamera.getTracks().forEach(t=>t.stop())
 
 }
 
-function startBarcode(){
-
-barcodeReader = new ZXing.BrowserBarcodeReader()
-
-barcodeReader.decodeFromVideoDevice(null,'video',(result,err)=>{
-
-if(result){
-
-let codice=result.text
-
-document.getElementById("tracking").value=codice
-
-alert("Tracking rilevato: "+codice)
-
-barcodeReader.reset()
-
-}
-
-})
-
-}
-
-function normalizza(t){
-return t.toLowerCase().replace(/\s+/g,"")
-}
-
 function trovaDestinatario(testo){
 
-let db=JSON.parse(localStorage.getItem("condomini"))||[]
+let db=safeParse("condomini")
 
 let testoNorm=normalizza(testo)
 
 for(let c of db){
 
-let nomeNorm=normalizza(c.nome)
+if(!c.nome)continue
 
-if(testoNorm.includes(nomeNorm)){
+let cognome=c.nome.split(" ").pop()
+
+let cognomeNorm=normalizza(cognome)
+
+if(testoNorm.includes(cognomeNorm)){
+
+if(scannerLock)return
+
+scannerLock=true
 
 beep()
 
 stopScanner()
 
-let msg="Salve "+c.nome+", è arrivato un pacco per lei in portineria."
+registraPaccoAuto(c.nome)
+
+if(c.telefono){
+
+let msg="Salve "+c.nome+", è arrivato un pacco."
 
 window.open("https://wa.me/"+c.telefono+"?text="+encodeURIComponent(msg))
 
-if(tipoScanner=="pacco")
-registraPaccoAuto(c.nome)
-else
-registraRaccAuto(c.nome)
+}
 
 }
 
@@ -266,47 +275,68 @@ registraRaccAuto(c.nome)
 
 }
 
-function fileToBase64(file){
-return new Promise(resolve=>{
-let reader=new FileReader()
-reader.onload=()=>resolve(reader.result)
-reader.readAsDataURL(file)
+function startBarcode(){
+
+const reader=new ZXing.BrowserBarcodeReader()
+
+reader.decodeFromVideoDevice(null,'video',(result)=>{
+
+if(result){
+
+let tracking=result.text
+
+document.getElementById("tracking").value=tracking
+
+let corriere=riconosciCorriere(tracking)
+
+if(corriere){
+document.getElementById("corriere").value=corriere
+}
+
+alert("Tracking rilevato: "+tracking)
+
+reader.reset()
+
+stopScanner()
+
+}
+
 })
+
 }
 
-async function registraPaccoManuale(){
+function registraPaccoManuale(){
 
 let nome=document.getElementById("nomePacco").value
+if(!nome)return
+
 let corriere=document.getElementById("corriere").value
 let tracking=document.getElementById("tracking").value
 
-let fotoFile=document.getElementById("foto").files[0]
-
-let foto=null
-
-if(fotoFile)
-foto=await fileToBase64(fotoFile)
-
-let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
+let pacchi=safeParse("pacchi")
 
 pacchi.unshift({
 nome,
 corriere,
 tracking,
-foto,
 data:new Date().toISOString()
 })
 
 localStorage.setItem("pacchi",JSON.stringify(pacchi))
 
+document.getElementById("nomePacco").value=""
+document.getElementById("corriere").value=""
+document.getElementById("tracking").value=""
+
 mostraPacchi()
 stats()
+grafico()
 
 }
 
 function registraPaccoAuto(nome){
 
-let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
+let pacchi=safeParse("pacchi")
 
 pacchi.unshift({
 nome,
@@ -317,6 +347,7 @@ localStorage.setItem("pacchi",JSON.stringify(pacchi))
 
 mostraPacchi()
 stats()
+grafico()
 
 }
 
@@ -325,7 +356,9 @@ function registraRaccManuale(){
 let nome=document.getElementById("nomeRacc").value
 let numero=document.getElementById("numeroRacc").value
 
-let racc=JSON.parse(localStorage.getItem("raccomandate"))||[]
+if(!nome)return
+
+let racc=safeParse("raccomandate")
 
 racc.unshift({
 nome,
@@ -336,45 +369,14 @@ data:new Date().toISOString()
 localStorage.setItem("raccomandate",JSON.stringify(racc))
 
 mostraRacc()
-stats()
-
-}
-
-function registraRaccAuto(nome){
-
-let racc=JSON.parse(localStorage.getItem("raccomandate"))||[]
-
-racc.unshift({
-nome,
-data:new Date().toISOString()
-})
-
-localStorage.setItem("raccomandate",JSON.stringify(racc))
-
-mostraRacc()
-stats()
-
-}
-
-function giorni(data){
-return Math.floor((Date.now()-new Date(data))/86400000)
-}
-
-function giacenza(data){
-
-let g=giorni(data)
-
-if(g<3)return"green"
-if(g<6)return"yellow"
-return"red"
 
 }
 
 function mostraPacchi(){
 
-let filtro=document.getElementById("searchPacchi").value.toLowerCase()
+let filtro=(document.getElementById("searchPacchi").value||"").toLowerCase()
 
-let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
+let pacchi=safeParse("pacchi")
 
 let div=document.getElementById("pacchi")
 
@@ -382,33 +384,27 @@ div.innerHTML=""
 
 pacchi.forEach((p,i)=>{
 
-if(!(p.nome||"").toLowerCase().includes(filtro))return
+if(!p || !p.nome)return
+if(!p.nome.toLowerCase().includes(filtro))return
 
-let colore=giacenza(p.data)
-let giorniP=giorni(p.data)
+let giorni=0
+
+if(p.data){
+
+let d=new Date(p.data)
+
+if(!isNaN(d)){
+giorni=(Date.now()-d)/86400000
+}
+
+}
 
 div.innerHTML+=`
-
-<div class="${colore}">
-
+<div>
 <b>${p.nome}</b>
-
-<div class="small">${giorniP} giorni</div>
-
-${giorniP>7?"<div class='alert'>⚠ Pacco in giacenza da "+giorniP+" giorni</div>":""}
-
-${p.corriere||""}
-
-${p.tracking?"<div class='small'>Tracking: "+p.tracking+"</div>":""}
-
-${p.foto?"<img src='"+p.foto+"'>":""}
-
+${giorni>7?'<div class="alert">⚠ pacco oltre 7 giorni</div>':''}
 <button onclick="consegnaPacco(${i})">Consegnato</button>
-
-<button onclick="eliminaPacco(${i})">Elimina</button>
-
 </div>
-
 `
 
 })
@@ -417,9 +413,7 @@ ${p.foto?"<img src='"+p.foto+"'>":""}
 
 function mostraRacc(){
 
-let filtro=document.getElementById("searchRacc").value.toLowerCase()
-
-let racc=JSON.parse(localStorage.getItem("raccomandate"))||[]
+let racc=safeParse("raccomandate")
 
 let div=document.getElementById("racc")
 
@@ -427,22 +421,13 @@ div.innerHTML=""
 
 racc.forEach((r,i)=>{
 
-if(!(r.nome||"").toLowerCase().includes(filtro))return
-
-let colore=giacenza(r.data)
+if(!r.nome)return
 
 div.innerHTML+=`
-
-<div class="${colore}">
-
-${r.nome}
-
+<div>
+<b>${r.nome}</b>
 <button onclick="consegnaRacc(${i})">Consegnato</button>
-
-<button onclick="eliminaRacc(${i})">Elimina</button>
-
 </div>
-
 `
 
 })
@@ -451,17 +436,13 @@ ${r.nome}
 
 function consegnaPacco(i){
 
-let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
-let storico=JSON.parse(localStorage.getItem("storico"))||[]
+let pacchi=safeParse("pacchi")
+let storico=safeParse("storico")
 
-let firma=document.getElementById("firma").toDataURL()
-
-pacchi[i].firma=firma
-pacchi[i].ritiro=new Date().toLocaleString()
-
+if(pacchi[i]){
 storico.unshift(pacchi[i])
-
 pacchi.splice(i,1)
+}
 
 localStorage.setItem("pacchi",JSON.stringify(pacchi))
 localStorage.setItem("storico",JSON.stringify(storico))
@@ -469,17 +450,19 @@ localStorage.setItem("storico",JSON.stringify(storico))
 mostraPacchi()
 mostraStorico()
 stats()
+grafico()
 
 }
 
 function consegnaRacc(i){
 
-let racc=JSON.parse(localStorage.getItem("raccomandate"))||[]
-let storico=JSON.parse(localStorage.getItem("storico"))||[]
+let racc=safeParse("raccomandate")
+let storico=safeParse("storico")
 
+if(racc[i]){
 storico.unshift(racc[i])
-
 racc.splice(i,1)
+}
 
 localStorage.setItem("raccomandate",JSON.stringify(racc))
 localStorage.setItem("storico",JSON.stringify(storico))
@@ -490,33 +473,9 @@ stats()
 
 }
 
-function eliminaPacco(i){
-
-let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
-
-pacchi.splice(i,1)
-
-localStorage.setItem("pacchi",JSON.stringify(pacchi))
-
-mostraPacchi()
-
-}
-
-function eliminaRacc(i){
-
-let racc=JSON.parse(localStorage.getItem("raccomandate"))||[]
-
-racc.splice(i,1)
-
-localStorage.setItem("raccomandate",JSON.stringify(racc))
-
-mostraRacc()
-
-}
-
 function mostraStorico(){
 
-let storico=JSON.parse(localStorage.getItem("storico"))||[]
+let storico=safeParse("storico")
 
 let div=document.getElementById("storico")
 
@@ -524,44 +483,24 @@ div.innerHTML=""
 
 storico.forEach(s=>{
 
-div.innerHTML+=`
+if(!s.nome)return
 
-<div class="card">
-
-<b>${s.nome}</b>
-
-${s.ritiro?"<div class='small'>Ritirato: "+s.ritiro+"</div>":""}
-
-${s.firma?"<img src='"+s.firma+"'>":""}
-
-</div>
-
-`
+div.innerHTML+=`<div><b>${s.nome}</b></div>`
 
 })
 
 }
 
-function stats(){
-
-let pacchi=JSON.parse(localStorage.getItem("pacchi"))||[]
-let racc=JSON.parse(localStorage.getItem("raccomandate"))||[]
-let storico=JSON.parse(localStorage.getItem("storico"))||[]
-
-document.getElementById("stats").innerHTML=
-
-"Pacchi presenti: "+pacchi.length+
-"<br>Raccomandate: "+racc.length+
-"<br>Consegnati: "+storico.length
-
-}
-
 function aggiungiCondomino(){
 
-let db=JSON.parse(localStorage.getItem("condomini"))||[]
+let nome=document.getElementById("nome").value
+
+if(!nome)return
+
+let db=safeParse("condomini")
 
 db.push({
-nome:document.getElementById("nome").value,
+nome,
 telefono:document.getElementById("telefono").value,
 scala:document.getElementById("scala").value,
 piano:document.getElementById("piano").value,
@@ -578,38 +517,39 @@ function caricaCondomini(){
 
 let filtro=(document.getElementById("searchCondomino").value||"").toLowerCase()
 
-let db=JSON.parse(localStorage.getItem("condomini"))||[]
+let db=safeParse("condomini")
 
 let div=document.getElementById("condomini")
 
 div.innerHTML=""
 
-db.forEach(c=>{
+db.forEach((c,i)=>{
 
+if(!c.nome)return
 if(!c.nome.toLowerCase().includes(filtro))return
 
 div.innerHTML+=`
-<b>${c.nome}</b>  
-${c.scala}-${c.piano}-${c.interno}  
-📞 ${c.telefono}
-<br><br>
+<div>
+${c.nome}
+<button onclick="eliminaCondomino(${i})">❌</button>
+</div>
 `
 
 })
 
 }
 
-function sbloccaRubrica(){
+function eliminaCondomino(i){
 
-let pin=prompt("PIN")
+if(!confirm("Eliminare condomino?"))return
 
-if(pin=="1234"){
+let db=safeParse("condomini")
 
-document.getElementById("rubrica").style.display="block"
+db.splice(i,1)
+
+localStorage.setItem("condomini",JSON.stringify(db))
 
 caricaCondomini()
-
-}
 
 }
 
@@ -650,38 +590,54 @@ reader.readAsText(file)
 
 }
 
-let canvas=document.getElementById("firma")
-let ctx=canvas.getContext("2d")
-let draw=false
+function stats(){
 
-canvas.addEventListener("mousedown",()=>draw=true)
-canvas.addEventListener("mouseup",()=>draw=false)
+let pacchi=safeParse("pacchi")
+let storico=safeParse("storico")
 
-canvas.addEventListener("mousemove",e=>{
+document.getElementById("stats").innerHTML=
+"Pacchi presenti: "+pacchi.length+
+"<br>Consegnati: "+storico.length
 
-if(!draw)return
+}
 
-ctx.lineWidth=2
-ctx.lineCap="round"
+function grafico(){
 
-ctx.lineTo(e.offsetX,e.offsetY)
+let storico=safeParse("storico")
 
-ctx.stroke()
+let mesi=new Array(12).fill(0)
 
-ctx.beginPath()
+storico.forEach(s=>{
 
-ctx.moveTo(e.offsetX,e.offsetY)
+if(!s.data)return
+
+let d=new Date(s.data)
+
+if(isNaN(d))return
+
+let m=d.getMonth()
+
+mesi[m]++
 
 })
 
-function pulisciFirma(){
-ctx.clearRect(0,0,canvas.width,canvas.height)
+if(chart)chart.destroy()
+
+chart=new Chart(document.getElementById("grafico"),{
+type:"bar",
+data:{
+labels:["Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"],
+datasets:[{label:"Pacchi",data:mesi}]
+}
+})
+
 }
 
 mostraPacchi()
 mostraRacc()
 mostraStorico()
 stats()
+grafico()
 
 </script>
 
