@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 
@@ -15,10 +14,10 @@
 
 body{
 font-family:Arial;
-font-size:18px;
 background:#f2f2f2;
 margin:0;
-padding:10px
+padding:10px;
+font-size:18px;
 }
 
 h1{text-align:center}
@@ -34,19 +33,23 @@ box-shadow:0 2px 6px rgba(0,0,0,.2)
 button{
 width:100%;
 padding:14px;
-font-size:18px;
 border:none;
 border-radius:10px;
 background:#27ae60;
 color:white;
+font-size:18px;
 margin-top:8px
 }
 
 input{
 width:100%;
 padding:12px;
-font-size:18px;
-margin-top:6px
+margin-top:6px;
+font-size:18px
+}
+
+.video-wrapper{
+position:relative
 }
 
 video{
@@ -54,21 +57,32 @@ width:100%;
 border-radius:10px
 }
 
-img{
-max-width:100%;
+.scanner-box{
+position:absolute;
+top:40%;
+left:10%;
+width:80%;
+height:100px;
+border:4px solid #00ff88;
 border-radius:10px;
-margin-top:5px
+box-shadow:0 0 0 9999px rgba(0,0,0,0.35);
+pointer-events:none
 }
 
-.alert{color:red}
+img{
+max-width:100%;
+margin-top:6px;
+border-radius:10px
+}
 
 .semaforo{
 font-size:22px;
 font-weight:bold
 }
 
-</style>
+.alert{color:red}
 
+</style>
 </head>
 
 <body>
@@ -83,16 +97,15 @@ font-weight:bold
 <div class="card">
 
 <button onclick="startScanner()">📦 Scanner pacco</button>
-
 <button onclick="startBarcode()">📦 Scanner barcode</button>
-
-<button onclick="startScannerRacc()">📬 Scanner raccomandata</button>
-
-<button onclick="avvisaPacchiOggi()">📢 Avvisa pacchi oggi</button>
+<button onclick="avvisaPacchiOggi()">📢 Avvisa pacchi di oggi</button>
 
 </div>
 
-<video id="video" autoplay></video>
+<div class="video-wrapper">
+<video id="video" autoplay playsinline></video>
+<div class="scanner-box"></div>
+</div>
 
 <div class="card">
 <h3>📷 Foto pacco</h3>
@@ -100,33 +113,24 @@ font-weight:bold
 </div>
 
 <div class="card">
-<h3>📦 Inserisci pacco</h3>
-<input id="nomePacco">
+<h3>📦 Inserisci pacco manuale</h3>
+<input id="nomePacco" placeholder="Nome destinatario">
 <button onclick="registraPaccoManuale()">Registra</button>
 </div>
 
 <div class="card">
 <h3>📦 Pacchi</h3>
-<input id="searchPacchi" placeholder="Cerca" oninput="mostraPacchi()">
+<input id="searchPacchi" placeholder="Cerca pacco" oninput="mostraPacchi()">
 <div id="pacchi"></div>
 </div>
 
 <div class="card">
-<h3>📬 Raccomandate</h3>
-<input id="nomeRacc">
-<button onclick="registraRacc()">Registra</button>
-<div id="racc"></div>
-</div>
+<h3>👥 Rubrica condomini</h3>
 
-<div class="card">
-<h3>👥 Rubrica</h3>
-
-<input id="nomeCondomino">
-<input id="telefonoCondomino">
+<input id="nomeCondomino" placeholder="Nome">
+<input id="telefonoCondomino" placeholder="Telefono">
 
 <button onclick="aggiungiCondomino()">Aggiungi</button>
-
-<input id="searchRubrica" placeholder="Cerca" oninput="mostraRubrica()">
 
 <div id="rubrica"></div>
 
@@ -136,7 +140,6 @@ font-weight:bold
 <h3>💾 Backup</h3>
 
 <button onclick="esporta()">Esporta dati</button>
-
 <input type="file" onchange="importa(event)">
 
 </div>
@@ -148,9 +151,9 @@ font-weight:bold
 
 <script>
 
-let chart=null
-let scannerLock=false
 let streamCamera=null
+let scannerLock=false
+let chart=null
 
 function safeParse(k){
 try{return JSON.parse(localStorage.getItem(k))||[]}catch{return[]}
@@ -183,10 +186,6 @@ else s.innerHTML="🟢 Situazione regolare"
 
 }
 
-function beep(){
-new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play()
-}
-
 function avvisaWhatsApp(nome){
 
 let rubrica=safeParse("condomini")
@@ -199,7 +198,7 @@ let tel=(c.telefono||"").replace(/\D/g,'')
 
 let msg="È arrivato un pacco per "+c.nome+" in portineria."
 
-window.open("https://wa.me/"+tel+"?text="+encodeURIComponent(msg))
+window.location.href="https://wa.me/"+tel+"?text="+encodeURIComponent(msg)
 
 }
 
@@ -226,14 +225,21 @@ setTimeout(scanLoop,1000)
 return
 }
 
-let canvas=document.createElement("canvas")
+let vw=video.videoWidth
+let vh=video.videoHeight
 
-canvas.width=video.videoWidth/2
-canvas.height=video.videoHeight/2
+let cropX=vw*0.10
+let cropY=vh*0.40
+let cropW=vw*0.80
+let cropH=vh*0.20
+
+let canvas=document.createElement("canvas")
+canvas.width=cropW
+canvas.height=cropH
 
 let ctx=canvas.getContext("2d")
 
-ctx.drawImage(video,0,0,canvas.width,canvas.height)
+ctx.drawImage(video,cropX,cropY,cropW,cropH,0,0,cropW,cropH)
 
 let result=await Tesseract.recognize(canvas,'ita')
 
@@ -252,10 +258,7 @@ if(testo.includes(parti[0])||(parti[1]&&testo.includes(parti[1]))){
 
 scannerLock=true
 
-beep()
-
 registraPaccoAuto(c.nome)
-
 avvisaWhatsApp(c.nome)
 
 setTimeout(()=>scannerLock=false,4000)
@@ -275,19 +278,12 @@ const reader=new ZXing.BrowserBarcodeReader()
 reader.decodeFromVideoDevice(null,'video',(result)=>{
 
 if(result){
-
 document.getElementById("nomePacco").value=result.text
-
 reader.reset()
-
 }
 
 })
 
-}
-
-function startScannerRacc(){
-startBarcode()
 }
 
 function registraPaccoManuale(){
@@ -308,6 +304,8 @@ salva("pacchi",pacchi)
 mostraPacchi()
 aggiornaSemaforo()
 
+avvisaWhatsApp(nome)
+
 }
 
 function registraPaccoAuto(nome){
@@ -322,16 +320,15 @@ data:new Date().toISOString()
 salva("pacchi",pacchi)
 
 mostraPacchi()
+aggiornaSemaforo()
 
 }
 
 function mostraPacchi(){
 
 let pacchi=safeParse("pacchi")
-
-let div=document.getElementById("pacchi")
-
 let filtro=document.getElementById("searchPacchi").value.toLowerCase()
+let div=document.getElementById("pacchi")
 
 div.innerHTML=""
 
@@ -355,7 +352,6 @@ grafico()
 function consegna(i){
 
 let pacchi=safeParse("pacchi")
-
 let storico=safeParse("storico")
 
 storico.unshift(pacchi[i])
@@ -366,44 +362,6 @@ salva("pacchi",pacchi)
 salva("storico",storico)
 
 mostraPacchi()
-
-}
-
-function registraRacc(){
-
-let nome=document.getElementById("nomeRacc").value
-
-let r=safeParse("raccomandate")
-
-r.unshift({
-nome,
-data:new Date().toISOString()
-})
-
-salva("raccomandate",r)
-
-mostraRacc()
-
-}
-
-function mostraRacc(){
-
-let r=safeParse("raccomandate")
-
-let div=document.getElementById("racc")
-
-div.innerHTML=""
-
-r.forEach((p,i)=>{
-
-div.innerHTML+=`
-<div>
-${p.nome}
-<button onclick="r.splice(${i},1);salva('raccomandate',r);mostraRacc()">Consegnata</button>
-</div>
-`
-
-})
 
 }
 
@@ -425,16 +383,11 @@ mostraRubrica()
 function mostraRubrica(){
 
 let db=safeParse("condomini")
-
-let filtro=document.getElementById("searchRubrica").value.toLowerCase()
-
 let div=document.getElementById("rubrica")
 
 div.innerHTML=""
 
 db.forEach((c,i)=>{
-
-if(!c.nome.toLowerCase().includes(filtro))return
 
 div.innerHTML+=`
 <div>
@@ -466,9 +419,7 @@ let blob=new Blob([data])
 let a=document.createElement("a")
 
 a.href=URL.createObjectURL(blob)
-
 a.download="backup_portineria.json"
-
 a.click()
 
 }
