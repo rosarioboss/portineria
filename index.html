@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="it">
+
 <head>
 
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <title>Portineria Digitale</title>
 
@@ -77,7 +78,7 @@ pointer-events:none
 
 <div class="card">
 
-<button onclick="startCamera()">📷 Scanner pacco</button>
+<button onclick="startCamera()">📷 Scanner</button>
 
 <div id="cameraBox">
 
@@ -93,11 +94,13 @@ pointer-events:none
 
 <button class="btn-green" onclick="salvaPacco()">Registra pacco</button>
 
+<button onclick="inviaWhatsApp()">Avvisa con WhatsApp</button>
+
 </div>
 
 <div class="card">
 
-<h3>Pacchi registrati</h3>
+<h3>Pacchi</h3>
 
 <div id="listaPacchi"></div>
 
@@ -105,13 +108,13 @@ pointer-events:none
 
 <div class="card">
 
-<h3>Rubrica condomini</h3>
+<h3>Rubrica</h3>
 
 <input id="nomeManuale" placeholder="Nome Cognome">
 
 <input id="telManuale" placeholder="Telefono">
 
-<button onclick="aggiungiCondomino()">Aggiungi condomino</button>
+<button onclick="aggiungiCondomino()">Aggiungi</button>
 
 <textarea id="fileRubrica" placeholder="MARIO ROSSI,333123456"></textarea>
 
@@ -133,6 +136,7 @@ set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))
 }
 
 let stream=null
+let scannerTimer=null
 
 window.onload=render
 
@@ -142,13 +146,8 @@ renderRubrica()
 }
 
 function beep(){
-
-let audio=new Audio(
-"data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA="
-)
-
+let audio=new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=")
 audio.play()
-
 }
 
 function salvaPacco(){
@@ -166,11 +165,7 @@ nome
 
 DB.set("pacchi",pacchi)
 
-document.getElementById("nomePacco").value=""
-
 render()
-
-inviaWhatsApp(nome)
 
 }
 
@@ -193,7 +188,7 @@ pacchi.map(p=>`
 function aggiungiCondomino(){
 
 let nome=document.getElementById("nomeManuale").value.trim().toUpperCase()
-let tel=document.getElementById("telManuale").value.trim().replace(/\D/g,'')
+let tel=document.getElementById("telManuale").value.trim()
 
 if(!nome)return
 
@@ -204,9 +199,6 @@ rubrica.push({nome,tel})
 }
 
 DB.set("rubrica",rubrica)
-
-document.getElementById("nomeManuale").value=""
-document.getElementById("telManuale").value=""
 
 renderRubrica()
 
@@ -224,10 +216,10 @@ testo.split("\n").forEach(r=>{
 
 let p=r.split(",")
 
-if(p[0] && p[0].trim()!=""){
+if(p[0]){
 
 let nome=p[0].trim().toUpperCase()
-let tel=p[1]?p[1].replace(/\D/g,''):""
+let tel=p[1]?p[1].trim():""
 
 if(!rubrica.some(x=>x.nome===nome)){
 rubrica.push({nome,tel})
@@ -252,7 +244,7 @@ let div=document.getElementById("listaRubrica")
 div.innerHTML=rubrica.length?
 
 rubrica.map(r=>`
-<div class="item">${r.nome} (${r.tel||""})</div>
+<div class="item">${r.nome} (${r.tel})</div>
 `).join("")
 
 :"Rubrica vuota"
@@ -263,21 +255,13 @@ function backupRubrica(){
 
 let rubrica=DB.get("rubrica")
 
-if(!rubrica.length){
-alert("Rubrica vuota")
-return
-}
-
-let blob=new Blob(
-[JSON.stringify(rubrica,null,2)],
-{type:"application/json"}
-)
+let blob=new Blob([JSON.stringify(rubrica)],{type:"application/json"})
 
 let a=document.createElement("a")
 
 a.href=URL.createObjectURL(blob)
 
-a.download="rubrica_condomini.json"
+a.download="rubrica.json"
 
 a.click()
 
@@ -286,8 +270,6 @@ a.click()
 function ripristinaRubrica(event){
 
 let file=event.target.files[0]
-
-if(!file)return
 
 let reader=new FileReader()
 
@@ -305,30 +287,16 @@ reader.readAsText(file)
 
 }
 
-function inviaWhatsApp(nome){
+function inviaWhatsApp(){
+
+let nome=document.getElementById("nomePacco").value.trim().toUpperCase()
 
 let rubrica=DB.get("rubrica")
 
-let nomeMaiuscolo=nome.toUpperCase()
+let trovato=rubrica.find(r=>r.nome===nome)
 
-// 1 ricerca nome completo
-let trovato=rubrica.find(r=>r.nome===nomeMaiuscolo)
-
-// 2 se non trovato cerca cognome
 if(!trovato){
-
-trovato=rubrica.find(r=>{
-
-let cognome=r.nome.split(" ").pop()
-
-return nomeMaiuscolo.includes(cognome)
-
-})
-
-}
-
-if(!trovato || !trovato.tel){
-alert("Numero non trovato in rubrica")
+alert("Destinatario non trovato")
 return
 }
 
@@ -336,20 +304,18 @@ let tel=trovato.tel.startsWith("39")?trovato.tel:"39"+trovato.tel
 
 let msg="Ciao "+trovato.nome+", è arrivato un pacco per te 📦"
 
-window.open(
+window.location.href=
 "https://wa.me/"+tel+
-"?text="+encodeURIComponent(msg),
-"_blank"
-)
+"?text="+encodeURIComponent(msg)
 
 }
 
 async function startCamera(){
 
-const cameraBox=document.getElementById("cameraBox")
+const box=document.getElementById("cameraBox")
 const video=document.getElementById("video")
 
-cameraBox.style.display="block"
+box.style.display="block"
 
 try{
 
@@ -363,15 +329,13 @@ video.onloadedmetadata=function(){
 
 video.play()
 
-setTimeout(()=>{
-scan()
-},1000)
+scannerTimer=setInterval(scan,3000)
 
 }
 
 }catch(e){
 
-alert("Impossibile aprire la fotocamera")
+alert("Errore apertura camera")
 
 }
 
@@ -382,11 +346,6 @@ async function scan(){
 if(!stream)return
 
 const video=document.getElementById("video")
-
-if(video.readyState!==4){
-setTimeout(scan,500)
-return
-}
 
 const canvas=document.createElement("canvas")
 
@@ -413,35 +372,25 @@ const result=await Tesseract.recognize(img,"ita")
 
 const text=result.data.text.toUpperCase()
 
-const rubrica=DB.get("rubrica")
+let righe=text.split("\n")
 
-for(let u of rubrica){
+let nome=righe.find(r=>r.length>5)
 
-let cognome=u.nome.split(" ").pop()
+if(nome){
 
-if(text.includes(cognome)){
+document.getElementById("nomePacco").value=nome
 
 beep()
 
-document.getElementById("nomePacco").value=u.nome
-
-inviaWhatsApp(u.nome)
-
-stopCamera()
-
-break
-
-}
-
-}
-
-if(stream){
-setTimeout(()=>scan(),2000)
 }
 
 }
 
 function stopCamera(){
+
+if(scannerTimer){
+clearInterval(scannerTimer)
+}
 
 if(stream){
 stream.getTracks().forEach(t=>t.stop())
