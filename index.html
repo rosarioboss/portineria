@@ -3,480 +3,321 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-
-<title>Portineria Digitale</title>
+<title>Portineria Digitale Pro</title>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/@zxing/library@latest"></script>
 
 <style>
-
-body{
-font-family:Arial;
-background:#f2f2f2;
-margin:0;
-padding:10px;
-font-size:18px;
-}
-
-h1{text-align:center}
-
-.card{
-background:white;
-padding:15px;
-border-radius:12px;
-margin-bottom:12px;
-box-shadow:0 2px 6px rgba(0,0,0,.2)
-}
-
-button{
-width:100%;
-padding:14px;
-border:none;
-border-radius:10px;
-background:#27ae60;
-color:white;
-font-size:18px;
-margin-top:8px
-}
-
-input{
-width:100%;
-padding:12px;
-margin-top:6px;
-font-size:18px
-}
-
-.video-wrapper{
-position:relative
-}
-
-video{
-width:100%;
-border-radius:10px
-}
-
-.scanner-box{
-position:absolute;
-top:40%;
-left:10%;
-width:80%;
-height:100px;
-border:4px solid #00ff88;
-border-radius:10px;
-box-shadow:0 0 0 9999px rgba(0,0,0,0.35);
-pointer-events:none
-}
-
-img{
-max-width:100%;
-margin-top:6px;
-border-radius:10px
-}
-
-.semaforo{
-font-size:22px;
-font-weight:bold
-}
-
-.alert{color:red}
-
+    body{ font-family: sans-serif; background: #f2f2f2; margin: 0; padding: 10px; font-size: 18px; }
+    h1{ text-align: center; color: #2c3e50; }
+    .card{ background: white; padding: 15px; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,.1); }
+    button{ width: 100%; padding: 14px; border: none; border-radius: 10px; background: #27ae60; color: white; font-size: 18px; margin-top: 8px; cursor: pointer; transition: 0.2s; }
+    button:active{ transform: scale(0.98); background: #1e8449; }
+    input{ width: 100%; padding: 12px; margin-top: 6px; font-size: 18px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+    
+    .video-wrapper{ position: relative; width: 100%; display: none; margin-top: 10px; }
+    .video-wrapper.active { display: block; }
+    video{ width: 100%; border-radius: 10px; background: #000; }
+    
+    .scanner-box{ position: absolute; top: 40%; left: 10%; width: 80%; height: 100px; border: 4px solid #00ff88; border-radius: 10px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.35); pointer-events: none; }
+    
+    .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
+    .item-row:last-child { border: none; }
+    .btn-small { width: auto; padding: 8px 15px; margin: 0; font-size: 14px; }
+    .btn-del { background: #e74c3c; }
+    .semaforo { font-weight: bold; text-align: center; padding: 10px; border-radius: 8px; }
 </style>
 </head>
-
 <body>
 
 <h1>🏢 Portineria Digitale</h1>
 
 <div class="card">
-<h3>🚦 Stato pacchi</h3>
-<div id="semaforo"></div>
+    <h3>🚦 Stato Giacenze</h3>
+    <div id="semaforo" class="semaforo">Caricamento...</div>
 </div>
 
 <div class="card">
-
-<button onclick="startScanner()">📦 Scanner pacco</button>
-<button onclick="startBarcode()">📦 Scanner barcode</button>
-<button onclick="avvisaPacchiOggi()">📢 Avvisa pacchi di oggi</button>
-
+    <button onclick="startScanner()">📦 Scannerizza Etichetta</button>
+    <button onclick="startBarcode()" style="background:#2980b9">🔍 Scannerizza Barcode</button>
+    <button onclick="stopCamera()" id="btnStop" style="display:none; background:#95a5a6">Chiudi Camera</button>
 </div>
 
-<div class="video-wrapper">
-<video id="video" autoplay playsinline></video>
-<div class="scanner-box"></div>
-</div>
-
-<div class="card">
-<h3>📷 Foto pacco</h3>
-<input type="file" id="fotoPacco" accept="image/*">
+<div class="video-wrapper" id="videoWrapper">
+    <video id="video" autoplay playsinline></video>
+    <div class="scanner-box"></div>
 </div>
 
 <div class="card">
-<h3>📦 Inserisci pacco manuale</h3>
-<input id="nomePacco" placeholder="Nome destinatario">
-<button onclick="registraPaccoManuale()">Registra</button>
+    <h3>📦 Inserimento Manuale</h3>
+    <input id="nomePacco" placeholder="Nome destinatario">
+    <button onclick="registraPaccoManuale()">Registra e Invia WhatsApp</button>
 </div>
 
 <div class="card">
-<h3>📦 Pacchi</h3>
-<input id="searchPacchi" placeholder="Cerca pacco" oninput="mostraPacchi()">
-<div id="pacchi"></div>
+    <h3>📦 Pacchi da Consegnare</h3>
+    <input id="searchPacchi" placeholder="Cerca nel magazzino..." oninput="mostraPacchi()">
+    <div id="pacchi"></div>
 </div>
 
 <div class="card">
-<h3>👥 Rubrica condomini</h3>
-
-<input id="nomeCondomino" placeholder="Nome">
-<input id="telefonoCondomino" placeholder="Telefono">
-
-<button onclick="aggiungiCondomino()">Aggiungi</button>
-
-<div id="rubrica"></div>
-
+    <h3>👥 Rubrica Condomini</h3>
+    <input id="nomeCondomino" placeholder="Nome e Cognome">
+    <input id="telefonoCondomino" placeholder="Telefono (es. 3331234567)">
+    <button onclick="aggiungiCondomino()" style="background:#8e44ad">Aggiungi Residente</button>
+    <div id="rubrica"></div>
 </div>
 
 <div class="card">
-<h3>💾 Backup</h3>
-
-<button onclick="esporta()">Esporta dati</button>
-<input type="file" onchange="importa(event)">
-
+    <h3>📊 Statistiche Mensili</h3>
+    <canvas id="grafico"></canvas>
 </div>
 
-<div class="card">
-<h3>📊 Statistiche</h3>
-<canvas id="grafico"></canvas>
+<div class="card" style="background: #ecf0f1;">
+    <button onclick="esporta()" style="background:#7f8c8d">Scarica Backup Dati</button>
+    <p style="font-size: 14px; margin-top: 10px;">Ripristina da file:</p>
+    <input type="file" onchange="importa(event)">
 </div>
 
 <script>
+let streamCamera = null;
+let scannerLock = false;
+let chart = null;
+let audioCtx = null;
 
-let streamCamera=null
-let scannerLock=false
-let chart=null
+// Inizializza AudioContext al primo clic
+document.addEventListener('click', () => {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}, { once: true });
 
-function safeParse(k){
-try{return JSON.parse(localStorage.getItem(k))||[]}catch{return[]}
+function playBeep() {
+    if(!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+    osc.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.1);
 }
 
-function salva(k,v){
-localStorage.setItem(k,JSON.stringify(v))
-}
+// --- DATABASE LOCALE ---
+function safeParse(k){ try{ return JSON.parse(localStorage.getItem(k)) || [] } catch { return [] } }
+function salva(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
 
-function giorni(data){
-return Math.floor((Date.now()-new Date(data))/86400000)
-}
-
-function aggiornaSemaforo(){
-
-let pacchi=safeParse("pacchi")
-
-let max=0
-
-pacchi.forEach(p=>{
-let g=giorni(p.data)
-if(g>max)max=g
-})
-
-let s=document.getElementById("semaforo")
-
-if(max>7)s.innerHTML="🔴 Pacchi oltre 7 giorni"
-else if(max>3)s.innerHTML="🟡 Pacchi da ritirare"
-else s.innerHTML="🟢 Situazione regolare"
-
-}
-
-function avvisaWhatsApp(nome){
-
-let rubrica=safeParse("condomini")
-
-let c=rubrica.find(x=>x.nome && x.nome.toLowerCase()==nome.toLowerCase())
-
-if(!c)return
-
-let tel=(c.telefono||"").replace(/\D/g,'')
-
-let msg="È arrivato un pacco per "+c.nome+" in portineria."
-
-window.location.href="https://wa.me/"+tel+"?text="+encodeURIComponent(msg)
-
-}
-
+// --- GESTIONE CAMERA ---
 async function startScanner(){
-
-let video=document.getElementById("video")
-
-streamCamera=await navigator.mediaDevices.getUserMedia({
-video:{facingMode:"environment"}
-})
-
-video.srcObject=streamCamera
-
-scanLoop()
-
+    stopCamera(); // Chiudi eventuali istanze aperte
+    let video = document.getElementById("video");
+    let wrapper = document.getElementById("videoWrapper");
+    
+    try {
+        streamCamera = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        video.srcObject = streamCamera;
+        wrapper.classList.add("active");
+        document.getElementById("btnStop").style.display = "block";
+        scanLoop();
+    } catch (err) { alert("Attiva la fotocamera per usare lo scanner."); }
 }
 
+function stopCamera() {
+    if (streamCamera) {
+        streamCamera.getTracks().forEach(track => track.stop());
+        document.getElementById("videoWrapper").classList.remove("active");
+        document.getElementById("btnStop").style.display = "none";
+    }
+}
+
+// --- LOGICA SCANNER ---
 async function scanLoop(){
+    let video = document.getElementById("video");
+    if(!streamCamera || !video.videoWidth || scannerLock) {
+        if(streamCamera) setTimeout(scanLoop, 1000);
+        return;
+    }
 
-let video=document.getElementById("video")
+    let canvas = document.createElement("canvas");
+    let ctx = canvas.getContext("2d");
+    let vw = video.videoWidth, vh = video.videoHeight;
+    canvas.width = vw * 0.8; canvas.height = vh * 0.2;
+    ctx.drawImage(video, vw*0.1, vh*0.4, vw*0.8, vh*0.2, 0, 0, canvas.width, canvas.height);
 
-if(!video.videoWidth){
-setTimeout(scanLoop,1000)
-return
-}
+    const result = await Tesseract.recognize(canvas, 'ita');
+    const testo = result.data.text.toLowerCase();
+    const rubrica = safeParse("condomini");
 
-let vw=video.videoWidth
-let vh=video.videoHeight
-
-let cropX=vw*0.10
-let cropY=vh*0.40
-let cropW=vw*0.80
-let cropH=vh*0.20
-
-let canvas=document.createElement("canvas")
-canvas.width=cropW
-canvas.height=cropH
-
-let ctx=canvas.getContext("2d")
-
-ctx.drawImage(video,cropX,cropY,cropW,cropH,0,0,cropW,cropH)
-
-let result=await Tesseract.recognize(canvas,'ita')
-
-let testo=result.data.text.toLowerCase()
-
-let rubrica=safeParse("condomini")
-
-rubrica.forEach(c=>{
-
-let nome=c.nome.toLowerCase()
-let parti=nome.split(" ")
-
-if(scannerLock)return
-
-if(testo.includes(parti[0])||(parti[1]&&testo.includes(parti[1]))){
-
-scannerLock=true
-
-registraPaccoAuto(c.nome)
-avvisaWhatsApp(c.nome)
-
-setTimeout(()=>scannerLock=false,4000)
-
-}
-
-})
-
-setTimeout(scanLoop,3000)
-
+    for (let c of rubrica) {
+        let parti = c.nome.toLowerCase().split(" ");
+        if(!scannerLock && (testo.includes(parti[0]) || (parti[1] && testo.includes(parti[1])))) {
+            scannerLock = true;
+            playBeep();
+            registraPaccoAuto(c.nome);
+            avvisaWhatsApp(c.nome);
+            alert("Riconosciuto: " + c.nome);
+            setTimeout(() => { scannerLock = false; }, 4000);
+            break; 
+        }
+    }
+    if(streamCamera) setTimeout(scanLoop, 2500);
 }
 
 function startBarcode(){
-
-const reader=new ZXing.BrowserBarcodeReader()
-
-reader.decodeFromVideoDevice(null,'video',(result)=>{
-
-if(result){
-document.getElementById("nomePacco").value=result.text
-reader.reset()
+    startScanner().then(() => {
+        const reader = new ZXing.BrowserBarcodeReader();
+        reader.decodeFromVideoDevice(null, 'video', (result) => {
+            if(result){
+                playBeep();
+                document.getElementById("nomePacco").value = result.text;
+                stopCamera();
+            }
+        });
+    });
 }
 
-})
-
+// --- FUNZIONI CORE ---
+function avvisaWhatsApp(nome) {
+    let rubrica = safeParse("condomini");
+    let c = rubrica.find(x => x.nome.toLowerCase().trim() === nome.toLowerCase().trim());
+    if (!c) return;
+    let tel = c.telefono.replace(/\D/g, '');
+    if (tel.startsWith('3') && tel.length === 10) tel = "39" + tel;
+    window.open(`https://wa.me/${tel}?text=${encodeURIComponent("Ciao " + c.nome + ", c'è un pacco per te in portineria! 📦")}`, '_blank');
 }
 
 function registraPaccoManuale(){
-
-let nome=document.getElementById("nomePacco").value
-
-if(!nome)return
-
-let pacchi=safeParse("pacchi")
-
-pacchi.unshift({
-nome,
-data:new Date().toISOString()
-})
-
-salva("pacchi",pacchi)
-
-mostraPacchi()
-aggiornaSemaforo()
-
-avvisaWhatsApp(nome)
-
+    let nome = document.getElementById("nomePacco").value;
+    if(!nome) return;
+    let pacchi = safeParse("pacchi");
+    pacchi.unshift({ nome, data: new Date().toISOString() });
+    salva("pacchi", pacchi);
+    playBeep();
+    mostraPacchi();
+    aggiornaSemaforo();
+    avvisaWhatsApp(nome);
+    document.getElementById("nomePacco").value = "";
 }
 
 function registraPaccoAuto(nome){
-
-let pacchi=safeParse("pacchi")
-
-pacchi.unshift({
-nome,
-data:new Date().toISOString()
-})
-
-salva("pacchi",pacchi)
-
-mostraPacchi()
-aggiornaSemaforo()
-
+    let pacchi = safeParse("pacchi");
+    pacchi.unshift({ nome, data: new Date().toISOString() });
+    salva("pacchi", pacchi);
+    mostraPacchi();
+    aggiornaSemaforo();
 }
 
 function mostraPacchi(){
-
-let pacchi=safeParse("pacchi")
-let filtro=document.getElementById("searchPacchi").value.toLowerCase()
-let div=document.getElementById("pacchi")
-
-div.innerHTML=""
-
-pacchi.forEach((p,i)=>{
-
-if(!p.nome.toLowerCase().includes(filtro))return
-
-div.innerHTML+=`
-<div>
-<b>${p.nome}</b>
-<button onclick="consegna(${i})">Consegnato</button>
-</div>
-`
-
-})
-
-grafico()
-
+    let pacchi = safeParse("pacchi");
+    let filtro = document.getElementById("searchPacchi").value.toLowerCase();
+    let div = document.getElementById("pacchi");
+    div.innerHTML = "";
+    pacchi.forEach((p, i) => {
+        if(!p.nome.toLowerCase().includes(filtro)) return;
+        div.innerHTML += `<div class="item-row">
+            <span><b>${p.nome}</b><br><small>${new Date(p.data).toLocaleDateString()}</small></span>
+            <button class="btn-small" onclick="consegna(${i})">RITIRATO</button>
+        </div>`;
+    });
+    grafico();
 }
 
 function consegna(i){
-
-let pacchi=safeParse("pacchi")
-let storico=safeParse("storico")
-
-storico.unshift(pacchi[i])
-
-pacchi.splice(i,1)
-
-salva("pacchi",pacchi)
-salva("storico",storico)
-
-mostraPacchi()
-
+    let pacchi = safeParse("pacchi");
+    let storico = safeParse("storico");
+    storico.unshift(pacchi[i]);
+    pacchi.splice(i, 1);
+    salva("pacchi", pacchi); salva("storico", storico);
+    mostraPacchi(); aggiornaSemaforo();
 }
 
+// --- RUBRICA ---
 function aggiungiCondomino(){
-
-let nome=document.getElementById("nomeCondomino").value
-let tel=document.getElementById("telefonoCondomino").value
-
-let db=safeParse("condomini")
-
-db.push({nome,telefono:tel})
-
-salva("condomini",db)
-
-mostraRubrica()
-
+    let nome = document.getElementById("nomeCondomino").value;
+    let tel = document.getElementById("telefonoCondomino").value;
+    if(!nome || !tel) return;
+    let db = safeParse("condomini");
+    db.push({nome, telefono: tel});
+    salva("condomini", db);
+    document.getElementById("nomeCondomino").value = "";
+    document.getElementById("telefonoCondomino").value = "";
+    mostraRubrica();
 }
 
 function mostraRubrica(){
-
-let db=safeParse("condomini")
-let div=document.getElementById("rubrica")
-
-div.innerHTML=""
-
-db.forEach((c,i)=>{
-
-div.innerHTML+=`
-<div>
-${c.nome}
-<button onclick="db.splice(${i},1);salva('condomini',db);mostraRubrica()">❌</button>
-</div>
-`
-
-})
-
+    let db = safeParse("condomini");
+    let div = document.getElementById("rubrica");
+    div.innerHTML = "";
+    db.forEach((c, i) => {
+        div.innerHTML += `<div class="item-row">
+            <span>${c.nome}</span>
+            <button class="btn-small btn-del" onclick="rimuoviCondomino(${i})">Elimina</button>
+        </div>`;
+    });
 }
 
-function avvisaPacchiOggi(){
-
-let pacchi=safeParse("pacchi")
-
-pacchi.forEach(p=>{
-alert("Pacco per "+p.nome)
-})
-
+function rimuoviCondomino(i){
+    let db = safeParse("condomini");
+    db.splice(i, 1);
+    salva("condomini", db);
+    mostraRubrica();
 }
 
-function esporta(){
-
-let data=JSON.stringify(localStorage)
-
-let blob=new Blob([data])
-
-let a=document.createElement("a")
-
-a.href=URL.createObjectURL(blob)
-a.download="backup_portineria.json"
-a.click()
-
-}
-
-function importa(e){
-
-let file=e.target.files[0]
-
-let reader=new FileReader()
-
-reader.onload=function(){
-
-let data=JSON.parse(reader.result)
-
-for(let k in data){
-localStorage.setItem(k,data[k])
-}
-
-location.reload()
-
-}
-
-reader.readAsText(file)
-
+// --- STATO E STATISTICHE ---
+function aggiornaSemaforo(){
+    let pacchi = safeParse("pacchi");
+    let max = 0;
+    pacchi.forEach(p => {
+        let g = Math.floor((Date.now() - new Date(p.data)) / 86400000);
+        if(g > max) max = g;
+    });
+    let s = document.getElementById("semaforo");
+    if(pacchi.length === 0) { s.innerHTML = "✅ Nessun pacco"; s.style.background = "#2ecc71"; }
+    else if(max > 7) { s.innerHTML = "🔴 ATTENZIONE: Pacchi da oltre 7 giorni!"; s.style.background = "#e74c3c"; s.style.color = "white"; }
+    else if(max > 3) { s.innerHTML = "🟡 Sollecito necessario (oltre 3gg)"; s.style.background = "#f1c40f"; }
+    else { s.innerHTML = "🟢 Situazione regolare"; s.style.background = "#2ecc71"; }
 }
 
 function grafico(){
-
-let storico=safeParse("storico")
-
-let mesi=new Array(12).fill(0)
-
-storico.forEach(s=>{
-let d=new Date(s.data)
-mesi[d.getMonth()]++
-})
-
-if(chart)chart.destroy()
-
-chart=new Chart(document.getElementById("grafico"),{
-type:"bar",
-data:{
-labels:["Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"],
-datasets:[{
-label:"Pacchi consegnati",
-data:mesi
-}]
-}
-})
-
+    let storico = safeParse("storico");
+    let mesi = new Array(12).fill(0);
+    storico.forEach(s => { mesi[new Date(s.data).getMonth()]++; });
+    if(chart) chart.destroy();
+    const ctx = document.getElementById("grafico").getContext("2d");
+    chart = new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels: ["Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"],
+            datasets: [{ label: "Pacchi consegnati", data: mesi, backgroundColor: '#3498db' }]
+        },
+        options: { responsive: true }
+    });
 }
 
-mostraPacchi()
-mostraRubrica()
-aggiornaSemaforo()
+// --- BACKUP ---
+function esporta(){
+    let data = JSON.stringify(localStorage);
+    let blob = new Blob([data], {type: "application/json"});
+    let a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "backup_portineria.json";
+    a.click();
+}
 
+function importa(e){
+    let file = e.target.files[0];
+    let reader = new FileReader();
+    reader.onload = function(){
+        let data = JSON.parse(reader.result);
+        for(let k in data) localStorage.setItem(k, data[k]);
+        location.reload();
+    };
+    reader.readAsText(file);
+}
+
+// Inizializzazione
+mostraPacchi();
+mostraRubrica();
+aggiornaSemaforo();
 </script>
-
 </body>
 </html>
