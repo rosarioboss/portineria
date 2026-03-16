@@ -309,17 +309,29 @@ function inviaWhatsApp(nome){
 
 let rubrica=DB.get("rubrica")
 
-let p=rubrica.find(x=>x.nome===nome)
+let nomeMaiuscolo=nome.toUpperCase()
 
-if(!p || !p.tel)return
+let trovato=rubrica.find(r=>{
 
-let tel=p.tel.startsWith("39")?p.tel:"39"+p.tel
+let cognome=r.nome.split(" ").pop()
 
-let msg="Ciao "+p.nome+", è arrivato un pacco per te 📦"
+return nomeMaiuscolo.includes(cognome)
+
+})
+
+if(!trovato || !trovato.tel){
+alert("Numero non trovato in rubrica")
+return
+}
+
+let tel=trovato.tel.startsWith("39")?trovato.tel:"39"+trovato.tel
+
+let msg="Ciao "+trovato.nome+", è arrivato un pacco per te 📦"
 
 window.open(
 "https://wa.me/"+tel+
-"?text="+encodeURIComponent(msg)
+"?text="+encodeURIComponent(msg),
+"_blank"
 )
 
 }
@@ -382,7 +394,9 @@ const rubrica=DB.get("rubrica")
 
 for(let u of rubrica){
 
-if(text.includes(u.nome)){
+let cognome=u.nome.split(" ").pop()
+
+if(text.includes(cognome)){
 
 beep()
 
