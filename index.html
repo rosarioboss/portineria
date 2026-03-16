@@ -1,367 +1,456 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Portineria Digitale Pro - iPhone Optimized</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Portineria Digitale PRO - Full Edition</title>
 
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://unpkg.com/@zxing/library@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/@zxing/library@latest"></script>
 
-<style>
-    :root { --primary: #1a73e8; --success: #25D366; --danger: #e74c3c; --warning: #f1c40f; --dark: #2c3e50; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f0f2f5; margin: 0; padding: 10px; font-size: 17px; color: var(--dark); }
-    h1 { text-align: center; color: var(--primary); font-weight: 800; }
-    .card { background: white; padding: 16px; border-radius: 16px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-    
-    /* Bottoni stile iOS */
-    button, .btn-link { 
-        width: 100%; padding: 16px; border: none; border-radius: 12px; 
-        background: var(--primary); color: white; font-size: 18px; font-weight: 600;
-        margin-top: 8px; cursor: pointer; text-decoration: none; 
-        display: inline-block; text-align: center; box-sizing: border-box;
-        -webkit-tap-highlight-color: transparent;
-    }
-    button:active { opacity: 0.7; transform: scale(0.99); }
-    
-    .btn-wa { background: var(--success) !important; border-bottom: 4px solid #128C7E; }
-    .btn-del { background: var(--danger) !important; width: auto; padding: 8px 16px; font-size: 14px; margin: 0; }
-    .btn-sec { background: #54a0ff; }
-    .btn-gray { background: #95a5a6; }
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --success: #25D366;
+            --danger: #e74c3c;
+            --warning: #f1c40f;
+            --info: #3498db;
+            --dark: #2c3e50;
+            --light: #f8f9fa;
+        }
 
-    input { width: 100%; padding: 14px; margin-top: 8px; font-size: 16px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; -webkit-appearance: none; }
-    
-    /* Scanner per iPhone */
-    .video-wrapper { position: relative; width: 100%; display: none; margin-top: 10px; border-radius: 14px; overflow: hidden; background: #000; }
-    .video-wrapper.active { display: block; }
-    video { width: 100%; display: block; }
-    .scanner-box { 
-        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-        width: 80%; height: 100px; border: 3px solid var(--success); border-radius: 12px;
-        box-shadow: 0 0 0 9999px rgba(0,0,0,0.5); pointer-events: none;
-    }
-    
-    /* Lista Pacchi */
-    .pacco-item { border-bottom: 1px solid #eee; padding: 16px 0; }
-    .pacco-header { display: flex; justify-content: space-between; align-items: flex-start; }
-    .pacco-meta { font-size: 14px; color: #7f8c8d; margin-top: 4px; }
-    
-    .semaforo { font-weight: bold; text-align: center; padding: 14px; border-radius: 12px; margin-bottom: 10px; color: white; transition: 0.3s; }
-    .rubrica-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f5f5f5; align-items: center; }
-</style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 10px;
+            color: var(--dark);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        h1 { text-align: center; color: var(--primary); font-size: 26px; margin: 15px 0; font-weight: 800; }
+        h3 { margin-top: 0; color: var(--dark); font-size: 18px; border-bottom: 2px solid var(--light); padding-bottom: 8px; }
+
+        .card {
+            background: white;
+            padding: 18px;
+            border-radius: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+
+        button, .btn-link {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 14px;
+            background-color: var(--primary);
+            color: white;
+            font-size: 17px;
+            font-weight: 700;
+            margin-top: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-block;
+            text-decoration: none;
+            text-align: center;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        button:active { transform: scale(0.97); opacity: 0.8; }
+
+        .btn-wa { background-color: var(--success) !important; box-shadow: 0 4px 10px rgba(37, 211, 102, 0.3); }
+        .btn-sec { background-color: var(--info); }
+        .btn-del { background-color: var(--danger) !important; width: auto; padding: 10px 18px; font-size: 14px; margin: 0; }
+        .btn-outline { background: transparent; border: 2px solid #ccc; color: #666; margin-top: 15px; }
+
+        input, textarea {
+            width: 100%;
+            padding: 14px;
+            margin-top: 8px;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            font-size: 16px;
+            box-sizing: border-box;
+            background: var(--light);
+            transition: border 0.3s;
+        }
+
+        textarea { height: 100px; font-family: monospace; font-size: 13px; }
+
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            display: none;
+            margin-top: 10px;
+            border-radius: 20px;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .video-wrapper.active { display: block; }
+        video { width: 100%; display: block; }
+
+        .scanner-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 75%;
+            height: 100px;
+            border: 3px solid var(--success);
+            border-radius: 15px;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);
+            pointer-events: none;
+        }
+
+        .scanner-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: var(--success);
+            top: 0;
+            animation: scan 2s infinite linear;
+        }
+
+        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+
+        .pacco-item { border-bottom: 1px solid #eee; padding: 18px 0; }
+        .flex-row { display: flex; align-items: center; justify-content: space-between; }
+        .pacco-info { display: flex; align-items: center; gap: 15px; }
+        
+        .img-preview {
+            width: 65px;
+            height: 65px;
+            border-radius: 12px;
+            object-fit: cover;
+            background: #eee;
+            border: 1px solid #ddd;
+        }
+
+        .pacco-text b { font-size: 18px; text-transform: uppercase; display: block; color: var(--dark); }
+        .pacco-text small { color: #888; font-size: 13px; }
+
+        .semaforo {
+            font-weight: 800;
+            text-align: center;
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            color: white;
+            text-transform: uppercase;
+        }
+
+        .rubrica-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            align-items: center;
+            background: var(--light);
+            border-radius: 10px;
+            margin-bottom: 5px;
+        }
+
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .stat-box { background: var(--light); padding: 12px; border-radius: 12px; text-align: center; }
+        .stat-box span { font-size: 20px; font-weight: bold; color: var(--primary); display: block; }
+
+        canvas { margin-top: 20px; max-height: 250px; }
+
+        #loading-overlay {
+            position: fixed; top:0; left:0; width:100%; height:100%;
+            background: rgba(255,255,255,0.8); display: none;
+            justify-content: center; align-items: center; z-index: 2000;
+        }
+    </style>
 </head>
 <body>
+
+<div id="loading-overlay">⌛ Elaborazione...</div>
 
 <h1>🏢 Portineria Digitale</h1>
 
 <div class="card">
-    <div id="semaforo" class="semaforo" style="background: var(--gray);">Verifica in corso...</div>
-    <button onclick="avvisaTuttiGiacenti()" class="btn-sec" style="font-size: 14px; padding: 10px;">📋 Riepilogo Solleciti</button>
+    <div id="semaforo" class="semaforo" style="background: #95a5a6;">Inizializzazione...</div>
+    <div class="stats-grid">
+        <div class="stat-box"><span id="count-oggi">0</span><label>PACCHI OGGI</label></div>
+        <div class="stat-box"><span id="count-totale">0</span><label>IN GIACENZA</label></div>
+    </div>
 </div>
 
 <div class="card">
-    <button onclick="startScanner()">📷 Scansiona Nome (OCR)</button>
-    <button onclick="startBarcode()" class="btn-sec">🔍 Scansiona Barcode</button>
-    <button onclick="stopCamera()" id="btnStop" style="display:none;" class="btn-gray">Chiudi Camera</button>
-</div>
-
-<div id="videoWrapper" class="video-wrapper">
-    <video id="video" autoplay playsinline muted></video>
-    <div class="scanner-box"></div>
-</div>
-
-<div class="card">
-    <h3>📦 Nuovo Pacco</h3>
-    <input id="nomePacco" placeholder="Nome destinatario o Codice...">
-    <button onclick="registraPaccoManuale()">Salva in Giacenza</button>
+    <h3>📷 Acquisizione Rapida</h3>
+    <button onclick="startScanner('ocr')">📄 Leggi Etichetta (OCR)</button>
+    <button onclick="startScanner('barcode')" style="background:#8e44ad">🔍 Scansiona Barcode</button>
+    <button onclick="stopCamera()" id="btnStop" style="display:none; background:#7f8c8d">Chiudi Fotocamera</button>
+    
+    <div id="videoWrapper" class="video-wrapper">
+        <video id="video" autoplay playsinline muted></video>
+        <div class="scanner-box"><div class="scanner-line"></div></div>
+    </div>
 </div>
 
 <div class="card">
-    <h3>📋 Pacchi in Attesa</h3>
-    <input id="searchPacchi" placeholder="Filtra per nome..." oninput="mostraPacchi()">
-    <div id="pacchi"></div>
+    <h3>📦 Nuovo Ingresso</h3>
+    <input type="file" id="fotoInput" accept="image/*" capture="environment" style="margin-bottom:10px;">
+    <input id="nomePacco" placeholder="Nome del destinatario...">
+    <button onclick="registraPacco()">Registra e Salva</button>
 </div>
 
 <div class="card">
-    <h3>👥 Rubrica Residenti</h3>
+    <h3>📋 Lista Giacenze</h3>
+    <input id="searchPacchi" placeholder="Cerca tra i pacchi..." oninput="renderPacchi()">
+    <div id="lista-pacchi"></div>
+</div>
+
+<div class="card">
+    <h3>👥 Importazione Condomini</h3>
+    <p style="font-size:12px; color:#666;">Incolla qui la lista (es: Mario Rossi, 3331234567) una per riga:</p>
+    <textarea id="importMassivo" placeholder="Nome Cognome, 393331234567"></textarea>
+    <button onclick="importazioneMassiva()" style="background:#2c3e50">Carica Lista Completa</button>
+    <hr>
+    <h3>➕ Aggiungi Singolo</h3>
     <input id="nomeCondomino" placeholder="Nome e Cognome">
-    <input id="telefonoCondomino" type="tel" placeholder="Cellulare (es. 3331234567)">
-    <button onclick="aggiungiCondomino()" class="btn-sec">Salva in Rubrica</button>
-    <div id="rubrica"></div>
+    <input id="telefonoCondomino" type="tel" placeholder="Cellulare">
+    <button onclick="aggiungiCondomino()" class="btn-sec">Salva Singolo</button>
+    <div id="lista-rubrica" style="margin-top: 15px; max-height: 200px; overflow-y: auto;"></div>
 </div>
 
 <div class="card">
-    <h3>📊 Statistiche Mensili</h3>
-    <canvas id="grafico"></canvas>
-    <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
-    <h3>💾 Gestione Database</h3>
-    <button onclick="esportaDati()" class="btn-gray">Esporta Backup (.json)</button>
-    <p style="font-size:13px; color:#7f8c8d; margin-top:10px;">Ripristina dati da file:</p>
-    <input type="file" onchange="importaDati(event)">
+    <h3>📊 Statistiche</h3>
+    <canvas id="graficoStorico"></canvas>
+    <hr>
+    <button onclick="esportaDati()" style="background:#607d8b">Scarica Backup Database</button>
+    <button onclick="cancellaTutto()" style="background:transparent; color:red; font-size:11px; border:none; margin-top:20px;">⚠️ Svuota tutto</button>
 </div>
 
 <script>
 let streamCamera = null;
-let scannerLock = false;
 let myChart = null;
 
-// Database Helper
 const DB = {
-    get: (k) => JSON.parse(localStorage.getItem(k)) || [],
-    set: (k, v) => localStorage.setItem(k, JSON.stringify(v))
+    pacchi: () => JSON.parse(localStorage.getItem('pacchi')) || [],
+    condomini: () => JSON.parse(localStorage.getItem('condomini')) || [],
+    storico: () => JSON.parse(localStorage.getItem('storico')) || [],
+    save: (key, data) => localStorage.setItem(key, JSON.stringify(data))
 };
 
-// --- LOGICA WHATSAPP (OTTIMIZZATA IPHONE) ---
-function generaLinkWA(nomeDestinatario) {
-    const rubrica = DB.get("condomini");
-    const cerca = nomeDestinatario.toLowerCase().trim();
-    
-    const utente = rubrica.find(c => 
-        cerca.includes(c.nome.toLowerCase().trim()) || 
-        c.nome.toLowerCase().trim().includes(cerca)
-    );
-    
-    if (!utente) return null;
+window.onload = () => { renderTutto(); initChart(); };
 
+function renderTutto() { renderPacchi(); renderRubrica(); aggiornaDashboard(); if(myChart) aggiornaGrafico(); }
+
+// --- WHATSAPP FIX IPHONE ---
+function getWhatsAppLink(nomeDestinatario) {
+    const rubrica = DB.condomini();
+    const cerca = nomeDestinatario.toLowerCase().trim();
+    const utente = rubrica.find(u => cerca.includes(u.nome.toLowerCase().trim()) || u.nome.toLowerCase().trim().includes(cerca));
+    if (!utente) return null;
     let tel = utente.telefono.replace(/\D/g, '');
     if (tel.length === 10) tel = "39" + tel;
-    
-    const messaggio = encodeURIComponent(`Ciao ${utente.nome}, c'è un pacco per te in portineria! 📦`);
-    return `https://api.whatsapp.com/send?phone=${tel}&text=${messaggio}`;
+    return `https://api.whatsapp.com/send?phone=${tel}&text=${encodeURIComponent("Ciao " + utente.nome + ", c'è un pacco per te! 📦")}`;
 }
 
-// --- FOTOCAMERA (FIX IPHONE 13) ---
-async function startScanner(){
+// --- IMPORTAZIONE MASSIVA ---
+function importazioneMassiva() {
+    const testo = document.getElementById('importMassivo').value;
+    if(!testo) return;
+    const righe = testo.split('\n');
+    let condomini = DB.condomini();
+    let contatore = 0;
+
+    righe.forEach(riga => {
+        let parti = riga.split(/[,;-]/); // Separa per virgola, punto e virgola o trattino
+        if(parti.length >= 2) {
+            let nome = parti[0].trim();
+            let tel = parti[1].trim().replace(/\s/g, '');
+            if(nome && tel) {
+                condomini.push({ nome, telefono: tel });
+                contatore++;
+            }
+        }
+    });
+
+    DB.save('condomini', condomini);
+    document.getElementById('importMassivo').value = "";
+    renderTutto();
+    alert("Caricati " + contatore + " condomini con successo!");
+}
+
+// --- FOTOCAMERA ---
+async function startScanner(modalita) {
     stopCamera();
     try {
-        const constraints = { video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } } };
-        streamCamera = await navigator.mediaDevices.getUserMedia(constraints);
-        const video = document.getElementById("video");
-        video.srcObject = streamCamera;
-        video.setAttribute("playsinline", true); // Obbligatorio per iPhone
-        document.getElementById("videoWrapper").classList.add("active");
-        document.getElementById("btnStop").style.display = "block";
-        scanLoop();
-    } catch (err) {
-        alert("Attenzione: attiva l'accesso alla fotocamera nelle impostazioni di Safari.");
-    }
+        streamCamera = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        document.getElementById('video').srcObject = streamCamera;
+        document.getElementById('videoWrapper').classList.add('active');
+        document.getElementById('btnStop').style.display = "block";
+        if(modalita === 'ocr') loopOCR(); else loopBarcode();
+    } catch (err) { alert("Attiva fotocamera!"); }
 }
 
 function stopCamera() {
     if (streamCamera) {
         streamCamera.getTracks().forEach(t => t.stop());
-        document.getElementById("videoWrapper").classList.remove("active");
-        document.getElementById("btnStop").style.display = "none";
+        document.getElementById('videoWrapper').classList.remove('active');
+        document.getElementById('btnStop').style.display = "none";
         streamCamera = null;
     }
 }
 
-async function scanLoop(){
-    const video = document.getElementById("video");
-    if(!streamCamera || scannerLock || !video.videoWidth) {
-        if(streamCamera) setTimeout(scanLoop, 1000);
-        return;
-    }
-    
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    // Zoom sul centro per facilitare l'OCR
+async function loopOCR() {
+    if(!streamCamera) return;
+    const video = document.getElementById('video');
+    const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth * 0.8; canvas.height = video.videoHeight * 0.2;
+    const ctx = canvas.getContext('2d');
     ctx.drawImage(video, video.videoWidth*0.1, video.videoHeight*0.4, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
-
     try {
         const result = await Tesseract.recognize(canvas, 'ita');
         const testo = result.data.text.toLowerCase();
-        const rubrica = DB.get("condomini");
-
-        for (let c of rubrica) {
-            if(testo.includes(c.nome.toLowerCase()) && c.nome.length > 3) {
-                scannerLock = true;
-                registraPacco(c.nome);
-                alert("✅ RICONOSCIUTO: " + c.nome.toUpperCase());
-                stopCamera();
-                scannerLock = false;
-                return;
-            }
-        }
-    } catch (e) { console.error("OCR Error", e); }
-    
-    if(streamCamera) setTimeout(scanLoop, 2000);
-}
-
-function startBarcode(){
-    startScanner().then(() => {
-        const reader = new ZXing.BrowserBarcodeReader();
-        reader.decodeFromVideoDevice(null, 'video', (result) => {
-            if(result){
-                document.getElementById("nomePacco").value = result.text;
+        DB.condomini().forEach(c => {
+            if (testo.includes(c.nome.toLowerCase()) && c.nome.length > 3) {
+                document.getElementById('nomePacco').value = c.nome.toUpperCase();
                 stopCamera();
             }
         });
+    } catch (e) {}
+    if(streamCamera) setTimeout(loopOCR, 2000);
+}
+
+function loopBarcode() {
+    const codeReader = new ZXing.BrowserBarcodeReader();
+    codeReader.decodeFromVideoDevice(null, 'video', (result) => {
+        if (result) { document.getElementById('nomePacco').value = result.text; stopCamera(); }
     });
 }
 
-// --- GESTIONE PACCHI ---
-function registraPaccoManuale(){
-    const nome = document.getElementById("nomePacco").value;
+// --- LOGICA PACCHI ---
+async function registraPacco() {
+    const nome = document.getElementById('nomePacco').value.trim();
     if(!nome) return;
-    registraPacco(nome);
-    document.getElementById("nomePacco").value = "";
+    showLoading(true);
+    const fotoFile = document.getElementById('fotoInput').files[0];
+    let fotoData = null;
+    if(fotoFile) fotoData = await compressImage(fotoFile);
+    const pacchi = DB.pacchi();
+    pacchi.unshift({ id: Date.now(), nome, data: new Date().toISOString(), foto: fotoData });
+    DB.save('pacchi', pacchi);
+    document.getElementById('nomePacco').value = "";
+    document.getElementById('fotoInput').value = "";
+    showLoading(false);
+    renderTutto();
 }
 
-function registraPacco(nome){
-    const pacchi = DB.get("pacchi");
-    pacchi.unshift({ nome: nome, data: new Date().toISOString() });
-    DB.set("pacchi", pacchi);
-    aggiornaUI();
-}
-
-function mostraPacchi(){
-    const pacchi = DB.get("pacchi");
-    const filtro = document.getElementById("searchPacchi").value.toLowerCase();
-    const container = document.getElementById("pacchi");
+function renderPacchi() {
+    const filtro = document.getElementById('searchPacchi').value.toLowerCase();
+    const container = document.getElementById('lista-pacchi');
     container.innerHTML = "";
-
-    pacchi.forEach((p, i) => {
+    DB.pacchi().forEach(p => {
         if(!p.nome.toLowerCase().includes(filtro)) return;
-        
-        const linkWA = generaLinkWA(p.nome);
-        const btnWA = linkWA 
-            ? `<a href="${linkWA}" target="_blank" rel="noopener" class="btn-link btn-wa">📲 AVVISA CON WHATSAPP</a>` 
-            : `<div style="color:var(--danger); font-size:13px; margin-top:8px;">⚠️ Destinatario non trovato in rubrica</div>`;
-
-        container.innerHTML += `
-            <div class="pacco-item">
-                <div class="pacco-header">
-                    <div>
-                        <b style="font-size:18px;">${p.nome.toUpperCase()}</b>
-                        <div class="pacco-meta">Arrivato: ${new Date(p.data).toLocaleDateString()} alle ${new Date(p.data).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
-                    </div>
-                    <button class="btn-del" onclick="consegnaPacco(${i})">RITIRATO</button>
+        const wa = getWhatsAppLink(p.nome);
+        const div = document.createElement('div');
+        div.className = 'pacco-item';
+        div.innerHTML = `
+            <div class="flex-row">
+                <div class="pacco-info">
+                    <img src="${p.foto || 'https://via.placeholder.com/60'}" class="img-preview">
+                    <div class="pacco-text"><b>${p.nome}</b><small>${new Date(p.data).toLocaleString()}</small></div>
                 </div>
-                ${btnWA}
-            </div>`;
+                <button class="btn-del" onclick="consegnaPacco(${p.id})">RITIRO</button>
+            </div>
+            ${wa ? `<a href="${wa}" target="_blank" class="btn-link btn-wa">📲 AVVISA</a>` : ''}
+        `;
+        container.appendChild(div);
     });
 }
 
-function consegnaPacco(i){
-    const pacchi = DB.get("pacchi");
-    const storico = DB.get("storico");
-    storico.unshift(pacchi[i]);
-    pacchi.splice(i, 1);
-    DB.set("pacchi", pacchi);
-    DB.set("storico", storico);
-    aggiornaUI();
-}
-
-// --- RUBRICA ---
-function aggiungiCondomino(){
-    const nome = document.getElementById("nomeCondomino").value;
-    const tel = document.getElementById("telefonoCondomino").value;
-    if(!nome || !tel) { alert("Inserisci nome e telefono"); return; }
-    
-    const db = DB.get("condomini");
-    db.push({ nome: nome, telefono: tel });
-    DB.set("condomini", db);
-    
-    document.getElementById("nomeCondomino").value = "";
-    document.getElementById("telefonoCondomino").value = "";
-    mostraRubrica();
-}
-
-function mostraRubrica(){
-    const db = DB.get("condomini");
-    const container = document.getElementById("rubrica");
-    container.innerHTML = "";
-    db.forEach((c, i) => {
-        container.innerHTML += `
-            <div class="rubrica-item">
-                <span><b>${c.nome}</b> (${c.telefono})</span>
-                <button class="btn-del" style="background:#bdc3c7!important;" onclick="rimuoviCondomino(${i})">Rimuovi</button>
-            </div>`;
-    });
-}
-
-function rimuoviCondomino(i){
-    const db = DB.get("condomini");
-    db.splice(i, 1);
-    DB.set("condomini", db);
-    mostraRubrica();
-}
-
-// --- DASHBOARD & UTILS ---
-function aggiornaUI(){
-    mostraPacchi();
-    mostraRubrica();
-    aggiornaSemaforo();
-    aggiornaGrafico();
-}
-
-function aggiornaSemaforo(){
-    const pacchi = DB.get("pacchi");
-    const s = document.getElementById("semaforo");
-    if(pacchi.length === 0) {
-        s.innerHTML = "✅ NESSUN PACCO IN ATTESA";
-        s.style.background = "var(--success)";
-    } else {
-        s.innerHTML = "📦 " + pacchi.length + " PACCHI DA CONSEGNARE";
-        s.style.background = "var(--warning)";
+function consegnaPacco(id) {
+    let pacchi = DB.pacchi();
+    let storico = DB.storico();
+    const index = pacchi.findIndex(p => p.id === id);
+    if(index > -1) {
+        storico.push({...pacchi[index], dataConsegna: new Date().toISOString()});
+        pacchi.splice(index, 1);
+        DB.save('pacchi', pacchi); DB.save('storico', storico);
+        renderTutto();
     }
 }
 
-function avvisaTuttiGiacenti(){
-    const pacchi = DB.get("pacchi");
-    if(pacchi.length === 0) return alert("Magazzino vuoto!");
-    const lista = pacchi.map(p => p.nome.toUpperCase()).join("\n");
-    alert("RIEPILOGO GIACENZE:\n\n" + lista);
+// --- RUBRICA ---
+function aggiungiCondomino() {
+    const nome = document.getElementById('nomeCondomino').value;
+    const tel = document.getElementById('telefonoCondomino').value;
+    if(!nome || !tel) return;
+    let c = DB.condomini(); c.push({nome, telefono: tel}); DB.save('condomini', c);
+    renderTutto();
 }
 
-function aggiornaGrafico(){
-    const storico = DB.get("storico");
-    const datiMesi = new Array(12).fill(0);
-    storico.forEach(s => {
-        const mese = new Date(s.data).getMonth();
-        datiMesi[mese]++;
+function renderRubrica() {
+    const container = document.getElementById('lista-rubrica');
+    container.innerHTML = "";
+    DB.condomini().forEach((c, i) => {
+        const div = document.createElement('div');
+        div.className = 'rubrica-item';
+        div.innerHTML = `<span>${c.nome}</span><button onclick="rimuoviCondomino(${i})" style="color:red; background:none; width:auto;">X</button>`;
+        container.appendChild(div);
     });
-    
-    const ctx = document.getElementById("grafico").getContext("2d");
-    if(myChart) myChart.destroy();
+}
+
+function rimuoviCondomino(i) { let c = DB.condomini(); c.splice(i, 1); DB.save('condomini', c); renderTutto(); }
+
+// --- DASHBOARD & GRAFICO ---
+function aggiornaDashboard() {
+    const pacchi = DB.pacchi();
+    document.getElementById('count-totale').innerText = pacchi.length;
+    const s = document.getElementById('semaforo');
+    s.style.background = pacchi.length > 0 ? "var(--info)" : "var(--success)";
+    s.innerText = pacchi.length > 0 ? "Giacenza attiva" : "Tutto consegnato";
+}
+
+function initChart() {
+    const ctx = document.getElementById('graficoStorico').getContext('2d');
     myChart = new Chart(ctx, {
-        type: "bar",
-        data: {
-            labels: ["Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"],
-            datasets: [{ label: "Pacchi Consegnati", data: datiMesi, backgroundColor: "#1a73e8" }]
-        },
-        options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+        type: 'line',
+        data: { labels: [], datasets: [{ label: 'Consegne', data: [], borderColor: '#1a73e8' }] },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+    aggiornaGrafico();
+}
+
+function aggiornaGrafico() {
+    const storico = DB.storico();
+    const stats = {};
+    storico.forEach(s => { const d = new Date(s.dataConsegna).toLocaleDateString(); stats[d] = (stats[d] || 0) + 1; });
+    myChart.data.labels = Object.keys(stats);
+    myChart.data.datasets[0].data = Object.values(stats);
+    myChart.update();
+}
+
+function compressImage(file) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = e => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const scale = 400 / img.width;
+                canvas.width = 400; canvas.height = img.height * scale;
+                canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                resolve(canvas.toDataURL('image/jpeg', 0.7));
+            }
+        }
     });
 }
 
-function esportaDati(){
-    const backup = JSON.stringify(localStorage);
-    const blob = new Blob([backup], {type: "application/json"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `portineria_backup_${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-}
-
-function importaDati(event){
-    const file = event.target.files[0];
-    if(!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        const dati = JSON.parse(e.target.result);
-        Object.keys(dati).forEach(k => localStorage.setItem(k, dati[k]));
-        alert("Dati ripristinati con successo!");
-        location.reload();
-    };
-    reader.readAsText(file);
-}
-
-// Inizializzazione App
-window.onload = aggiornaUI;
+function showLoading(show) { document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none'; }
+function esportaDati() { const blob = new Blob([JSON.stringify(localStorage)], {type: 'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "backup.json"; a.click(); }
+function cancellaTutto() { if(confirm("Cancelli tutto?")) { localStorage.clear(); location.reload(); } }
 </script>
 </body>
 </html>
