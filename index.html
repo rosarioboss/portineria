@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Portineria Digitale Pro</title>
+<title>Portineria Digitale 2.0</title>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -13,50 +13,29 @@
     body{ font-family: sans-serif; background: #f2f2f2; margin: 0; padding: 10px; font-size: 18px; }
     h1{ text-align: center; color: #2c3e50; }
     .card{ background: white; padding: 15px; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,.1); }
-    button{ width: 100%; padding: 14px; border: none; border-radius: 10px; background: #27ae60; color: white; font-size: 18px; margin-top: 8px; cursor: pointer; }
-    button:active{ transform: scale(0.98); opacity: 0.8; }
+    
+    button, .btn-link{ width: 100%; padding: 14px; border: none; border-radius: 10px; background: #27ae60; color: white; font-size: 18px; margin-top: 8px; cursor: pointer; text-decoration: none; display: inline-block; text-align: center; box-sizing: border-box; }
+    
+    .btn-wa { background: #25D366 !important; font-weight: bold; margin-top: 5px; }
+    .btn-del { background: #e74c3c !important; width: auto; padding: 5px 15px; }
+    
     input{ width: 100%; padding: 12px; margin-top: 6px; font-size: 18px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
     
-    /* Box Notifica WhatsApp */
-    #notificaWA {
-        display: none;
-        position: fixed;
-        top: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 90%;
-        z-index: 1000;
-        background: #25D366;
-        color: white;
-        padding: 20px;
-        border-radius: 15px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        text-align: center;
-    }
-
     .video-wrapper{ position: relative; width: 100%; display: none; margin-top: 10px; }
     .video-wrapper.active { display: block; }
     video{ width: 100%; border-radius: 10px; background: #000; }
     .scanner-box{ position: absolute; top: 40%; left: 10%; width: 80%; height: 100px; border: 4px solid #00ff88; border-radius: 10px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.35); pointer-events: none; }
     
-    .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
-    .btn-small { width: auto; padding: 8px 15px; margin: 0; font-size: 14px; }
-    .semaforo { font-weight: bold; text-align: center; padding: 10px; border-radius: 8px; }
+    .pacco-item { border-bottom: 2px solid #eee; padding: 15px 0; }
+    .pacco-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .semaforo { font-weight: bold; text-align: center; padding: 10px; border-radius: 8px; margin-bottom: 10px; }
 </style>
 </head>
 <body>
 
-<div id="notificaWA">
-    <div style="font-size: 22px; margin-bottom: 10px;">📦 Pacco Riconosciuto!</div>
-    <div id="waNome" style="font-weight: bold; margin-bottom: 15px;"></div>
-    <button id="waClickBtn" style="background: white; color: #27ae60; font-weight: bold;">INVIA MESSAGGIO WHATSAPP</button>
-    <button onclick="chiudiNotifica()" style="background: transparent; border: 1px solid white; margin-top: 10px; font-size: 14px;">Annulla</button>
-</div>
-
 <h1>🏢 Portineria Digitale</h1>
 
 <div class="card">
-    <h3>🚦 Stato Giacenze</h3>
     <div id="semaforo" class="semaforo">Caricamento...</div>
 </div>
 
@@ -66,15 +45,15 @@
     <button onclick="stopCamera()" id="btnStop" style="display:none; background:#95a5a6">Chiudi Camera</button>
 </div>
 
-<div class="video-wrapper" id="videoWrapper">
+<div id="videoWrapper" class="video-wrapper">
     <video id="video" autoplay playsinline></video>
     <div class="scanner-box"></div>
 </div>
 
 <div class="card">
-    <h3>📦 Inserimento Manuale</h3>
+    <h3>📦 Registra Pacco Manuale</h3>
     <input id="nomePacco" placeholder="Nome destinatario">
-    <button onclick="registraPaccoManuale()">Registra e Prepara WhatsApp</button>
+    <button onclick="registraPaccoManuale()">Salva in Lista</button>
 </div>
 
 <div class="card">
@@ -87,58 +66,26 @@
     <h3>👥 Rubrica</h3>
     <input id="nomeCondomino" placeholder="Nome">
     <input id="telefonoCondomino" placeholder="Telefono">
-    <button onclick="aggiungiCondomino()" style="background:#8e44ad">Aggiungi</button>
+    <button onclick="aggiungiCondomino()" style="background:#8e44ad">Aggiungi in Rubrica</button>
     <div id="rubrica"></div>
-</div>
-
-<div class="card">
-    <canvas id="grafico"></canvas>
 </div>
 
 <script>
 let streamCamera = null;
 let scannerLock = false;
-let chart = null;
-let audioCtx = null;
-
-// Audio init al primo tocco
-document.addEventListener('click', () => { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }, { once: true });
-
-function playBeep() {
-    if(!audioCtx) return;
-    const osc = audioCtx.createOscillator();
-    osc.connect(audioCtx.destination);
-    osc.start(); osc.stop(audioCtx.currentTime + 0.1);
-}
 
 function safeParse(k){ try{ return JSON.parse(localStorage.getItem(k)) || [] } catch { return [] } }
 function salva(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
 
-// --- WHATSAPP FIX ---
-function preparaNotificaWA(nome) {
-    const box = document.getElementById("notificaWA");
-    const label = document.getElementById("waNome");
-    const btn = document.getElementById("waClickBtn");
-
-    label.innerText = nome;
-    box.style.display = "block";
-
-    btn.onclick = function() {
-        let rubrica = safeParse("condomini");
-        let c = rubrica.find(x => x.nome.toLowerCase().trim() === nome.toLowerCase().trim());
-        if (c) {
-            let tel = c.telefono.replace(/\D/g, '');
-            if (tel.startsWith('3') && tel.length === 10) tel = "39" + tel;
-            let msg = encodeURIComponent(`Ciao ${c.nome}, è arrivato un pacco per te! 📦`);
-            window.open(`https://wa.me/${tel}?text=${msg}`, '_blank');
-        }
-        chiudiNotifica();
-    };
-}
-
-function chiudiNotifica() {
-    document.getElementById("notificaWA").style.display = "none";
-    scannerLock = false;
+// --- LOGICA WHATSAPP (URL DIRETTO) ---
+function getWhatsAppLink(nome) {
+    let rubrica = safeParse("condomini");
+    let c = rubrica.find(x => x.nome.toLowerCase().trim() === nome.toLowerCase().trim());
+    if (!c) return null;
+    let tel = c.telefono.replace(/\D/g, '');
+    if (tel.startsWith('3') && tel.length === 10) tel = "39" + tel;
+    let msg = encodeURIComponent(`Ciao ${c.nome}, è arrivato un pacco per te! 📦`);
+    return `https://wa.me/${tel}?text=${msg}`;
 }
 
 // --- FOTOCAMERA ---
@@ -150,7 +97,7 @@ async function startScanner(){
         document.getElementById("videoWrapper").classList.add("active");
         document.getElementById("btnStop").style.display = "block";
         scanLoop();
-    } catch (err) { alert("Accesso camera negato"); }
+    } catch (err) { alert("Attiva i permessi per la camera"); }
 }
 
 function stopCamera() {
@@ -162,14 +109,12 @@ function stopCamera() {
     }
 }
 
-// --- SCANNER LOOP ---
 async function scanLoop(){
     let video = document.getElementById("video");
     if(!streamCamera || scannerLock || !video.videoWidth) {
         if(streamCamera) setTimeout(scanLoop, 1000);
         return;
     }
-
     let canvas = document.createElement("canvas");
     let ctx = canvas.getContext("2d");
     canvas.width = video.videoWidth * 0.8; canvas.height = video.videoHeight * 0.2;
@@ -183,10 +128,10 @@ async function scanLoop(){
         let parti = c.nome.toLowerCase().split(" ");
         if(testo.includes(parti[0]) || (parti[1] && testo.includes(parti[1]))) {
             scannerLock = true;
-            playBeep();
             registraPaccoAuto(c.nome);
-            preparaNotificaWA(c.nome); // Mostra il tasto WhatsApp
+            alert("Pacco registrato per: " + c.nome + ". Lo trovi in lista.");
             stopCamera();
+            scannerLock = false;
             break;
         }
     }
@@ -198,7 +143,6 @@ function startBarcode(){
         const reader = new ZXing.BrowserBarcodeReader();
         reader.decodeFromVideoDevice(null, 'video', (result) => {
             if(result){
-                playBeep();
                 document.getElementById("nomePacco").value = result.text;
                 stopCamera();
             }
@@ -206,18 +150,16 @@ function startBarcode(){
     });
 }
 
-// --- LOGICA PACCHI ---
+// --- GESTIONE PACCHI ---
 function registraPaccoManuale(){
     let nome = document.getElementById("nomePacco").value;
     if(!nome) return;
     let pacchi = safeParse("pacchi");
     pacchi.unshift({ nome, data: new Date().toISOString() });
     salva("pacchi", pacchi);
-    playBeep();
+    document.getElementById("nomePacco").value = "";
     mostraPacchi();
     aggiornaSemaforo();
-    preparaNotificaWA(nome); // Prepara il tasto WA anche per inserimento manuale
-    document.getElementById("nomePacco").value = "";
 }
 
 function registraPaccoAuto(nome){
@@ -233,24 +175,30 @@ function mostraPacchi(){
     let filtro = document.getElementById("searchPacchi").value.toLowerCase();
     let div = document.getElementById("pacchi");
     div.innerHTML = "";
+
     pacchi.forEach((p, i) => {
-        if(p.nome.toLowerCase().includes(filtro)) {
-            div.innerHTML += `<div class="item-row">
-                <span><b>${p.nome}</b></span>
-                <button class="btn-small" onclick="consegna(${i})">CONSEGNATO</button>
+        if(!p.nome.toLowerCase().includes(filtro)) return;
+        
+        let waLink = getWhatsAppLink(p.nome);
+        let btnWA = waLink ? `<a href="${waLink}" target="_blank" class="btn-link btn-wa">📲 AVVISA SU WHATSAPP</a>` : `<small style="color:red">Non in rubrica</small>`;
+
+        div.innerHTML += `
+            <div class="pacco-item">
+                <div class="pacco-info">
+                    <span><b>${p.nome}</b><br><small>${new Date(p.data).toLocaleDateString()}</small></span>
+                    <button class="btn-del" onclick="consegna(${i})">RITIRATO</button>
+                </div>
+                ${btnWA}
             </div>`;
-        }
     });
-    grafico();
 }
 
 function consegna(i){
     let pacchi = safeParse("pacchi");
-    let storico = safeParse("storico");
-    storico.unshift(pacchi[i]);
     pacchi.splice(i, 1);
-    salva("pacchi", pacchi); salva("storico", storico);
-    mostraPacchi(); aggiornaSemaforo();
+    salva("pacchi", pacchi);
+    mostraPacchi();
+    aggiornaSemaforo();
 }
 
 // --- RUBRICA ---
@@ -271,9 +219,9 @@ function mostraRubrica(){
     let div = document.getElementById("rubrica");
     div.innerHTML = "";
     db.forEach((c, i) => {
-        div.innerHTML += `<div class="item-row">
+        div.innerHTML += `<div style="display:flex; justify-content:space-between; padding:5px 0;">
             <span>${c.nome}</span>
-            <button class="btn-small" style="background:#e74c3c" onclick="rimuoviCondomino(${i})">X</button>
+            <button class="btn-del" onclick="rimuoviCondomino(${i})">X</button>
         </div>`;
     });
 }
@@ -285,28 +233,11 @@ function rimuoviCondomino(i){
     mostraRubrica();
 }
 
-// --- STATO ---
 function aggiornaSemaforo(){
     let pacchi = safeParse("pacchi");
-    let max = 0;
-    pacchi.forEach(p => {
-        let g = Math.floor((Date.now() - new Date(p.data)) / 86400000);
-        if(g > max) max = g;
-    });
     let s = document.getElementById("semaforo");
     if(pacchi.length === 0) { s.innerHTML = "✅ Nessun pacco"; s.style.background = "#2ecc71"; }
-    else if(max > 7) { s.innerHTML = "🔴 Oltre 7 giorni!"; s.style.background = "#e74c3c"; s.style.color="white"; }
-    else if(max > 3) { s.innerHTML = "🟡 In attesa (3+ gg)"; s.style.background = "#f1c40f"; }
-    else { s.innerHTML = "🟢 Regolare"; s.style.background = "#2ecc71"; }
-}
-
-function grafico(){
-    let storico = safeParse("storico");
-    let mesi = new Array(12).fill(0);
-    storico.forEach(s => { mesi[new Date(s.data).getMonth()]++; });
-    if(chart) chart.destroy();
-    const ctx = document.getElementById("grafico").getContext("2d");
-    chart = new Chart(ctx, { type: "bar", data: { labels: ["G","F","M","A","M","G","L","A","S","O","N","D"], datasets: [{ label: "Pacchi", data: mesi, backgroundColor: '#3498db' }] } });
+    else { s.innerHTML = "📦 " + pacchi.length + " pacchi in attesa"; s.style.background = "#f1c40f"; }
 }
 
 mostraPacchi(); mostraRubrica(); aggiornaSemaforo();
