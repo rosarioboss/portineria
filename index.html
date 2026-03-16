@@ -3,186 +3,394 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Portineria Digitale PRO</title>
+    <title>Portineria Digitale PRO - Full System</title>
 
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/@zxing/library@latest"></script>
 
     <style>
-        :root { --primary: #1a73e8; --success: #25D366; --danger: #e74c3c; --dark: #2c3e50; --light: #f8f9fa; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: #f0f2f5; margin: 0; padding: 10px; color: var(--dark); }
-        h1 { text-align: center; color: var(--primary); font-weight: 800; }
-        .card { background: white; padding: 18px; border-radius: 20px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
-        
-        button, .btn-link { 
-            width: 100%; padding: 16px; border: none; border-radius: 14px; 
-            background: var(--primary); color: white; font-size: 17px; font-weight: 700;
-            margin-top: 10px; cursor: pointer; text-decoration: none; display: inline-block; text-align: center; box-sizing: border-box;
+        :root {
+            --primary: #1a73e8;
+            --success: #25D366;
+            --danger: #e74c3c;
+            --warning: #f1c40f;
+            --info: #3498db;
+            --dark: #2c3e50;
+            --light: #f8f9fa;
         }
-        .btn-wa { background: var(--success) !important; }
-        .btn-sec { background: #3498db; }
-        .btn-del { background: var(--danger) !important; width: auto; padding: 8px 15px; font-size: 13px; }
 
-        input, textarea { width: 100%; padding: 14px; margin-top: 8px; border: 1px solid #ddd; border-radius: 12px; font-size: 16px; box-sizing: border-box; background: var(--light); }
-        
-        .video-wrapper { position: relative; width: 100%; display: none; margin-top: 10px; border-radius: 20px; overflow: hidden; background: #000; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 10px;
+            color: var(--dark);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        h1 { text-align: center; color: var(--primary); font-size: 28px; margin: 20px 0; font-weight: 800; letter-spacing: -1px; }
+        h3 { margin-top: 0; color: var(--dark); font-size: 20px; border-bottom: 2px solid var(--light); padding-bottom: 10px; margin-bottom: 15px; }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.02);
+        }
+
+        /* Bottoni Stile iOS */
+        button, .btn-link {
+            width: 100%;
+            padding: 18px;
+            border: none;
+            border-radius: 16px;
+            background-color: var(--primary);
+            color: white;
+            font-size: 18px;
+            font-weight: 700;
+            margin-top: 12px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-block;
+            text-decoration: none;
+            text-align: center;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        button:active { transform: scale(0.96); opacity: 0.8; }
+
+        .btn-wa { background-color: var(--success) !important; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3); }
+        .btn-sec { background-color: var(--info); }
+        .btn-del { background-color: var(--danger) !important; width: auto; padding: 10px 20px; font-size: 14px; margin: 0; border-radius: 12px; }
+        .btn-all { background-color: var(--dark) !important; margin-bottom: 10px; }
+
+        /* Input */
+        input, select, textarea {
+            width: 100%;
+            padding: 16px;
+            margin-top: 10px;
+            border: 2px solid #eee;
+            border-radius: 14px;
+            font-size: 16px;
+            box-sizing: border-box;
+            background: var(--light);
+            transition: all 0.3s;
+        }
+
+        input:focus, textarea:focus { border-color: var(--primary); outline: none; background: white; }
+        textarea { height: 150px; font-family: 'Courier New', monospace; font-size: 14px; resize: none; }
+
+        /* Camera e Scanner */
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            display: none;
+            margin-top: 15px;
+            border-radius: 24px;
+            overflow: hidden;
+            background: #000;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
         .video-wrapper.active { display: block; }
         video { width: 100%; display: block; }
-        .scanner-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 75%; height: 100px; border: 3px solid var(--success); border-radius: 15px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.5); pointer-events: none; }
 
-        .pacco-item { border-bottom: 1px solid #eee; padding: 15px 0; }
-        .img-preview { width: 60px; height: 60px; border-radius: 10px; object-fit: cover; margin-right: 12px; }
-        .flex-row { display: flex; align-items: center; justify-content: space-between; }
-        .semaforo { font-weight: bold; text-align: center; padding: 15px; border-radius: 15px; margin-bottom: 15px; color: white; }
+        .scanner-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 140px;
+            border: 4px solid var(--success);
+            border-radius: 20px;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.6);
+            pointer-events: none;
+        }
+
+        .scanner-line {
+            position: absolute;
+            width: 100%;
+            height: 3px;
+            background: var(--success);
+            top: 0;
+            animation: scan 2.5s infinite linear;
+            box-shadow: 0 0 15px var(--success);
+        }
+
+        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+
+        /* Liste Pacchi e Condomini */
+        .pacco-item {
+            border-bottom: 1px solid #f0f0f0;
+            padding: 20px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .flex-row { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+        .pacco-info { display: flex; align-items: center; gap: 15px; }
+        
+        .img-preview {
+            width: 75px;
+            height: 75px;
+            border-radius: 16px;
+            object-fit: cover;
+            background: #eee;
+            border: 1px solid #ddd;
+            cursor: pointer;
+        }
+
+        .pacco-text b { font-size: 18px; color: var(--dark); display: block; text-transform: uppercase; }
+        .pacco-text small { color: #888; font-size: 13px; }
+
+        .semaforo {
+            font-weight: 800;
+            text-align: center;
+            padding: 18px;
+            border-radius: 18px;
+            margin-bottom: 20px;
+            color: white;
+            text-transform: uppercase;
+            font-size: 14px;
+            letter-spacing: 1px;
+        }
+
+        .rubrica-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 14px;
+            border-bottom: 1px solid #f5f5f5;
+            align-items: center;
+            background: white;
+            transition: background 0.2s;
+        }
+
+        /* Loading */
+        #loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.9); display: none;
+            justify-content: center; align-items: center; z-index: 9999;
+            flex-direction: column;
+        }
+
+        .spinner {
+            width: 50px; height: 50px;
+            border: 5px solid #f3f3f3; border-top: 5px solid var(--primary);
+            border-radius: 50%; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
+<div id="loading-overlay">
+    <div class="spinner"></div>
+    <p style="margin-top:15px; font-weight:bold;">Elaborazione dati...</p>
+</div>
+
 <h1>🏢 Portineria Digitale</h1>
 
 <div class="card">
-    <div id="semaforo" class="semaforo" style="background: #95a5a6;">Caricamento...</div>
+    <div id="semaforo" class="semaforo" style="background: #95a5a6;">Inizializzazione Sistema...</div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+        <div style="background: var(--light); padding: 15px; border-radius: 16px; text-align: center;">
+            <small style="color: #666; font-weight: bold;">OGGI</small><br>
+            <span id="count-oggi" style="font-size: 24px; font-weight: 900; color: var(--primary);">0</span>
+        </div>
+        <div style="background: var(--light); padding: 15px; border-radius: 16px; text-align: center;">
+            <small style="color: #666; font-weight: bold;">GIACENZA</small><br>
+            <span id="count-totale" style="font-size: 24px; font-weight: 900; color: var(--danger);">0</span>
+        </div>
+    </div>
+    <button onclick="avvisaTuttiGiacenti()" class="btn-all btn-wa">📢 AVVISA TUTTI I GIACENTI</button>
 </div>
 
 <div class="card">
-    <button onclick="startScanner('ocr')">📄 Scansiona Nome (OCR)</button>
-    <button onclick="startScanner('barcode')" style="background:#8e44ad">🔍 Scansiona Barcode</button>
-    <button onclick="stopCamera()" id="btnStop" style="display:none; background:#7f8c8d">Chiudi Camera</button>
+    <h3>📷 Acquisizione Automatica</h3>
+    <button onclick="startScanner('ocr')">📄 Leggi Etichetta Destinatario</button>
+    <button onclick="startScanner('barcode')" style="background:#8e44ad">🔍 Scansiona Codice a Barre</button>
+    <button onclick="stopCamera()" id="btnStop" style="display:none; background:#7f8c8d">Spegni Fotocamera</button>
+    
     <div id="videoWrapper" class="video-wrapper">
         <video id="video" autoplay playsinline muted></video>
-        <div class="scanner-box"></div>
+        <div class="scanner-box"><div class="scanner-line"></div></div>
     </div>
 </div>
 
 <div class="card">
-    <h3>📦 Nuovo Pacco</h3>
-    <input type="file" id="fotoInput" accept="image/*" capture="environment" style="margin-bottom:10px;">
-    <input id="nomePacco" placeholder="Nome destinatario...">
-    <button onclick="registraPacco()">Registra Pacco</button>
+    <h3>📦 Nuovo Ingresso Pacco</h3>
+    <label style="font-size: 13px; font-weight: 700; color: #444;">FOTO PACCO (OBBLIGATORIA PER AVVISO)</label>
+    <input type="file" id="fotoInput" accept="image/*" capture="environment">
+    <input id="nomePacco" placeholder="Nome Condomino (es. Rossi)...">
+    <button onclick="registraPacco()">Salva e Invia Avviso</button>
 </div>
 
 <div class="card">
-    <h3>📋 Pacchi in Attesa</h3>
-    <input id="searchPacchi" placeholder="Cerca..." oninput="renderPacchi()">
-    <div id="lista-pacchi"></div>
+    <h3>📋 Pacchi in Attesa di Ritiro</h3>
+    <input id="searchPacchi" placeholder="Cerca un pacco..." oninput="renderPacchi()">
+    <div id="lista-pacchi" style="margin-top: 15px;"></div>
 </div>
 
 <div class="card">
     <h3>👥 Gestione Condomini</h3>
-    
-    <input type="file" id="fileCondomini" accept=".json,.txt" style="display: none;" onchange="importaFileCondomini(event)">
-    
-    <button onclick="document.getElementById('fileCondomini').click()" style="background:#2c3e50">📥 Importa File Condomini (JSON/TXT)</button>
-    
-    <div style="margin-top:20px;">
-        <p style="font-size:12px; color:#666;">Oppure incolla testo dalle Note:</p>
-        <textarea id="testoMassivo" placeholder="Mario Rossi, 3331234567"></textarea>
-        <button onclick="importaDaTesto()" class="btn-sec">Carica da Testo</button>
+    <div style="background: #fffbe6; padding: 15px; border-radius: 16px; border: 1px solid #ffe58f;">
+        <p style="margin-top:0; font-weight: bold; font-size: 14px;">IMPORTAZIONE MASSIVA</p>
+        <textarea id="importMassivo" placeholder="Copia qui la lista dalle Note. Esempio:&#10;Mario Rossi, 3331234567&#10;Luigi Verdi, 3409988776"></textarea>
+        <button onclick="importazioneMassiva()" style="background:#2c3e50; padding: 14px; font-size: 15px;">Carica Lista Intera</button>
+    </div>
+
+    <div style="margin-top: 25px;">
+        <p style="font-weight: bold; font-size: 14px;">AGGIUNGI SINGOLO</p>
+        <input id="nomeCondomino" placeholder="Nome e Cognome">
+        <input id="telefonoCondomino" type="tel" placeholder="Numero di Cellulare">
+        <button onclick="aggiungiCondomino()" class="btn-sec">Salva in Rubrica</button>
     </div>
     
-    <div id="lista-rubrica" style="margin-top:15px; max-height:200px; overflow-y:auto;"></div>
+    <div style="margin-top: 30px;">
+        <div class="flex-row">
+            <h4>Rubrica Residente</h4>
+            <input id="searchRubrica" placeholder="Cerca nome..." oninput="renderRubrica()" style="width: 50%; margin-top:0; padding: 8px;">
+        </div>
+        <div id="lista-rubrica" style="max-height: 350px; overflow-y: auto; border: 1px solid #eee; border-radius: 16px; margin-top: 10px;"></div>
+    </div>
 </div>
 
 <div class="card">
-    <h3>📊 Statistiche e Backup</h3>
+    <h3>📊 Storico e Backup</h3>
     <canvas id="graficoStorico"></canvas>
-    <button onclick="esportaTutto()" style="background:#607d8b">Esporta Backup Totale</button>
-    <button onclick="svuotaTutto()" style="background:transparent; color:red; border:none; font-size:11px; margin-top:20px;">⚠️ Cancella tutto</button>
+    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+    <button onclick="esportaDatabase()" style="background:#607d8b">Esporta Backup Database (.json)</button>
+    <button onclick="svuotaMemoria()" style="background:transparent; color:red; border:none; font-size:11px; margin-top:20px; font-weight:bold;">⚠️ CANCELLA TUTTI I DATI</button>
 </div>
 
 <script>
+/* ============================================================
+   SISTEMA CORE - LOGICA INTEGRALE
+   ============================================================ */
+
 let streamCamera = null;
 let myChart = null;
 
-// Database locale
-const DB = {
-    get: (k) => JSON.parse(localStorage.getItem(k)) || [],
-    set: (k, v) => localStorage.setItem(k, JSON.stringify(v))
+// Gestione Storage Locale
+const AppDB = {
+    pacchi: () => JSON.parse(localStorage.getItem('pacchi')) || [],
+    condomini: () => JSON.parse(localStorage.getItem('condomini')) || [],
+    storico: () => JSON.parse(localStorage.getItem('storico')) || [],
+    save: (key, data) => localStorage.setItem(key, JSON.stringify(data))
 };
 
-window.onload = () => { renderTutto(); initChart(); };
+window.onload = () => {
+    renderTutto();
+    initChart();
+};
 
-function renderTutto() { renderPacchi(); renderRubrica(); aggiornaSemaforo(); if(myChart) aggiornaGrafico(); }
-
-// --- FUNZIONI DI IMPORTAZIONE (FIXED) ---
-
-// 1. Carica da FILE (JSON o TXT)
-function importaFileCondomini(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        try {
-            // Prova a leggere come JSON (backup)
-            const data = JSON.parse(e.target.result);
-            if (Array.isArray(data)) {
-                DB.set('condomini', data);
-            } else if (data.condomini) {
-                DB.set('condomini', data.condomini);
-            }
-            alert("Rubrica aggiornata con successo!");
-            renderTutto();
-        } catch (err) {
-            // Se non è JSON, prova a leggere riga per riga (TXT)
-            const righe = e.target.result.split('\n');
-            processaRighe(righe);
-        }
-    };
-    reader.readAsText(file);
+function renderTutto() {
+    renderPacchi();
+    renderRubrica();
+    aggiornaDashboard();
+    if(myChart) aggiornaGrafico();
 }
 
-// 2. Carica da TESTO INCOLLATO
-function importaDaTesto() {
-    const testo = document.getElementById('testoMassivo').value;
-    if (!testo) return alert("Incolla prima la lista!");
+// --- LOGICA WHATSAPP (FIX IPHONE) ---
+function generaLinkWA(nomeDestinatario, isSollecito = false) {
+    const rubrica = AppDB.condomini();
+    const nomeCerca = nomeDestinatario.toLowerCase().trim();
+    
+    // Ricerca intelligente
+    const condomino = rubrica.find(c => 
+        nomeCerca.includes(c.nome.toLowerCase().trim()) || 
+        c.nome.toLowerCase().trim().includes(nomeCerca)
+    );
+    
+    if (!condomino) return null;
+
+    let tel = condomino.telefono.replace(/\D/g, '');
+    if (tel.length === 10) tel = "39" + tel;
+    
+    const messaggio = isSollecito 
+        ? `Ciao ${condomino.nome}, hai ancora dei pacchi da ritirare in portineria. Ti aspettiamo! 📦`
+        : `Ciao ${condomino.nome}, è arrivato un pacco per te! Passa pure a ritirarlo. 📦`;
+
+    return `https://api.whatsapp.com/send?phone=${tel}&text=${encodeURIComponent(messaggio)}`;
+}
+
+function avvisaTuttiGiacenti() {
+    const pacchi = AppDB.pacchi();
+    if(pacchi.length === 0) return alert("Nessun pacco da sollecitare.");
+    
+    const unici = [...new Set(pacchi.map(p => p.nome))];
+    if(confirm(`Inviare un messaggio di sollecito a ${unici.length} condomini?`)) {
+        unici.forEach(nome => {
+            const link = generaLinkWA(nome, true);
+            if(link) window.open(link, '_blank');
+        });
+    }
+}
+
+// --- IMPORTAZIONE MASSIVA (FIXED) ---
+function importazioneMassiva() {
+    const testo = document.getElementById('importMassivo').value;
+    if(!testo) return alert("Il campo è vuoto!");
+    
     const righe = testo.split('\n');
-    processaRighe(righe);
-    document.getElementById('testoMassivo').value = "";
-}
+    let listaAttuale = AppDB.condomini();
+    let contatore = 0;
 
-// Logica per trasformare le righe in condomini
-function processaRighe(righe) {
-    let condomini = DB.get('condomini');
-    let aggiunti = 0;
     righe.forEach(riga => {
-        const parti = riga.split(/[,;-]/);
-        if (parti.length >= 2) {
+        // Supporta virgola, punto e virgola, tabulazione o trattino
+        const separator = riga.includes(',') ? ',' : (riga.includes(';') ? ';' : '-');
+        const parti = riga.split(separator);
+        
+        if(parti.length >= 2) {
             const nome = parti[0].trim();
             const tel = parti[1].trim().replace(/\s/g, '');
-            if (nome && tel) {
-                condomini.push({ nome, telefono: tel });
-                aggiunti++;
+            if(nome && tel) {
+                listaAttuale.push({ nome, telefono: tel });
+                contatore++;
             }
         }
     });
-    DB.set('condomini', condomini);
+
+    AppDB.save('condomini', listaAttuale);
+    document.getElementById('importMassivo').value = "";
     renderTutto();
-    alert("Aggiunti " + aggiunti + " condomini!");
+    alert(`Caricati correttamente ${contatore} residenti.`);
 }
 
-// --- WHATSAPP ---
-function getWALink(nome) {
-    const rubrica = DB.get('condomini');
-    const cerca = nome.toLowerCase().trim();
-    const u = rubrica.find(c => cerca.includes(c.nome.toLowerCase().trim()) || c.nome.toLowerCase().trim().includes(cerca));
-    if (!u) return null;
-    let tel = u.telefono.replace(/\D/g, '');
-    if (tel.length === 10) tel = "39" + tel;
-    return `https://api.whatsapp.com/send?phone=${tel}&text=${encodeURIComponent("Ciao " + u.nome + ", c'è un pacco per te! 📦")}`;
-}
-
-// --- FOTOCAMERA ---
-async function startScanner(tipo) {
+// --- FOTOCAMERA E SCANNER ---
+async function startScanner(modo) {
     stopCamera();
+    const video = document.getElementById('video');
+    const wrap = document.getElementById('videoWrapper');
+    
     try {
-        streamCamera = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        document.getElementById('video').srcObject = streamCamera;
-        document.getElementById('videoWrapper').classList.add('active');
+        streamCamera = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: "environment" } 
+        });
+        video.srcObject = streamCamera;
+        wrap.classList.add('active');
         document.getElementById('btnStop').style.display = "block";
-        if(tipo === 'ocr') loopOCR(); else loopBarcode();
-    } catch (e) { alert("Attiva fotocamera!"); }
+
+        if(modo === 'ocr') {
+            loopOCR();
+        } else {
+            const codeReader = new ZXing.BrowserBarcodeReader();
+            codeReader.decodeFromVideoDevice(null, 'video', (res) => {
+                if (res) {
+                    document.getElementById('nomePacco').value = res.text;
+                    stopCamera();
+                }
+            });
+        }
+    } catch (e) {
+        alert("Errore camera: Assicurati di usare HTTPS e dare i permessi.");
+    }
 }
 
 function stopCamera() {
@@ -198,134 +406,262 @@ async function loopOCR() {
     if(!streamCamera) return;
     const v = document.getElementById('video');
     const canvas = document.createElement('canvas');
-    canvas.width = v.videoWidth * 0.8; canvas.height = v.videoHeight * 0.2;
+    canvas.width = v.videoWidth * 0.8;
+    canvas.height = v.videoHeight * 0.25;
     const ctx = canvas.getContext('2d');
+    
     ctx.drawImage(v, v.videoWidth*0.1, v.videoHeight*0.4, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+
     try {
         const res = await Tesseract.recognize(canvas, 'ita');
-        const txt = res.data.text.toLowerCase();
-        DB.get('condomini').forEach(c => {
-            if (txt.includes(c.nome.toLowerCase()) && c.nome.length > 3) {
-                document.getElementById('nomePacco').value = c.nome.toUpperCase();
+        const trovato = res.data.text.toLowerCase();
+        
+        const residenti = AppDB.condomini();
+        for (let r of residenti) {
+            if (trovato.includes(r.nome.toLowerCase()) && r.nome.length > 3) {
+                document.getElementById('nomePacco').value = r.nome.toUpperCase();
                 stopCamera();
+                return;
             }
-        });
-    } catch (e) {}
+        }
+    } catch (err) {}
+
     if(streamCamera) setTimeout(loopOCR, 2000);
 }
 
-function loopBarcode() {
-    const reader = new ZXing.BrowserBarcodeReader();
-    reader.decodeFromVideoDevice(null, 'video', (res) => {
-        if (res) { document.getElementById('nomePacco').value = res.text; stopCamera(); }
-    });
-}
-
-// --- PACCHI ---
+// --- GESTIONE PACCHI ---
 async function registraPacco() {
     const nome = document.getElementById('nomePacco').value.trim();
-    if (!nome) return;
-    let fotoData = null;
+    if(!nome) return alert("Devi inserire il nome del destinatario.");
+
+    document.getElementById('loading-overlay').style.display = "flex";
     const file = document.getElementById('fotoInput').files[0];
-    if (file) {
-        fotoData = await new Promise(r => {
-            const rd = new FileReader();
-            rd.readAsDataURL(file);
-            rd.onload = e => {
-                const img = new Image();
-                img.src = e.target.result;
-                img.onload = () => {
-                    const cv = document.createElement('canvas');
-                    cv.width = 400; cv.height = img.height * (400/img.width);
-                    cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-                    r(cv.toDataURL('image/jpeg', 0.7));
-                }
-            }
-        });
+    let imgData = null;
+
+    if(file) {
+        imgData = await processaImmagine(file);
     }
-    const pacchi = DB.get('pacchi');
-    pacchi.unshift({ id: Date.now(), nome, data: new Date().toISOString(), foto: fotoData });
-    DB.set('pacchi', pacchi);
+
+    const pacchi = AppDB.pacchi();
+    const nuovo = {
+        id: Date.now(),
+        nome: nome,
+        data: new Date().toISOString(),
+        foto: imgData
+    };
+
+    pacchi.unshift(nuovo);
+    AppDB.save('pacchi', pacchi);
+    
+    // Pulisci campi
     document.getElementById('nomePacco').value = "";
     document.getElementById('fotoInput').value = "";
+    
+    document.getElementById('loading-overlay').style.display = "none";
     renderTutto();
 }
 
 function renderPacchi() {
-    const f = document.getElementById('searchPacchi').value.toLowerCase();
+    const pacchi = AppDB.pacchi();
+    const cerca = document.getElementById('searchPacchi').value.toLowerCase();
     const container = document.getElementById('lista-pacchi');
     container.innerHTML = "";
-    DB.get('pacchi').forEach(p => {
-        if (!p.nome.toLowerCase().includes(f)) return;
-        const wa = getWALink(p.nome);
+
+    pacchi.forEach(p => {
+        if(!p.nome.toLowerCase().includes(cerca)) return;
+
+        const wa = generaLinkWA(p.nome);
+        const dataFormattata = new Date(p.data).toLocaleString('it-IT', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
+        
         const div = document.createElement('div');
         div.className = 'pacco-item';
         div.innerHTML = `
             <div class="flex-row">
-                <div style="display:flex; align-items:center;">
-                    <img src="${p.foto || 'https://via.placeholder.com/60'}" class="img-preview">
-                    <div><b>${p.nome}</b><br><small>${new Date(p.data).toLocaleString()}</small></div>
+                <div class="pacco-info">
+                    <img src="${p.foto || 'https://via.placeholder.com/80?text=NO+FOTO'}" class="img-preview" onclick="apriFoto('${p.foto}')">
+                    <div class="pacco-text">
+                        <b>${p.nome.toUpperCase()}</b>
+                        <small>Arrivato: ${dataFormattata}</small>
+                    </div>
                 </div>
-                <button class="btn-del" onclick="consegna(${p.id})">RITIRO</button>
+                <button class="btn-del" onclick="consegnaPacco(${p.id})">RITIRATO</button>
             </div>
-            ${wa ? `<a href="${wa}" target="_blank" class="btn-link btn-wa">📲 AVVISA</a>` : ''}
+            ${wa ? `<a href="${wa}" target="_blank" class="btn-link btn-wa">📲 INVIA AVVISO WHATSAPP</a>` : `<p style="color:var(--danger); font-size:11px; margin:5px 0;">⚠️ Condomino non trovato in rubrica</p>`}
         `;
         container.appendChild(div);
     });
 }
 
-function consegna(id) {
-    let p = DB.get('pacchi'); let s = DB.get('storico');
-    const i = p.findIndex(x => x.id === id);
-    if (i > -1) {
-        s.push({...p[i], dataFine: new Date().toISOString()});
-        p.splice(i, 1);
-        DB.set('pacchi', p); DB.set('storico', s);
+function consegnaPacco(id) {
+    let pacchi = AppDB.pacchi();
+    let storico = AppDB.storico();
+    const idx = pacchi.findIndex(p => p.id === id);
+    
+    if(idx > -1) {
+        const p = pacchi[idx];
+        p.dataConsegna = new Date().toISOString();
+        storico.push(p);
+        pacchi.splice(idx, 1);
+        
+        AppDB.save('pacchi', pacchi);
+        AppDB.save('storico', storico);
         renderTutto();
     }
 }
 
 // --- RUBRICA ---
+function aggiungiCondomino() {
+    const n = document.getElementById('nomeCondomino').value.trim();
+    const t = document.getElementById('telefonoCondomino').value.trim();
+    if(!n || !t) return alert("Inserisci sia nome che telefono.");
+
+    const lista = AppDB.condomini();
+    lista.push({ nome: n, telefono: t });
+    AppDB.save('condomini', lista);
+    
+    document.getElementById('nomeCondomino').value = "";
+    document.getElementById('telefonoCondomino').value = "";
+    renderTutto();
+}
+
 function renderRubrica() {
-    const c = document.getElementById('lista-rubrica');
-    c.innerHTML = "";
-    DB.get('condomini').forEach((u, i) => {
-        const d = document.createElement('div');
-        d.style = "display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid #eee;";
-        d.innerHTML = `<span>${u.nome}</span><button onclick="rimuoviC(${i})" style="color:red; background:none; border:none;">X</button>`;
-        c.appendChild(d);
+    const lista = AppDB.condomini();
+    const cerca = document.getElementById('searchRubrica').value.toLowerCase();
+    const container = document.getElementById('lista-rubrica');
+    container.innerHTML = "";
+
+    lista.sort((a,b) => a.nome.localeCompare(b.nome)).forEach((c, idx) => {
+        if(!c.nome.toLowerCase().includes(cerca)) return;
+        
+        const div = document.createElement('div');
+        div.className = 'rubrica-item';
+        div.innerHTML = `
+            <span><b>${c.nome}</b><br><small>${c.telefono}</small></span>
+            <button onclick="rimuoviCondomino(${idx})" style="background:none; color:var(--danger); width:auto; margin:0; padding:5px; font-weight:bold;">ELIMINA</button>
+        `;
+        container.appendChild(div);
     });
 }
-function rimuoviC(i) { let c = DB.get('condomini'); c.splice(i,1); DB.set('condomini', c); renderRubrica(); }
 
-// --- DASHBOARD ---
-function aggiornaSemaforo() {
-    const n = DB.get('pacchi').length;
-    const s = document.getElementById('semaforo');
-    s.style.background = n > 0 ? "var(--info)" : "var(--success)";
-    s.innerText = n > 0 ? n + " PACCHI IN GIACENZA" : "NESSUN PACCO";
+function rimuoviCondomino(idx) {
+    if(confirm("Eliminare questo condomino?")) {
+        const lista = AppDB.condomini();
+        lista.splice(idx, 1);
+        AppDB.save('condomini', lista);
+        renderTutto();
+    }
+}
+
+// --- UTILITY E GRAFICA ---
+function processaImmagine(file) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+                const cvs = document.createElement('canvas');
+                const MAX_W = 600;
+                const r = MAX_W / img.width;
+                cvs.width = MAX_W;
+                cvs.height = img.height * r;
+                const ctx = cvs.getContext('2d');
+                ctx.drawImage(img, 0, 0, cvs.width, cvs.height);
+                resolve(cvs.toDataURL('image/jpeg', 0.8));
+            };
+        };
+    });
+}
+
+function apriFoto(data) {
+    if(!data) return;
+    const w = window.open("");
+    w.document.write(`<body style="margin:0; background:#000; display:flex; align-items:center; justify-content:center;"><img src="${data}" style="max-width:100%; height:auto; border-radius:10px;"></body>`);
+}
+
+function aggiornaDashboard() {
+    const pacchi = AppDB.pacchi();
+    const oggi = new Date().toDateString();
+    const numOggi = pacchi.filter(p => new Date(p.data).toDateString() === oggi).length;
+    
+    document.getElementById('count-oggi').innerText = numOggi;
+    document.getElementById('count-totale').innerText = pacchi.length;
+
+    const sem = document.getElementById('semaforo');
+    if(pacchi.length === 0) {
+        sem.innerText = "Portineria Libera";
+        sem.style.background = "var(--success)";
+    } else if(pacchi.length > 15) {
+        sem.innerText = "Giacenza Eccessiva";
+        sem.style.background = "var(--danger)";
+    } else {
+        sem.innerText = "Giacenza Ordinaria";
+        sem.style.background = "var(--info)";
+    }
 }
 
 function initChart() {
     const ctx = document.getElementById('graficoStorico').getContext('2d');
     myChart = new Chart(ctx, {
         type: 'line',
-        data: { labels: [], datasets: [{ label: 'Ritiro', data: [], borderColor: '#1a73e8' }] },
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Pacchi Consegnati',
+                data: [],
+                borderColor: '#1a73e8',
+                backgroundColor: 'rgba(26, 115, 232, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
         options: { responsive: true, maintainAspectRatio: false }
     });
 }
 
 function aggiornaGrafico() {
-    const s = DB.get('storico');
-    const counts = {};
-    s.forEach(x => { const d = new Date(x.dataFine).toLocaleDateString(); counts[d] = (counts[d] || 0) + 1; });
-    myChart.data.labels = Object.keys(counts);
-    myChart.data.datasets[0].data = Object.values(counts);
+    const storico = AppDB.storico();
+    const conteggio = {};
+    
+    // Ultime 7 date
+    for(let i=6; i>=0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        conteggio[d.toLocaleDateString()] = 0;
+    }
+
+    storico.forEach(s => {
+        const dataStr = new Date(s.dataConsegna).toLocaleDateString();
+        if(conteggio[dataStr] !== undefined) conteggio[dataStr]++;
+    });
+
+    myChart.data.labels = Object.keys(conteggio);
+    myChart.data.datasets[0].data = Object.values(conteggio);
     myChart.update();
 }
 
-function esportaTutto() { const blob = new Blob([JSON.stringify(localStorage)], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download="backup_completo.json"; a.click(); }
-function svuotaTutto() { if(confirm("Cancellare tutto?")) { localStorage.clear(); location.reload(); } }
+function esportaDatabase() {
+    const data = {
+        pacchi: AppDB.pacchi(),
+        condomini: AppDB.condomini(),
+        storico: AppDB.storico()
+    };
+    const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `portineria_backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+}
+
+function svuotaMemoria() {
+    if(confirm("SEI SICURO? Perderai tutti i pacchi, la rubrica e le foto definitivamente.")) {
+        localStorage.clear();
+        location.reload();
+    }
+}
 </script>
+
 </body>
 </html>
