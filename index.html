@@ -2,48 +2,53 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Portineria Digitale v3.0</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Portineria Digitale Pro - iPhone Optimized</title>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/@zxing/library@latest"></script>
 
 <style>
-    body { font-family: sans-serif; background: #f0f2f5; margin: 0; padding: 10px; font-size: 18px; color: #1c1e21; }
-    h1 { text-align: center; color: #1a73e8; }
-    .card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    :root { --primary: #1a73e8; --success: #25D366; --danger: #e74c3c; --warning: #f1c40f; --dark: #2c3e50; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f0f2f5; margin: 0; padding: 10px; font-size: 17px; color: var(--dark); }
+    h1 { text-align: center; color: var(--primary); font-weight: 800; }
+    .card { background: white; padding: 16px; border-radius: 16px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
     
+    /* Bottoni stile iOS */
     button, .btn-link { 
-        width: 100%; padding: 15px; border: none; border-radius: 10px; 
-        background: #27ae60; color: white; font-size: 18px; font-weight: bold;
+        width: 100%; padding: 16px; border: none; border-radius: 12px; 
+        background: var(--primary); color: white; font-size: 18px; font-weight: 600;
         margin-top: 8px; cursor: pointer; text-decoration: none; 
         display: inline-block; text-align: center; box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
     }
+    button:active { opacity: 0.7; transform: scale(0.99); }
     
-    .btn-wa { background: #25D366 !important; border: 2px solid #128C7E; }
-    .btn-del { background: #e74c3c !important; width: auto; padding: 8px 15px; font-size: 14px; }
-    .btn-secondary { background: #3498db; }
+    .btn-wa { background: var(--success) !important; border-bottom: 4px solid #128C7E; }
+    .btn-del { background: var(--danger) !important; width: auto; padding: 8px 16px; font-size: 14px; margin: 0; }
+    .btn-sec { background: #54a0ff; }
+    .btn-gray { background: #95a5a6; }
+
+    input { width: 100%; padding: 14px; margin-top: 8px; font-size: 16px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; -webkit-appearance: none; }
     
-    input { width: 100%; padding: 12px; margin-top: 8px; font-size: 18px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
-    
-    .video-wrapper { position: relative; width: 100%; display: none; margin-top: 10px; border-radius: 10px; overflow: hidden; }
+    /* Scanner per iPhone */
+    .video-wrapper { position: relative; width: 100%; display: none; margin-top: 10px; border-radius: 14px; overflow: hidden; background: #000; }
     .video-wrapper.active { display: block; }
-    video { width: 100%; background: #000; display: block; }
-    
+    video { width: 100%; display: block; }
     .scanner-box { 
-        position: absolute; top: 40%; left: 10%; width: 80%; height: 80px; 
-        border: 4px solid #00ff88; border-radius: 10px; 
-        box-shadow: 0 0 0 9999px rgba(0,0,0,0.4); pointer-events: none; 
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        width: 80%; height: 100px; border: 3px solid var(--success); border-radius: 12px;
+        box-shadow: 0 0 0 9999px rgba(0,0,0,0.5); pointer-events: none;
     }
     
-    .pacco-item { border-bottom: 1px solid #ddd; padding: 20px 0; }
-    .pacco-item:last-child { border: none; }
-    .pacco-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    /* Lista Pacchi */
+    .pacco-item { border-bottom: 1px solid #eee; padding: 16px 0; }
+    .pacco-header { display: flex; justify-content: space-between; align-items: flex-start; }
+    .pacco-meta { font-size: 14px; color: #7f8c8d; margin-top: 4px; }
     
-    .semaforo { font-weight: bold; text-align: center; padding: 12px; border-radius: 8px; margin-bottom: 15px; }
-    
-    .rubrica-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; align-items: center; }
+    .semaforo { font-weight: bold; text-align: center; padding: 14px; border-radius: 12px; margin-bottom: 10px; color: white; transition: 0.3s; }
+    .rubrica-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f5f5f5; align-items: center; }
 </style>
 </head>
 <body>
@@ -51,77 +56,96 @@
 <h1>🏢 Portineria Digitale</h1>
 
 <div class="card">
-    <div id="semaforo" class="semaforo">Verifica pacchi...</div>
+    <div id="semaforo" class="semaforo" style="background: var(--gray);">Verifica in corso...</div>
+    <button onclick="avvisaTuttiGiacenti()" class="btn-sec" style="font-size: 14px; padding: 10px;">📋 Riepilogo Solleciti</button>
 </div>
 
 <div class="card">
-    <button onclick="startScanner()">📷 Scansiona Etichetta</button>
-    <button onclick="startBarcode()" class="btn-secondary">🔍 Scansiona Barcode</button>
-    <button onclick="stopCamera()" id="btnStop" style="display:none; background:#7f8c8d">Chiudi Fotocamera</button>
+    <button onclick="startScanner()">📷 Scansiona Nome (OCR)</button>
+    <button onclick="startBarcode()" class="btn-sec">🔍 Scansiona Barcode</button>
+    <button onclick="stopCamera()" id="btnStop" style="display:none;" class="btn-gray">Chiudi Camera</button>
 </div>
 
 <div id="videoWrapper" class="video-wrapper">
-    <video id="video" autoplay playsinline></video>
+    <video id="video" autoplay playsinline muted></video>
     <div class="scanner-box"></div>
 </div>
 
 <div class="card">
-    <h3>📦 Inserimento Manuale</h3>
-    <input id="nomePacco" placeholder="Nome del destinatario...">
+    <h3>📦 Nuovo Pacco</h3>
+    <input id="nomePacco" placeholder="Nome destinatario o Codice...">
     <button onclick="registraPaccoManuale()">Salva in Giacenza</button>
 </div>
 
 <div class="card">
-    <h3>📋 Lista Giacenze</h3>
-    <input id="searchPacchi" placeholder="Cerca pacco..." oninput="mostraPacchi()">
+    <h3>📋 Pacchi in Attesa</h3>
+    <input id="searchPacchi" placeholder="Filtra per nome..." oninput="mostraPacchi()">
     <div id="pacchi"></div>
 </div>
 
 <div class="card">
-    <h3>👥 Rubrica Condomini</h3>
+    <h3>👥 Rubrica Residenti</h3>
     <input id="nomeCondomino" placeholder="Nome e Cognome">
-    <input id="telefonoCondomino" placeholder="Telefono (es. 3331234567)">
-    <button onclick="aggiungiCondomino()" class="btn-secondary">Salva in Rubrica</button>
+    <input id="telefonoCondomino" type="tel" placeholder="Cellulare (es. 3331234567)">
+    <button onclick="aggiungiCondomino()" class="btn-sec">Salva in Rubrica</button>
     <div id="rubrica"></div>
+</div>
+
+<div class="card">
+    <h3>📊 Statistiche Mensili</h3>
+    <canvas id="grafico"></canvas>
+    <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+    <h3>💾 Gestione Database</h3>
+    <button onclick="esportaDati()" class="btn-gray">Esporta Backup (.json)</button>
+    <p style="font-size:13px; color:#7f8c8d; margin-top:10px;">Ripristina dati da file:</p>
+    <input type="file" onchange="importaDati(event)">
 </div>
 
 <script>
 let streamCamera = null;
 let scannerLock = false;
+let myChart = null;
 
-// Funzioni Database
-function safeParse(k){ try{ return JSON.parse(localStorage.getItem(k)) || [] } catch { return [] } }
-function salva(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+// Database Helper
+const DB = {
+    get: (k) => JSON.parse(localStorage.getItem(k)) || [],
+    set: (k, v) => localStorage.setItem(k, JSON.stringify(v))
+};
 
-// --- LOGICA WHATSAPP (API UFFICIALE) ---
-function getWhatsAppLink(nomePacco) {
-    let rubrica = safeParse("condomini");
-    let destinatarioPacco = nomePacco.toLowerCase().trim();
+// --- LOGICA WHATSAPP (OTTIMIZZATA IPHONE) ---
+function generaLinkWA(nomeDestinatario) {
+    const rubrica = DB.get("condomini");
+    const cerca = nomeDestinatario.toLowerCase().trim();
     
-    // Cerca il condomino: il nome deve essere contenuto o coincidere
-    let c = rubrica.find(x => destinatarioPacco.includes(x.nome.toLowerCase().trim()) || x.nome.toLowerCase().trim().includes(destinatarioPacco));
+    const utente = rubrica.find(c => 
+        cerca.includes(c.nome.toLowerCase().trim()) || 
+        c.nome.toLowerCase().trim().includes(cerca)
+    );
     
-    if (!c) return null;
+    if (!utente) return null;
 
-    let tel = c.telefono.replace(/\D/g, ''); // Solo numeri
-    if (tel.length === 10) tel = "39" + tel; // Aggiunge prefisso Italia se manca
-
-    let msg = encodeURIComponent(`Ciao ${c.nome}, ti avviso che è arrivato un pacco per te in portineria! 📦`);
+    let tel = utente.telefono.replace(/\D/g, '');
+    if (tel.length === 10) tel = "39" + tel;
     
-    // URL API Ufficiale (massima compatibilità)
-    return `https://api.whatsapp.com/send?phone=${tel}&text=${msg}`;
+    const messaggio = encodeURIComponent(`Ciao ${utente.nome}, c'è un pacco per te in portineria! 📦`);
+    return `https://api.whatsapp.com/send?phone=${tel}&text=${messaggio}`;
 }
 
-// --- GESTIONE FOTOCAMERA ---
+// --- FOTOCAMERA (FIX IPHONE 13) ---
 async function startScanner(){
     stopCamera();
     try {
-        streamCamera = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        document.getElementById("video").srcObject = streamCamera;
+        const constraints = { video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } } };
+        streamCamera = await navigator.mediaDevices.getUserMedia(constraints);
+        const video = document.getElementById("video");
+        video.srcObject = streamCamera;
+        video.setAttribute("playsinline", true); // Obbligatorio per iPhone
         document.getElementById("videoWrapper").classList.add("active");
         document.getElementById("btnStop").style.display = "block";
         scanLoop();
-    } catch (err) { alert("Errore: consenti l'uso della fotocamera."); }
+    } catch (err) {
+        alert("Attenzione: attiva l'accesso alla fotocamera nelle impostazioni di Safari.");
+    }
 }
 
 function stopCamera() {
@@ -134,33 +158,36 @@ function stopCamera() {
 }
 
 async function scanLoop(){
-    let video = document.getElementById("video");
+    const video = document.getElementById("video");
     if(!streamCamera || scannerLock || !video.videoWidth) {
         if(streamCamera) setTimeout(scanLoop, 1000);
         return;
     }
     
-    let canvas = document.createElement("canvas");
-    let ctx = canvas.getContext("2d");
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    // Zoom sul centro per facilitare l'OCR
     canvas.width = video.videoWidth * 0.8; canvas.height = video.videoHeight * 0.2;
     ctx.drawImage(video, video.videoWidth*0.1, video.videoHeight*0.4, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
 
-    const result = await Tesseract.recognize(canvas, 'ita');
-    const testo = result.data.text.toLowerCase();
-    const rubrica = safeParse("condomini");
+    try {
+        const result = await Tesseract.recognize(canvas, 'ita');
+        const testo = result.data.text.toLowerCase();
+        const rubrica = DB.get("condomini");
 
-    for (let c of rubrica) {
-        let nomeRubrica = c.nome.toLowerCase();
-        if(testo.includes(nomeRubrica) && nomeRubrica.length > 2) {
-            scannerLock = true;
-            registraPaccoAuto(c.nome);
-            alert("Riconosciuto: " + c.nome + ". Pacco aggiunto in lista!");
-            stopCamera();
-            scannerLock = false;
-            break;
+        for (let c of rubrica) {
+            if(testo.includes(c.nome.toLowerCase()) && c.nome.length > 3) {
+                scannerLock = true;
+                registraPacco(c.nome);
+                alert("✅ RICONOSCIUTO: " + c.nome.toUpperCase());
+                stopCamera();
+                scannerLock = false;
+                return;
+            }
         }
-    }
-    if(streamCamera) setTimeout(scanLoop, 2500);
+    } catch (e) { console.error("OCR Error", e); }
+    
+    if(streamCamera) setTimeout(scanLoop, 2000);
 }
 
 function startBarcode(){
@@ -175,105 +202,166 @@ function startBarcode(){
     });
 }
 
-// --- LOGICA PACCHI ---
+// --- GESTIONE PACCHI ---
 function registraPaccoManuale(){
-    let nome = document.getElementById("nomePacco").value;
+    const nome = document.getElementById("nomePacco").value;
     if(!nome) return;
-    let pacchi = safeParse("pacchi");
-    pacchi.unshift({ nome: nome, data: new Date().toISOString() });
-    salva("pacchi", pacchi);
+    registraPacco(nome);
     document.getElementById("nomePacco").value = "";
-    mostraPacchi();
-    aggiornaSemaforo();
 }
 
-function registraPaccoAuto(nome){
-    let pacchi = safeParse("pacchi");
+function registraPacco(nome){
+    const pacchi = DB.get("pacchi");
     pacchi.unshift({ nome: nome, data: new Date().toISOString() });
-    salva("pacchi", pacchi);
-    mostraPacchi();
-    aggiornaSemaforo();
+    DB.set("pacchi", pacchi);
+    aggiornaUI();
 }
 
 function mostraPacchi(){
-    let pacchi = safeParse("pacchi");
-    let filtro = document.getElementById("searchPacchi").value.toLowerCase();
-    let div = document.getElementById("pacchi");
-    div.innerHTML = "";
+    const pacchi = DB.get("pacchi");
+    const filtro = document.getElementById("searchPacchi").value.toLowerCase();
+    const container = document.getElementById("pacchi");
+    container.innerHTML = "";
 
     pacchi.forEach((p, i) => {
         if(!p.nome.toLowerCase().includes(filtro)) return;
         
-        let waLink = getWhatsAppLink(p.nome);
-        let waButton = waLink 
-            ? `<a href="${waLink}" target="_blank" rel="noopener" class="btn-link btn-wa">📲 AVVISA CON WHATSAPP</a>` 
-            : `<div style="color:#c0392b; font-size:14px; padding-top:5px;">⚠️ Nome non trovato in rubrica</div>`;
+        const linkWA = generaLinkWA(p.nome);
+        const btnWA = linkWA 
+            ? `<a href="${linkWA}" target="_blank" rel="noopener" class="btn-link btn-wa">📲 AVVISA CON WHATSAPP</a>` 
+            : `<div style="color:var(--danger); font-size:13px; margin-top:8px;">⚠️ Destinatario non trovato in rubrica</div>`;
 
-        div.innerHTML += `
+        container.innerHTML += `
             <div class="pacco-item">
                 <div class="pacco-header">
-                    <span><b>${p.nome.toUpperCase()}</b><br><small>${new Date(p.data).toLocaleDateString()} ore ${new Date(p.data).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small></span>
-                    <button class="btn-del" onclick="consegna(${i})">CONSEGNATO</button>
+                    <div>
+                        <b style="font-size:18px;">${p.nome.toUpperCase()}</b>
+                        <div class="pacco-meta">Arrivato: ${new Date(p.data).toLocaleDateString()} alle ${new Date(p.data).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+                    </div>
+                    <button class="btn-del" onclick="consegnaPacco(${i})">RITIRATO</button>
                 </div>
-                ${waButton}
+                ${btnWA}
             </div>`;
     });
 }
 
-function consegna(i){
-    let pacchi = safeParse("pacchi");
+function consegnaPacco(i){
+    const pacchi = DB.get("pacchi");
+    const storico = DB.get("storico");
+    storico.unshift(pacchi[i]);
     pacchi.splice(i, 1);
-    salva("pacchi", pacchi);
-    mostraPacchi();
-    aggiornaSemaforo();
+    DB.set("pacchi", pacchi);
+    DB.set("storico", storico);
+    aggiornaUI();
 }
 
-// --- LOGICA RUBRICA ---
+// --- RUBRICA ---
 function aggiungiCondomino(){
-    let nome = document.getElementById("nomeCondomino").value;
-    let tel = document.getElementById("telefonoCondomino").value;
-    if(!nome || !tel) return;
-    let db = safeParse("condomini");
-    db.push({nome: nome, telefono: tel});
-    salva("condomini", db);
+    const nome = document.getElementById("nomeCondomino").value;
+    const tel = document.getElementById("telefonoCondomino").value;
+    if(!nome || !tel) { alert("Inserisci nome e telefono"); return; }
+    
+    const db = DB.get("condomini");
+    db.push({ nome: nome, telefono: tel });
+    DB.set("condomini", db);
+    
     document.getElementById("nomeCondomino").value = "";
     document.getElementById("telefonoCondomino").value = "";
     mostraRubrica();
 }
 
 function mostraRubrica(){
-    let db = safeParse("condomini");
-    let div = document.getElementById("rubrica");
-    div.innerHTML = "";
+    const db = DB.get("condomini");
+    const container = document.getElementById("rubrica");
+    container.innerHTML = "";
     db.forEach((c, i) => {
-        div.innerHTML += `<div class="rubrica-item">
-            <span>${c.nome} (${c.telefono})</span>
-            <button class="btn-del" onclick="rimuoviCondomino(${i})">Elimina</button>
-        </div>`;
+        container.innerHTML += `
+            <div class="rubrica-item">
+                <span><b>${c.nome}</b> (${c.telefono})</span>
+                <button class="btn-del" style="background:#bdc3c7!important;" onclick="rimuoviCondomino(${i})">Rimuovi</button>
+            </div>`;
     });
 }
 
 function rimuoviCondomino(i){
-    let db = safeParse("condomini");
+    const db = DB.get("condomini");
     db.splice(i, 1);
-    salva("condomini", db);
+    DB.set("condomini", db);
     mostraRubrica();
 }
 
+// --- DASHBOARD & UTILS ---
+function aggiornaUI(){
+    mostraPacchi();
+    mostraRubrica();
+    aggiornaSemaforo();
+    aggiornaGrafico();
+}
+
 function aggiornaSemaforo(){
-    let pacchi = safeParse("pacchi");
-    let s = document.getElementById("semaforo");
-    if(pacchi.length === 0) { 
-        s.innerHTML = "✅ NESSUN PACCO IN ATTESA"; s.style.background = "#2ecc71"; s.style.color = "white"; 
-    } else { 
-        s.innerHTML = "📦 " + pacchi.length + " PACCHI DA CONSEGNARE"; s.style.background = "#f1c40f"; s.style.color = "#2c3e50"; 
+    const pacchi = DB.get("pacchi");
+    const s = document.getElementById("semaforo");
+    if(pacchi.length === 0) {
+        s.innerHTML = "✅ NESSUN PACCO IN ATTESA";
+        s.style.background = "var(--success)";
+    } else {
+        s.innerHTML = "📦 " + pacchi.length + " PACCHI DA CONSEGNARE";
+        s.style.background = "var(--warning)";
     }
 }
 
-// Avvio iniziale
-mostraPacchi();
-mostraRubrica();
-aggiornaSemaforo();
+function avvisaTuttiGiacenti(){
+    const pacchi = DB.get("pacchi");
+    if(pacchi.length === 0) return alert("Magazzino vuoto!");
+    const lista = pacchi.map(p => p.nome.toUpperCase()).join("\n");
+    alert("RIEPILOGO GIACENZE:\n\n" + lista);
+}
+
+function aggiornaGrafico(){
+    const storico = DB.get("storico");
+    const datiMesi = new Array(12).fill(0);
+    storico.forEach(s => {
+        const mese = new Date(s.data).getMonth();
+        datiMesi[mese]++;
+    });
+    
+    const ctx = document.getElementById("grafico").getContext("2d");
+    if(myChart) myChart.destroy();
+    myChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels: ["Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"],
+            datasets: [{ label: "Pacchi Consegnati", data: datiMesi, backgroundColor: "#1a73e8" }]
+        },
+        options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+    });
+}
+
+function esportaDati(){
+    const backup = JSON.stringify(localStorage);
+    const blob = new Blob([backup], {type: "application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `portineria_backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+}
+
+function importaDati(event){
+    const file = event.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const dati = JSON.parse(e.target.result);
+        Object.keys(dati).forEach(k => localStorage.setItem(k, dati[k]));
+        alert("Dati ripristinati con successo!");
+        location.reload();
+    };
+    reader.readAsText(file);
+}
+
+// Inizializzazione App
+window.onload = aggiornaUI;
 </script>
 </body>
 </html>
