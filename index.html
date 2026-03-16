@@ -1,17 +1,159 @@
-const DB={
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>Portineria Digitale PRO</title>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+
+<style>
+
+body{
+font-family:-apple-system,Arial;
+background:#f2f2f7;
+padding:15px
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:18px;
+margin-bottom:20px;
+box-shadow:0 6px 15px rgba(0,0,0,0.05)
+}
+
+button{
+width:100%;
+padding:14px;
+border:none;
+border-radius:10px;
+background:#007aff;
+color:white;
+font-weight:bold;
+margin-top:10px
+}
+
+.btn-red{background:#ff3b30}
+.btn-green{background:#34c759}
+
+input,textarea{
+width:100%;
+padding:10px;
+margin-top:10px;
+border-radius:8px;
+border:1px solid #ddd
+}
+
+.item{
+padding:10px;
+border-bottom:1px solid #eee;
+display:flex;
+justify-content:space-between
+}
+
+#cameraBox{
+display:none;
+position:relative
+}
+
+#scanBox{
+position:absolute;
+border:3px solid #00ff88;
+width:65%;
+height:35%;
+top:32%;
+left:18%;
+border-radius:12px
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h2>Portineria Digitale PRO</h2>
+
+<div class="card">
+
+<button onclick="startCamera()">Scanner pacco</button>
+
+<div id="cameraBox">
+
+<video id="video" autoplay playsinline style="width:100%"></video>
+
+<div id="scanBox"></div>
+
+<button class="btn-red" onclick="stopCamera()">Chiudi scanner</button>
+
+</div>
+
+<input id="nomePacco" placeholder="Destinatario">
+
+<button class="btn-green" onclick="salvaPacco()">Registra pacco</button>
+
+</div>
+
+<div class="card">
+
+<h3>Pacchi</h3>
+
+<input id="searchPacchi" placeholder="Cerca..." oninput="filtraPacchi()">
+
+<div id="listaPacchi"></div>
+
+</div>
+
+<div class="card">
+
+<h3>Raccomandate</h3>
+
+<input id="nomeRacc" placeholder="Destinatario">
+
+<button onclick="salvaRacc()">Registra</button>
+
+<div id="listaRacc"></div>
+
+</div>
+
+<div class="card">
+
+<h3>Rubrica</h3>
+
+<input id="nomeManuale" placeholder="Nome">
+<input id="telManuale" placeholder="Telefono">
+
+<button onclick="aggiungiManuale()">Aggiungi residente</button>
+
+<textarea id="inputRubrica" placeholder="Mario Rossi,333123456"></textarea>
+
+<button onclick="importaRubrica()">Importa lista</button>
+
+<input id="searchRubrica" placeholder="Cerca residente..." oninput="filtraRubrica()">
+
+<div id="listaRubrica"></div>
+
+</div>
+
+<script> 
+  const DB={
 get:k=>JSON.parse(localStorage.getItem(k))||[],
 set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))
 }
 
 let stream=null
 
+window.onload=render
+
 function render(){
 renderPacchi()
 renderRubrica()
 renderRacc()
 }
-
-window.onload=render
 
 function salvaPacco(){
 
@@ -26,8 +168,7 @@ let pacchi=DB.get("pacchi")
 
 pacchi.unshift({
 id:Date.now(),
-nome:nome,
-data:new Date().toISOString()
+nome:nome
 })
 
 DB.set("pacchi",pacchi)
@@ -76,7 +217,18 @@ render()
 
 }
 
-function inviaWA(nome){
+function filtraPacchi(){
+
+let f=document.getElementById("searchPacchi").value.toLowerCase()
+
+document.querySelectorAll("#listaPacchi .item").forEach(i=>{
+
+i.style.display=i.innerText.toLowerCase().includes(f)?"flex":"none"
+
+})
+
+} 
+  function inviaWA(nome){
 
 let rubrica=DB.get("rubrica")
 
@@ -88,9 +240,7 @@ let tel=c.tel.startsWith("39")?c.tel:"39"+c.tel
 
 window.open(
 "https://wa.me/"+tel+
-"?text="+encodeURIComponent(
-"Ciao "+c.nome+", è arrivato un pacco per te 📦"
-)
+"?text="+encodeURIComponent("Ciao "+c.nome+", è arrivato un pacco per te 📦")
 )
 
 }
@@ -109,9 +259,7 @@ const video=document.getElementById("video")
 
 video.srcObject=stream
 
-video.onloadedmetadata=()=>{
-scan()
-}
+video.onloadedmetadata=()=>scan()
 
 }
 
@@ -131,13 +279,11 @@ const canvas=document.createElement("canvas")
 canvas.width=video.videoWidth
 canvas.height=video.videoHeight
 
-const ctx=canvas.getContext("2d")
+canvas.getContext("2d").drawImage(video,0,0)
 
-ctx.drawImage(video,0,0)
+const img=canvas.toDataURL("image/png")
 
-const image=canvas.toDataURL("image/png")
-
-const result=await Tesseract.recognize(image,"ita")
+const result=await Tesseract.recognize(img,"ita")
 
 const text=result.data.text.toLowerCase()
 
@@ -236,6 +382,16 @@ r.map(x=>`
 
 }
 
+function filtraRubrica(){
+
+let f=document.getElementById("searchRubrica").value.toLowerCase()
+
+document.querySelectorAll("#listaRubrica .item").forEach(i=>{
+i.style.display=i.innerText.toLowerCase().includes(f)?"flex":"none"
+})
+
+}
+
 function salvaRacc(){
 
 let nome=document.getElementById("nomeRacc").value.trim()
@@ -244,14 +400,9 @@ if(!nome)return
 
 let r=DB.get("raccomandate")||[]
 
-r.unshift({
-nome:nome,
-data:new Date().toISOString()
-})
+r.unshift({nome})
 
 DB.set("raccomandate",r)
-
-document.getElementById("nomeRacc").value=""
 
 renderRacc()
 
@@ -270,3 +421,8 @@ r.map(x=>`<div class="item">${x.nome}</div>`).join("")
 :"Nessuna raccomandata"
 
 }
+
+</script>
+
+</body>
+</html>
