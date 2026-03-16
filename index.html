@@ -3,290 +3,356 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Portineria PRO v4.5 - Sistema Integrale</title>
+    <title>Portineria Digitale PRO v5.0</title>
 
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/@zxing/library@latest"></script>
 
     <style>
-        :root { --p: #007aff; --s: #34c759; --d: #ff3b30; --l: #f2f2f7; --w: #ffffff; --dark: #1c1c1e; --g: #8e8e93; }
-        
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: var(--l); margin: 0; padding: 15px; color: var(--dark); -webkit-font-smoothing: antialiased; }
-        
-        .card { background: var(--w); padding: 20px; border-radius: 24px; margin-bottom: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); }
-        
-        h1 { font-size: 26px; font-weight: 800; text-align: center; margin: 10px 0 20px 0; letter-spacing: -1px; }
-        h3 { margin-top: 0; font-size: 18px; color: var(--g); display: flex; align-items: center; gap: 8px; }
+        :root {
+            --primary: #007aff; --success: #34c759; --danger: #ff3b30;
+            --dark: #1c1c1e; --light: #f2f2f7; --white: #ffffff; --gray: #8e8e93;
+        }
 
-        button { width: 100%; padding: 16px; border: none; border-radius: 16px; background: var(--p); color: white; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 10px; transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
-        button:active { transform: scale(0.97); opacity: 0.8; }
-        
-        .btn-wa { background: var(--s) !important; }
-        .btn-dark { background: var(--dark) !important; }
-        .btn-outline { background: none; border: 2px solid var(--p); color: var(--p); }
-        .btn-del { background: #fff0f0; color: var(--d); width: auto; padding: 6px 12px; font-size: 12px; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background-color: var(--light); margin: 0; padding: 15px; color: var(--dark);
+        }
 
-        input, textarea { width: 100%; padding: 15px; margin-top: 10px; border: 2px solid #e5e5ea; border-radius: 14px; font-size: 16px; box-sizing: border-box; background: var(--l); appearance: none; }
+        .card {
+            background: var(--white); padding: 20px; border-radius: 24px;
+            margin-bottom: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.1);
+        }
 
-        .video-container { position: relative; width: 100%; display: none; border-radius: 20px; overflow: hidden; background: #000; margin-top: 15px; aspect-ratio: 4/3; }
-        .video-container.active { display: block; border: 3px solid var(--s); }
+        h1 { font-size: 28px; font-weight: 800; text-align: center; margin-bottom: 20px; letter-spacing: -1px; }
+        h3 { margin-top: 0; font-size: 18px; color: var(--gray); display: flex; align-items: center; gap: 8px; }
+
+        button {
+            width: 100%; padding: 18px; border: none; border-radius: 16px;
+            background-color: var(--primary); color: var(--white);
+            font-size: 17px; font-weight: 700; cursor: pointer;
+            margin-top: 10px; transition: all 0.2s; -webkit-tap-highlight-color: transparent;
+        }
+
+        button:active { transform: scale(0.96); }
+        .btn-wa { background-color: var(--success) !important; }
+        .btn-dark { background-color: var(--dark) !important; }
+        .btn-outline { background: none; border: 2px solid var(--primary); color: var(--primary); }
+        .btn-ritiro { background-color: var(--danger) !important; width: auto; padding: 10px 20px; font-size: 14px; margin: 0; }
+
+        input, textarea {
+            width: 100%; padding: 16px; margin-top: 10px; border: 2px solid #e5e5ea;
+            border-radius: 14px; font-size: 16px; box-sizing: border-box; background: var(--light);
+        }
+
+        .video-container {
+            position: relative; width: 100%; display: none; border-radius: 20px;
+            overflow: hidden; background: #000; margin-top: 15px; aspect-ratio: 4/3;
+        }
+        .video-container.active { display: block; border: 3px solid var(--success); }
         video { width: 100%; height: 100%; object-fit: cover; }
 
-        .item-row { padding: 15px; background: var(--l); border-radius: 18px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        
-        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
-        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--p); border-radius: 50%; animation: spin 1s linear infinite; }
+        .pacco-item {
+            padding: 18px; background: var(--light); border-radius: 20px;
+            margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .status-box {
+            text-align: center; padding: 15px; border-radius: 18px;
+            font-weight: 800; color: white; margin-bottom: 20px;
+        }
+
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.9); display: none;
+            flex-direction: column; align-items: center; justify-content: center; z-index: 9999;
+        }
+        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-<div id="loading"><div class="spinner"></div><p style="font-weight:700; margin-top:15px;">Elaborazione...</p></div>
+<div id="loader"><div class="spinner"></div><p>Elaborazione...</p></div>
 
 <div class="container">
     <h1>Portineria PRO</h1>
 
     <div class="card">
+        <div id="semaforo" class="status-box" style="background: var(--primary);">SISTEMA ATTIVO</div>
         <div style="display: flex; justify-content: space-around; text-align: center;">
-            <div><small>IN DEPOSITO</small><br><b id="count-totale" style="font-size: 28px; color: var(--p);">0</b></div>
-            <div style="border-left: 1px solid #eee;"></div>
-            <div><small>OGGI</small><br><b id="count-oggi" style="font-size: 28px; color: var(--s);">0</b></div>
+            <div style="flex:1;"><small>OGGI</small><br><b id="count-oggi" style="font-size: 24px;">0</b></div>
+            <div style="flex:1;"><small>IN GIACENZA</small><br><b id="count-totale" style="font-size: 24px;">0</b></div>
         </div>
-        <button onclick="sollecitoTutti()" class="btn-wa">📢 AVVISA TUTTI I SOSPESI</button>
+        <button onclick="sollecitoMassivo()" class="btn-wa">📢 AVVISA TUTTI I SOSPESI</button>
     </div>
 
     <div class="card">
-        <h3>📷 Scanner Intelligente</h3>
+        <h3>📷 Acquisizione</h3>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <button onclick="startCamera('ocr')" class="btn-dark">📄 Leggi Nome</button>
-            <button onclick="startCamera('barcode')" style="background:#5856d6">🔍 Barcode</button>
+            <button onclick="avviaScanner('ocr')" class="btn-dark">📄 Leggi Nome</button>
+            <button onclick="avviaScanner('barcode')" style="background:#5856d6">🔍 Barcode</button>
         </div>
-        <div id="videoContainer" class="video-container"><video id="webcam" autoplay playsinline muted></video></div>
-        <button id="btnStop" style="display:none; background: var(--g);" onclick="stopCamera()">Chiudi Fotocamera</button>
+        <div id="videoContainer" class="video-container">
+            <video id="webcam" autoplay playsinline muted></video>
+        </div>
+        <button id="btnStop" style="display:none; background: var(--gray);" onclick="stopCamera()">Spegni Camera</button>
     </div>
 
     <div class="card">
-        <h3>📦 Registra Entrata</h3>
-        <input type="text" id="nomePacco" placeholder="Nome del destinatario...">
+        <h3>📦 Registra Pacco</h3>
+        <input type="text" id="inputNome" placeholder="Destinatario...">
         <button onclick="salvaPacco()" class="btn-wa">REGISTRA E INVIA WA</button>
     </div>
 
     <div class="card">
-        <h3>📋 Giacenze Correnti</h3>
+        <h3>📋 Giacenze</h3>
         <div id="lista-pacchi"></div>
     </div>
 
     <div class="card">
-        <h3>👥 Gestione Residenti</h3>
-        <label style="font-size: 12px; font-weight: bold; color: var(--g);">IMPORTA DA FILE (.TXT / .CSV)</label>
-        <input type="file" id="fileInput" accept=".txt,.csv" onchange="importaDaFile(this)">
-        
-        <label style="font-size: 12px; font-weight: bold; color: var(--g); margin-top: 15px; display: block;">AGGIUNTA MANUALE (NOME, TELEFONO)</label>
-        <textarea id="testoRubrica" placeholder="Esempio: Mario Rossi, 3331234567" style="height: 70px;"></textarea>
+        <h3>👥 Gestione Condomini</h3>
+        <label style="font-size: 12px; font-weight: bold;">IMPORTA FILE (.TXT / .CSV)</label>
+        <input type="file" id="fileImport" accept=".txt,.csv" onchange="importaFile(this)">
+        <textarea id="boxNote" placeholder="Manuale: Nome, Telefono" style="height:80px;"></textarea>
         <button onclick="aggiungiManuale()" class="btn-outline">Aggiungi Residenti</button>
-        
-        <div id="elenco-rubrica" style="max-height: 250px; overflow-y: auto; margin-top: 15px; border-radius: 12px; border: 1px solid #eee;"></div>
+        <div id="elenco-rubrica" style="max-height: 250px; overflow-y: auto; margin-top: 15px; border: 1px solid #eee; border-radius: 12px;"></div>
     </div>
 
     <div class="card">
+        <h3>📊 Rendimento</h3>
         <canvas id="graficoConsegne"></canvas>
-        <button onclick="esportaDati()" style="background:#555; margin-top: 20px;">💾 Scarica Backup Dati</button>
-        <button onclick="fullReset()" style="background:none; color:var(--d); border:none; font-size:10px; margin-top:30px;">⚠️ RESET TOTALE</button>
+        <button onclick="scaricaBackup()" style="background:#444; margin-top: 20px;">💾 Backup Dati</button>
+        <button onclick="resetTotale()" style="background:none; color:red; font-size:10px; border:none; margin-top:30px;">⚠️ RESET TOTALE</button>
     </div>
-</div>
+        <script>
+let stream = null;
+let chart = null;
 
-<script>
-/* --- SISTEMA DI SALVATAGGIO --- */
-const AppData = {
-    get: (key) => JSON.parse(localStorage.getItem(key)) || [],
-    set: (key, val) => localStorage.setItem(key, JSON.stringify(val))
+// GESTIONE MEMORIA LOCALE
+const Storage = {
+    get: (k) => JSON.parse(localStorage.getItem(k)) || [],
+    set: (k, v) => localStorage.setItem(k, JSON.stringify(v))
 };
 
-let camStream = null;
-let deliveryChart = null;
+// INIZIALIZZAZIONE APP
+window.onload = () => { 
+    initGrafico(); 
+    renderTutto(); 
+};
 
-window.onload = () => { initChart(); refreshUI(); };
-
-/* --- LOGICA WHATSAPP --- */
-function inviaMessaggio(nome, isSollecito = false) {
-    const rubrica = AppData.get('rubrica');
-    const target = nome.toLowerCase().trim();
-    const condomino = rubrica.find(c => target.includes(c.nome.toLowerCase()) || c.nome.toLowerCase().includes(target));
-
-    if (condomino && condomino.telefono && condomino.telefono !== "Mancante") {
-        let tel = condomino.telefono.replace(/\D/g, '');
-        if (tel.length === 10) tel = "39" + tel;
-        const msg = isSollecito ? `Reminder: hai un pacco da ritirare in portineria. 📦` : `Buongiorno ${condomino.nome}, è arrivato un pacco per lei! 📦`;
-        window.location.href = `https://wa.me/${tel}?text=${encodeURIComponent(msg)}`;
-    } else if (!isSollecito) {
-        alert("Pacco registrato. Nota: WhatsApp non inviato perché il numero manca o il nome non è in rubrica.");
-    }
+function renderTutto() { 
+    renderPacchi(); 
+    renderRubrica(); 
+    aggiornaDash(); 
 }
 
-/* --- GESTIONE RUBRICA (FILE + TESTO) --- */
+// LOGICA DASHBOARD
+function aggiornaDash() {
+    const p = Storage.get('pacchi');
+    const oggi = p.filter(x => new Date(x.data).toDateString() === new Date().toDateString()).length;
+    document.getElementById('count-totale').innerText = p.length;
+    document.getElementById('count-oggi').innerText = oggi;
+}
+
+// GESTIONE RUBRICA
 function aggiungiManuale() {
-    const area = document.getElementById('testoRubrica');
-    elaboraESalva(area.value);
-    area.value = "";
+    const testo = document.getElementById('boxNote').value;
+    if(!testo.trim()) return alert("Inserisci un nome!");
+    elaboraDati(testo);
+    document.getElementById('boxNote').value = "";
 }
 
-function importaDaFile(input) {
-    const file = input.files[0];
-    if (!file) return;
+function importaFile(input) {
+    if (!input.files[0]) return;
     const reader = new FileReader();
-    reader.onload = (e) => { elaboraESalva(e.target.result); input.value = ""; };
-    reader.readAsText(file);
+    reader.onload = (e) => { 
+        elaboraDati(e.target.result); 
+        input.value = ""; 
+    };
+    reader.readAsText(input.files[0]);
 }
 
-function elaboraESalva(testo) {
-    if (!testo.trim()) return;
-    let rubrica = AppData.get('rubrica');
-    const righe = testo.split(/\n/);
-    let cont = 0;
+function elaboraDati(testo) {
+    let r = Storage.get('rubrica');
+    const righe = testo.split('\n');
+    let aggiunti = 0;
 
-    righe.forEach(riga => {
-        const parti = riga.split(/[,;\t\-]/);
+    righe.forEach(l => {
+        const parti = l.split(/[,;\t\-]/);
         const nome = parti[0].trim();
-        let tel = parti[1] ? parti[1].trim().replace(/\D/g, '') : "Mancante";
+        let tel = parti[1] ? parti[1].trim().replace(/\D/g, '') : "";
         
         if (nome.length > 2) {
-            if (!rubrica.some(x => x.nome.toLowerCase() === nome.toLowerCase())) {
-                rubrica.push({ nome, telefono: tel });
-                cont++;
+            if (!r.some(x => x.nome.toLowerCase() === nome.toLowerCase())) {
+                r.push({ nome: nome, telefono: tel });
+                aggiunti++;
             }
         }
     });
 
-    AppData.set('rubrica', rubrica);
-    refreshUI();
-    alert("Operazione completata! Aggiunti " + cont + " condomini.");
+    Storage.set('rubrica', r);
+    renderTutto();
+    alert("Operazione completata. Aggiunti " + aggiunti + " condomini.");
 }
 
-/* --- GESTIONE PACCHI --- */
+function renderRubrica() {
+    const r = Storage.get('rubrica');
+    const container = document.getElementById('elenco-rubrica');
+    container.innerHTML = r.sort((a,b) => a.nome.localeCompare(b.nome)).map((c, i) => `
+        <div style="padding:12px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; background:white;">
+            <span><b>${c.nome}</b><br><small style="color:gray;">${c.telefono || 'Senza numero'}</small></span>
+            <button onclick="eliminaC(${i})" style="background:none; border:none; color:red; width:auto; padding:5px;">Elimina</button>
+        </div>
+    `).join('');
+}
+
+function eliminaC(index) {
+    let r = Storage.get('rubrica');
+    r.splice(index, 1);
+    Storage.set('rubrica', r);
+    renderTutto();
+}
+
+// LOGICA PACCHI
 function salvaPacco() {
-    const input = document.getElementById('nomePacco');
+    const input = document.getElementById('inputNome');
     const nome = input.value.trim();
-    if (!nome) return alert("Inserisci un nome!");
+    if (!nome) return alert("Inserisci il nome!");
 
-    let pacchi = AppData.get('pacchi');
-    pacchi.unshift({ id: Date.now(), nome: nome, data: new Date().toISOString() });
-    AppData.set('pacchi', pacchi);
-
+    let p = Storage.get('pacchi');
+    p.unshift({ id: Date.now(), nome: nome, data: new Date().toISOString() });
+    Storage.set('pacchi', p);
     input.value = "";
-    refreshUI();
-    inviaMessaggio(nome);
+    renderTutto();
+    inviaWA(nome);
 }
 
-function ritiro(id) {
-    let p = AppData.get('pacchi');
-    let s = AppData.get('storico');
-    let rimosso = p.find(x => x.id === id);
-    rimosso.dataRitiro = new Date().toISOString();
-    s.push(rimosso);
-    AppData.set('pacchi', p.filter(x => x.id !== id));
-    AppData.set('storico', s);
-    refreshUI();
-    updateChartData();
+function ritiraPacco(id) {
+    let p = Storage.get('pacchi');
+    let s = Storage.get('storico') || [];
+    const idx = p.findIndex(x => x.id === id);
+    if (idx > -1) {
+        let r = p.splice(idx, 1)[0];
+        r.ritiro = new Date().toISOString();
+        s.push(r);
+        Storage.set('pacchi', p);
+        Storage.set('storico', s);
+        renderTutto();
+        aggiornaGrafico();
+    }
 }
 
-/* --- INTERFACCIA --- */
-function refreshUI() {
-    const pacchi = AppData.get('pacchi');
-    const rubrica = AppData.get('rubrica');
-
-    // Stats
-    document.getElementById('count-totale').innerText = pacchi.length;
-    document.getElementById('count-oggi').innerText = pacchi.filter(x => new Date(x.data).toDateString() === new Date().toDateString()).length;
-
-    // Lista Pacchi
-    document.getElementById('lista-pacchi').innerHTML = pacchi.map(x => `
-        <div class="item-row">
+function renderPacchi() {
+    const list = document.getElementById('lista-pacchi');
+    const p = Storage.get('pacchi');
+    list.innerHTML = p.map(x => `
+        <div class="pacco-item">
             <span><b>${x.nome.toUpperCase()}</b><br><small>${new Date(x.data).toLocaleTimeString()}</small></span>
-            <button onclick="ritiro(${x.id})" style="width:auto; padding:8px 15px; background:var(--d); margin:0;">RITIRATO</button>
-        </div>
-    `).join('');
-
-    // Lista Rubrica
-    document.getElementById('elenco-rubrica').innerHTML = rubrica.sort((a,b)=>a.nome.localeCompare(b.nome)).map((c, i) => `
-        <div style="padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; background:white;">
-            <span><b>${c.nome}</b><br><small style="color:var(--g)">${c.telefono}</small></span>
-            <button onclick="deleteCondo(${i})" class="btn-del">Elimina</button>
+            <button class="btn-ritiro" onclick="ritiraPacco(${x.id})">RITIRATO</button>
         </div>
     `).join('');
 }
 
-/* --- FOTOCAMERA --- */
-async function startCamera(modo) {
-    stopCamera();
+// WHATSAPP
+function inviaWA(nome, sollecito = false) {
+    const r = Storage.get('rubrica');
+    const c = r.find(u => nome.toLowerCase().includes(u.nome.toLowerCase()) || u.nome.toLowerCase().includes(nome.toLowerCase()));
+    
+    if (c && c.telefono && c.telefono.length >= 9) {
+        let tel = c.telefono.startsWith('39') ? c.telefono : "39" + c.telefono;
+        const msg = sollecito ? "Sollecito: hai un pacco in portineria da ritirare! 📦" : "Ciao, è arrivato un pacco per te in portineria! 📦";
+        window.open(`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`, '_blank');
+    } else if (!sollecito) {
+        alert("Pacco registrato. WhatsApp non inviato: numero o condomino non in rubrica.");
+    }
+}
+
+function sollecitoMassivo() {
+    const p = Storage.get('pacchi');
+    if(p.length === 0) return alert("Nessun pacco in giacenza.");
+    p.forEach((x, i) => {
+        setTimeout(() => inviaWA(x.nome, true), i * 1500);
+    });
+}
+
+// FOTOCAMERA E OCR
+async function avviaScanner(m) {
     try {
-        camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
         const v = document.getElementById('webcam');
-        v.srcObject = camStream;
+        v.srcObject = stream;
         document.getElementById('videoContainer').classList.add('active');
         document.getElementById('btnStop').style.display = "block";
 
-        if (modo === 'ocr') {
-            const timer = setInterval(async () => {
-                if (!camStream) return clearInterval(timer);
-                const cvs = document.createElement('canvas');
-                cvs.width = v.videoWidth; cvs.height = v.videoHeight;
-                cvs.getContext('2d').drawImage(v, 0, 0);
-                const result = await Tesseract.recognize(cvs, 'ita');
-                AppData.get('rubrica').forEach(c => {
-                    if (result.data.text.toLowerCase().includes(c.nome.toLowerCase())) {
-                        document.getElementById('nomePacco').value = c.nome;
+        if (m === 'ocr') {
+            const intervallo = setInterval(async () => {
+                if (!stream) return clearInterval(intervallo);
+                const canvas = document.createElement('canvas');
+                canvas.width = v.videoWidth; canvas.height = v.videoHeight;
+                canvas.getContext('2d').drawImage(v, 0, 0);
+                const result = await Tesseract.recognize(canvas, 'ita');
+                const testoRilevato = result.data.text.toLowerCase();
+                
+                Storage.get('rubrica').forEach(u => {
+                    if (testoRilevato.includes(u.nome.toLowerCase())) {
+                        document.getElementById('inputNome').value = u.nome;
                         stopCamera();
-                        clearInterval(timer);
+                        clearInterval(intervallo);
                     }
                 });
             }, 2500);
-        } else {
-            const reader = new ZXing.BrowserBarcodeReader();
-            reader.decodeFromVideoDevice(null, 'webcam', (res) => {
-                if (res) { document.getElementById('nomePacco').value = res.text; stopCamera(); }
-            });
         }
-    } catch (e) { alert("Accesso fotocamera negato."); }
+    } catch (e) { alert("Errore fotocamera."); }
 }
 
 function stopCamera() {
-    if (camStream) camStream.getTracks().forEach(t => t.stop());
-    camStream = null;
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    stream = null;
     document.getElementById('videoContainer').classList.remove('active');
     document.getElementById('btnStop').style.display = "none";
 }
 
-/* --- GRAFICO & UTILS --- */
-function initChart() {
+// GRAFICI E UTILS
+function initGrafico() {
     const ctx = document.getElementById('graficoConsegne').getContext('2d');
-    deliveryChart = new Chart(ctx, {
+    chart = new Chart(ctx, {
         type: 'line',
-        data: { labels: [], datasets: [{ label: 'Consegne', data: [], borderColor: '#007aff', tension: 0.3, fill: true, backgroundColor: 'rgba(0,122,255,0.1)' }] },
-        options: { responsive: true, plugins: { legend: { display: false } } }
+        data: { labels: [], datasets: [{ label: 'Consegne', data: [], borderColor: '#007aff', fill: false }] }
     });
-    updateChartData();
+    aggiornaGrafico();
 }
 
-function updateChartData() {
-    const storico = AppData.get('storico');
-    const stats = {};
-    storico.slice(-20).forEach(s => {
-        const d = new Date(s.dataRitiro).toLocaleDateString();
-        stats[d] = (stats[d] || 0) + 1;
+function aggiornaGrafico() {
+    const s = Storage.get('storico') || [];
+    const conteggio = {};
+    s.slice(-30).forEach(x => {
+        const d = new Date(x.ritiro).toLocaleDateString();
+        conteggio[d] = (conteggio[d] || 0) + 1;
     });
-    deliveryChart.data.labels = Object.keys(stats);
-    deliveryChart.data.datasets[0].data = Object.values(stats);
-    deliveryChart.update();
+    chart.data.labels = Object.keys(conteggio);
+    chart.data.datasets[0].data = Object.values(conteggio);
+    chart.update();
 }
 
-function deleteCondo(i) { let r = AppData.get('rubrica'); r.splice(i,1); AppData.set('rubrica', r); refreshUI(); }
-function esportaDati() {
-    const blob = new Blob([JSON.stringify(localStorage)], {type:'application/json'});
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "backup_portineria.json"; a.click();
+function scaricaBackup() {
+    const dati = JSON.stringify(localStorage);
+    const blob = new Blob([dati], {type: 'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = "backup_portineria.json";
+    a.click();
 }
-function sollecitoTutti() { AppData.get('pacchi').forEach((p, i) => setTimeout(() => inviaMessaggio(p.nome, true), i * 1500)); }
-function fullReset() { if(confirm("ELIMINARE TUTTI I DATI?")) { localStorage.clear(); location.reload(); } }
+
+function resetTotale() {
+    if(confirm("Sei sicuro? Cancellerai tutto!")) {
+        localStorage.clear();
+        location.reload();
+    }
+}
 </script>
 </body>
 </html>
+</div>
