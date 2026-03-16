@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-<title>Portineria Digitale PRO v8</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Portineria Digitale PRO</title>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -16,7 +17,7 @@
 --s:#34c759;
 --d:#ff3b30;
 --bg:#f2f2f7;
---w:#ffffff;
+--w:#fff;
 --g:#8e8e93;
 }
 
@@ -25,48 +26,33 @@ font-family:-apple-system,system-ui;
 background:var(--bg);
 margin:0;
 padding:15px;
-color:#1c1c1e;
 }
 
 .card{
 background:var(--w);
 padding:20px;
-border-radius:22px;
+border-radius:20px;
 margin-bottom:20px;
-box-shadow:0 8px 20px rgba(0,0,0,0.05);
-}
-
-h1{
-text-align:center;
-font-size:26px;
-}
-
-h3{
-margin-bottom:15px;
-color:var(--g);
-font-size:14px;
-text-transform:uppercase;
 }
 
 button{
 width:100%;
-padding:15px;
+padding:14px;
 border:none;
 border-radius:12px;
 background:var(--p);
 color:white;
-font-size:16px;
 font-weight:700;
 margin-top:10px;
 }
 
-.btn-wa{background:var(--s);}
-.btn-del{background:var(--d);width:auto;padding:6px 10px;font-size:12px;margin:0;}
+.btn-wa{background:var(--s)}
+.btn-del{background:var(--d);width:auto}
 
 input,textarea{
 width:100%;
 padding:12px;
-margin:10px 0;
+margin-top:10px;
 border-radius:10px;
 border:1px solid #ddd;
 }
@@ -81,6 +67,7 @@ align-items:center;
 
 #video-container{
 display:none;
+position:relative;
 margin-top:10px;
 border-radius:15px;
 overflow:hidden;
@@ -90,14 +77,30 @@ video{
 width:100%;
 }
 
-.empty{
-padding:20px;
-text-align:center;
-color:#999;
+#scan-box{
+position:absolute;
+border:3px solid #00ff88;
+width:70%;
+height:35%;
+top:30%;
+left:15%;
+border-radius:10px;
+box-shadow:0 0 0 2000px rgba(0,0,0,0.35);
+pointer-events:none;
 }
 
-canvas{
-max-width:100%;
+#closeCam{
+position:absolute;
+top:10px;
+right:10px;
+background:#ff3b30;
+padding:8px 12px;
+border-radius:8px;
+font-size:14px;
+}
+
+.old{
+background:#fff3cd;
 }
 
 </style>
@@ -105,43 +108,33 @@ max-width:100%;
 
 <body>
 
-<h1>Portineria Digitale</h1>
-
-<div class="card" style="display:flex;text-align:center">
-
-<div style="flex:1;border-right:1px solid #eee">
-<small>GIACENZA</small><br>
-<b id="countGiacenza">0</b>
-</div>
-
-<div style="flex:1">
-<small>ARRIVI OGGI</small><br>
-<b id="countOggi">0</b>
-</div>
-
-</div>
+<h2>Portineria Digitale</h2>
 
 <div class="card">
-
-<h3>📦 Registrazione pacco</h3>
 
 <button onclick="avviaScanner()">📷 Scanner etichetta</button>
 
 <div id="video-container">
+
 <video id="video" autoplay playsinline muted></video>
+
+<div id="scan-box"></div>
+
+<button id="closeCam" onclick="stopScanner()">Chiudi</button>
+
 </div>
 
-<input id="nomePacco" placeholder="Nome destinatario">
+<input id="nomePacco" placeholder="Destinatario">
 
-<button class="btn-wa" onclick="salvaPacco()">REGISTRA PACCO</button>
+<button class="btn-wa" onclick="salvaPacco()">Registra pacco</button>
 
 </div>
 
 <div class="card">
 
-<h3>📋 Pacchi in deposito</h3>
+<h3>Pacchi</h3>
 
-<input id="cercaPacco" placeholder="🔎 Cerca pacco..." oninput="filtraPacchi()">
+<input id="searchPacchi" placeholder="Cerca pacco..." oninput="filtraPacchi()">
 
 <div id="listaPacchi"></div>
 
@@ -149,26 +142,32 @@ max-width:100%;
 
 <div class="card">
 
-<h3>👥 Rubrica residenti</h3>
+<h3>Raccomandate a mano</h3>
 
-<h4>Aggiungi manualmente</h4>
+<input id="nomeRacc" placeholder="Destinatario">
+
+<button onclick="salvaRaccomandata()">Registra raccomandata</button>
+
+<div id="listaRacc"></div>
+
+</div>
+
+<div class="card">
+
+<h3>Rubrica</h3>
 
 <input id="nomeManuale" placeholder="Nome">
 <input id="telManuale" placeholder="Telefono">
 
 <button onclick="aggiungiManuale()">Aggiungi residente</button>
 
-<h4>Incolla lista</h4>
+<textarea id="inputRubrica" placeholder="Mario Rossi,333123456"></textarea>
 
-<textarea id="inputRubrica"></textarea>
-
-<button onclick="importaRubrica()">Importa rubrica</button>
-
-<h4>Carica file rubrica</h4>
+<button onclick="importaRubrica()">Importa lista</button>
 
 <input type="file" onchange="caricaRubricaFile(event)">
 
-<input id="cercaRubrica" placeholder="🔎 Cerca residente..." oninput="filtraRubrica()">
+<input id="searchRubrica" placeholder="Cerca residente..." oninput="filtraRubrica()">
 
 <div id="listaRubrica"></div>
 
@@ -176,19 +175,20 @@ max-width:100%;
 
 <div class="card">
 
-<h3>📊 Statistiche consegne</h3>
+<h3>Statistiche</h3>
 
 <canvas id="grafico"></canvas>
 
-<button onclick="backup()">💾 Backup</button>
+<button onclick="backup()">Backup</button>
 
 <input type="file" onchange="ripristinaBackup(event)">
 
-<button onclick="reset()" style="background:var(--d)">RESET</button>
+<button onclick="reset()" style="background:var(--d)">Reset</button>
 
 </div>
 
 <script>
+
 const DB={
 get:k=>JSON.parse(localStorage.getItem(k))||[],
 set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))
@@ -207,33 +207,18 @@ initChart()
 function render(){
 renderPacchi()
 renderRubrica()
-aggiornaContatori()
-setTimeout(evidenziaPacchiVecchi,300)
-}
-
-function aggiornaContatori(){
-
-const pacchi=DB.get("pacchi")
-
-document.getElementById("countGiacenza").innerText=pacchi.length
-
-const oggi=pacchi.filter(p=>new Date(p.data).toDateString()===new Date().toDateString()).length
-
-document.getElementById("countOggi").innerText=oggi
-
-}
-
+renderRaccomandate()
 function salvaPacco(){
 
-const nome=document.getElementById("nomePacco").value.trim()
+let nome=document.getElementById("nomePacco").value.trim()
 
-if(!nome)return alert("Inserisci nome")
+if(!nome)return
 
 let pacchi=DB.get("pacchi")
 
 pacchi.unshift({
 id:Date.now(),
-nome,
+nome:nome,
 data:new Date().toISOString()
 })
 
@@ -244,6 +229,25 @@ document.getElementById("nomePacco").value=""
 render()
 
 inviaWA(nome)
+
+}
+
+function renderPacchi(){
+
+let p=DB.get("pacchi")
+
+let div=document.getElementById("listaPacchi")
+
+div.innerHTML=p.length?
+
+p.map(x=>`
+<div class="item">
+<span>${x.nome}</span>
+<button class="btn-del" onclick="ritiraPacco(${x.id})">Ritirato</button>
+</div>
+`).join("")
+
+:"Nessun pacco"
 
 }
 
@@ -272,45 +276,96 @@ updateChart()
 
 }
 
-function renderPacchi(){
-
-let pacchi=DB.get("pacchi")
-
-let div=document.getElementById("listaPacchi")
-
-div.innerHTML=pacchi.length?
-
-pacchi.map(p=>`
-
-<div class="item">
-
-<span><b>${p.nome}</b><br><small>${new Date(p.data).toLocaleTimeString()}</small></span>
-
-<button class="btn-del" onclick="ritiraPacco(${p.id})">RITIRATO</button>
-
-</div>
-
-`).join("")
-
-:'<div class="empty">Nessun pacco</div>'
-
-}
-
 function filtraPacchi(){
 
-const f=document.getElementById("cercaPacco").value.toLowerCase()
+let f=document.getElementById("searchPacchi").value.toLowerCase()
 
 document.querySelectorAll("#listaPacchi .item").forEach(i=>{
-
 i.style.display=i.innerText.toLowerCase().includes(f)?"flex":"none"
-
 })
 
 }
+
+function inviaWA(nome){
+
+let r=DB.get("rubrica")
+
+let c=r.find(x=>x.nome.toLowerCase()==nome.toLowerCase())
+
+if(c && c.tel){
+
+let tel=c.tel.startsWith("39")?c.tel:"39"+c.tel
+
+window.open(`https://wa.me/${tel}?text=${encodeURIComponent("Ciao "+c.nome+", è arrivato un pacco per te 📦")}`)
+
+}
+
+}
+
+async function avviaScanner(){
+
+document.getElementById("video-container").style.display="block"
+
+stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
+
+video.srcObject=stream
+
+scanLoop()
+
+}
+
+async function scanLoop(){
+
+if(!stream)return
+
+const video=document.getElementById("video")
+
+const canvas=document.createElement("canvas")
+
+canvas.width=video.videoWidth||1280
+canvas.height=video.videoHeight||720
+
+canvas.getContext("2d").drawImage(video,0,0)
+
+const r=await Tesseract.recognize(canvas,"ita")
+
+const testo=r.data.text.toLowerCase()
+
+const rubrica=DB.get("rubrica")
+
+rubrica.forEach(u=>{
+
+if(testo.includes(u.nome.toLowerCase())){
+
+document.getElementById("nomePacco").value=u.nome
+
+inviaWA(u.nome)
+
+stopScanner()
+
+}
+
+})
+
+setTimeout(scanLoop,2500)
+
+}
+
+function stopScanner(){
+
+if(stream){
+stream.getTracks().forEach(t=>t.stop())
+stream=null
+}
+
+document.getElementById("video-container").style.display="none"
+
+}
+
 function aggiungiManuale(){
 
-const nome=document.getElementById("nomeManuale").value.trim()
-const tel=document.getElementById("telManuale").value.trim()
+let nome=document.getElementById("nomeManuale").value.trim()
+let tel=document.getElementById("telManuale").value.trim()
 
 if(!nome)return
 
@@ -329,7 +384,7 @@ renderRubrica()
 
 function importaRubrica(){
 
-const testo=document.getElementById("inputRubrica").value.trim()
+let testo=document.getElementById("inputRubrica").value.trim()
 
 if(!testo)return
 
@@ -340,19 +395,12 @@ testo.split("\n").forEach(l=>{
 let p=l.split(",")
 
 if(p[0]){
-
-r.push({
-nome:p[0].trim(),
-tel:p[1]?p[1].trim():""
-})
-
+r.push({nome:p[0].trim(),tel:p[1]?p[1].trim():""})
 }
 
 })
 
 DB.set("rubrica",r)
-
-document.getElementById("inputRubrica").value=""
 
 renderRubrica()
 
@@ -360,17 +408,36 @@ renderRubrica()
 
 function caricaRubricaFile(e){
 
-let file=e.target.files[0]
+const file=e.target.files[0]
 
 if(!file)return
 
-let reader=new FileReader()
+const reader=new FileReader()
 
-reader.onload=x=>{
+reader.onload=function(ev){
 
-let dati=JSON.parse(x.target.result)
+let testo=ev.target.result
 
-if(dati.rubrica)DB.set("rubrica",dati.rubrica)
+let rubrica=DB.get("rubrica")
+
+try{
+
+let dati=JSON.parse(testo)
+
+if(Array.isArray(dati)){
+dati.forEach(x=>{if(x.nome)rubrica.push(x)})
+}
+
+}catch{
+
+testo.split("\n").forEach(riga=>{
+let p=riga.split(",")
+if(p[0])rubrica.push({nome:p[0].trim(),tel:p[1]?p[1].trim():""})
+})
+
+}
+
+DB.set("rubrica",rubrica)
 
 renderRubrica()
 
@@ -382,130 +449,65 @@ reader.readAsText(file)
 
 function renderRubrica(){
 
-let r=DB.get("rubrica").sort((a,b)=>a.nome.localeCompare(b.nome))
+let r=DB.get("rubrica")
 
 let div=document.getElementById("listaRubrica")
 
 div.innerHTML=r.length?
 
-r.map(c=>`
-
+r.map(x=>`
 <div class="item">
-
-<span><b>${c.nome}</b><br><small>${c.tel||""}</small></span>
-
-<button class="btn-del" onclick="eliminaContatto('${c.nome}')">Rimuovi</button>
-
+<span>${x.nome} (${x.tel||""})</span>
 </div>
-
 `).join("")
 
-:'<div class="empty">Rubrica vuota</div>'
-
-}
-
-function eliminaContatto(nome){
-
-let r=DB.get("rubrica").filter(x=>x.nome!==nome)
-
-DB.set("rubrica",r)
-
-renderRubrica()
+:"Rubrica vuota"
 
 }
 
 function filtraRubrica(){
 
-const f=document.getElementById("cercaRubrica").value.toLowerCase()
+let f=document.getElementById("searchRubrica").value.toLowerCase()
 
 document.querySelectorAll("#listaRubrica .item").forEach(i=>{
-
 i.style.display=i.innerText.toLowerCase().includes(f)?"flex":"none"
-
 })
 
 }
 
-function inviaWA(nome){
+function salvaRaccomandata(){
 
-const c=DB.get("rubrica").find(u=>u.nome.toLowerCase()===nome.toLowerCase())
+let nome=document.getElementById("nomeRacc").value.trim()
 
-if(c && c.tel){
+if(!nome)return
 
-const tel=c.tel.startsWith("39")?c.tel:"39"+c.tel
+let r=DB.get("raccomandate")
 
-window.open(`https://wa.me/${tel}?text=${encodeURIComponent("Ciao "+c.nome+", è arrivato un pacco per te 📦")}`)
+r.unshift({id:Date.now(),nome,data:new Date().toISOString()})
 
-}
+DB.set("raccomandate",r)
 
-}
+document.getElementById("nomeRacc").value=""
 
-async function avviaScanner(){
-
-document.getElementById("video-container").style.display="block"
-
-stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
-
-document.getElementById("video").srcObject=stream
-
-setTimeout(scan,3000)
+renderRaccomandate()
 
 }
 
-async function scan(){
+function renderRaccomandate(){
 
-const video=document.getElementById("video")
+let r=DB.get("raccomandate")
 
-const canvas=document.createElement("canvas")
+let div=document.getElementById("listaRacc")
 
-canvas.width=video.videoWidth||1280
-canvas.height=video.videoHeight||720
+div.innerHTML=r.length?
 
-canvas.getContext("2d").drawImage(video,0,0)
+r.map(x=>`
+<div class="item">
+<span>${x.nome}</span>
+</div>
+`).join("")
 
-const r=await Tesseract.recognize(canvas,"ita")
-
-const testo=r.data.text.toLowerCase()
-
-DB.get("rubrica").forEach(u=>{
-
-if(testo.includes(u.nome.toLowerCase())){
-
-document.getElementById("nomePacco").value=u.nome
-
-stopScanner()
-
-}
-
-})
-
-}
-
-function stopScanner(){
-
-if(stream)stream.getTracks().forEach(t=>t.stop())
-
-document.getElementById("video-container").style.display="none"
-
-}
-
-function evidenziaPacchiVecchi(){
-
-const pacchi=DB.get("pacchi")
-
-const oggi=new Date()
-
-document.querySelectorAll("#listaPacchi .item").forEach((el,i)=>{
-
-const p=pacchi[i]
-
-if(!p)return
-
-const diff=(oggi-new Date(p.data))/(1000*60*60*24)
-
-if(diff>7)el.style.background="#fff3cd"
-
-})
+:"Nessuna raccomandata"
 
 }
 
@@ -546,15 +548,15 @@ chart.update()
 
 function backup(){
 
-const dati={
+let dati={
 rubrica:DB.get("rubrica"),
 pacchi:DB.get("pacchi"),
 storico:DB.get("storico")
 }
 
-const blob=new Blob([JSON.stringify(dati)],{type:"application/json"})
+let blob=new Blob([JSON.stringify(dati)],{type:"application/json"})
 
-const a=document.createElement("a")
+let a=document.createElement("a")
 
 a.href=URL.createObjectURL(blob)
 
@@ -566,13 +568,13 @@ a.click()
 
 function ripristinaBackup(e){
 
-const file=e.target.files[0]
+let file=e.target.files[0]
 
-const reader=new FileReader()
+let reader=new FileReader()
 
 reader.onload=x=>{
 
-const dati=JSON.parse(x.target.result)
+let dati=JSON.parse(x.target.result)
 
 if(dati.rubrica)DB.set("rubrica",dati.rubrica)
 if(dati.pacchi)DB.set("pacchi",dati.pacchi)
@@ -589,11 +591,8 @@ reader.readAsText(file)
 function reset(){
 
 if(confirm("Cancellare tutto?")){
-
 localStorage.clear()
-
 location.reload()
-
 }
 
 }
