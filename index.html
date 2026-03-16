@@ -1,218 +1,26 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Portineria Digitale PRO</title>
-
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<style>
-
-:root{
---p:#007aff;
---s:#34c759;
---d:#ff3b30;
---bg:#f2f2f7;
---w:#fff;
---g:#8e8e93;
-}
-
-body{
-font-family:-apple-system,system-ui;
-background:var(--bg);
-margin:0;
-padding:15px;
-}
-
-.card{
-background:var(--w);
-padding:20px;
-border-radius:20px;
-margin-bottom:20px;
-}
-
-button{
-width:100%;
-padding:14px;
-border:none;
-border-radius:12px;
-background:var(--p);
-color:white;
-font-weight:700;
-margin-top:10px;
-}
-
-.btn-wa{background:var(--s)}
-.btn-del{background:var(--d);width:auto}
-
-input,textarea{
-width:100%;
-padding:12px;
-margin-top:10px;
-border-radius:10px;
-border:1px solid #ddd;
-}
-
-.item{
-padding:12px;
-border-bottom:1px solid #eee;
-display:flex;
-justify-content:space-between;
-align-items:center;
-}
-
-#video-container{
-display:none;
-position:relative;
-margin-top:10px;
-border-radius:15px;
-overflow:hidden;
-}
-
-video{
-width:100%;
-}
-
-#scan-box{
-position:absolute;
-border:3px solid #00ff88;
-width:70%;
-height:35%;
-top:30%;
-left:15%;
-border-radius:10px;
-box-shadow:0 0 0 2000px rgba(0,0,0,0.35);
-pointer-events:none;
-}
-
-#closeCam{
-position:absolute;
-top:10px;
-right:10px;
-background:#ff3b30;
-padding:8px 12px;
-border-radius:8px;
-font-size:14px;
-}
-
-.old{
-background:#fff3cd;
-}
-
-</style>
-</head>
-
-<body>
-
-<h2>Portineria Digitale</h2>
-
-<div class="card">
-
-<button onclick="avviaScanner()">📷 Scanner etichetta</button>
-
-<div id="video-container">
-
-<video id="video" autoplay playsinline muted></video>
-
-<div id="scan-box"></div>
-
-<button id="closeCam" onclick="stopScanner()">Chiudi</button>
-
-</div>
-
-<input id="nomePacco" placeholder="Destinatario">
-
-<button class="btn-wa" onclick="salvaPacco()">Registra pacco</button>
-
-</div>
-
-<div class="card">
-
-<h3>Pacchi</h3>
-
-<input id="searchPacchi" placeholder="Cerca pacco..." oninput="filtraPacchi()">
-
-<div id="listaPacchi"></div>
-
-</div>
-
-<div class="card">
-
-<h3>Raccomandate a mano</h3>
-
-<input id="nomeRacc" placeholder="Destinatario">
-
-<button onclick="salvaRaccomandata()">Registra raccomandata</button>
-
-<div id="listaRacc"></div>
-
-</div>
-
-<div class="card">
-
-<h3>Rubrica</h3>
-
-<input id="nomeManuale" placeholder="Nome">
-<input id="telManuale" placeholder="Telefono">
-
-<button onclick="aggiungiManuale()">Aggiungi residente</button>
-
-<textarea id="inputRubrica" placeholder="Mario Rossi,333123456"></textarea>
-
-<button onclick="importaRubrica()">Importa lista</button>
-
-<input type="file" onchange="caricaRubricaFile(event)">
-
-<input id="searchRubrica" placeholder="Cerca residente..." oninput="filtraRubrica()">
-
-<div id="listaRubrica"></div>
-
-</div>
-
-<div class="card">
-
-<h3>Statistiche</h3>
-
-<canvas id="grafico"></canvas>
-
-<button onclick="backup()">Backup</button>
-
-<input type="file" onchange="ripristinaBackup(event)">
-
-<button onclick="reset()" style="background:var(--d)">Reset</button>
-
-</div>
-
-<script>
-
 const DB={
 get:k=>JSON.parse(localStorage.getItem(k))||[],
 set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))
 }
 
 let stream=null
-let chart=null
-
-if(!localStorage.getItem("storico"))localStorage.setItem("storico","[]")
-
-window.onload=()=>{
-render()
-initChart()
-}
 
 function render(){
 renderPacchi()
 renderRubrica()
-renderRaccomandate()
+renderRacc()
+}
+
+window.onload=render
+
 function salvaPacco(){
 
 let nome=document.getElementById("nomePacco").value.trim()
 
-if(!nome)return
+if(!nome){
+alert("Inserisci destinatario")
+return
+}
 
 let pacchi=DB.get("pacchi")
 
@@ -234,131 +42,133 @@ inviaWA(nome)
 
 function renderPacchi(){
 
-let p=DB.get("pacchi")
+let pacchi=DB.get("pacchi")
 
 let div=document.getElementById("listaPacchi")
 
-div.innerHTML=p.length?
+div.innerHTML=pacchi.length?
 
-p.map(x=>`
+pacchi.map(p=>`
+
 <div class="item">
-<span>${x.nome}</span>
-<button class="btn-del" onclick="ritiraPacco(${x.id})">Ritirato</button>
+
+<span>${p.nome}</span>
+
+<button onclick="ritira(${p.id})">Ritirato</button>
+
 </div>
+
 `).join("")
 
 :"Nessun pacco"
 
 }
 
-function ritiraPacco(id){
+function ritira(id){
 
 let pacchi=DB.get("pacchi")
-let storico=DB.get("storico")
 
-let i=pacchi.findIndex(p=>p.id==id)
-
-if(i>-1){
-
-let p=pacchi.splice(i,1)[0]
-
-p.ritiro=new Date().toISOString()
-
-storico.push(p)
+pacchi=pacchi.filter(p=>p.id!=id)
 
 DB.set("pacchi",pacchi)
-DB.set("storico",storico)
 
 render()
-updateChart()
-
-}
-
-}
-
-function filtraPacchi(){
-
-let f=document.getElementById("searchPacchi").value.toLowerCase()
-
-document.querySelectorAll("#listaPacchi .item").forEach(i=>{
-i.style.display=i.innerText.toLowerCase().includes(f)?"flex":"none"
-})
 
 }
 
 function inviaWA(nome){
 
-let r=DB.get("rubrica")
+let rubrica=DB.get("rubrica")
 
-let c=r.find(x=>x.nome.toLowerCase()==nome.toLowerCase())
+let c=rubrica.find(x=>x.nome.toLowerCase()==nome.toLowerCase())
 
 if(c && c.tel){
 
 let tel=c.tel.startsWith("39")?c.tel:"39"+c.tel
 
-window.open(`https://wa.me/${tel}?text=${encodeURIComponent("Ciao "+c.nome+", è arrivato un pacco per te 📦")}`)
+window.open(
+"https://wa.me/"+tel+
+"?text="+encodeURIComponent(
+"Ciao "+c.nome+", è arrivato un pacco per te 📦"
+)
+)
 
 }
 
 }
 
-async function avviaScanner(){
+async function startCamera(){
 
-document.getElementById("video-container").style.display="block"
+document.getElementById("cameraBox").style.display="block"
 
-stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
+stream=await navigator.mediaDevices.getUserMedia({
+video:{facingMode:"environment"}
+})
+
+const video=document.getElementById("video")
 
 video.srcObject=stream
 
-scanLoop()
+video.onloadedmetadata=()=>{
+scan()
+}
 
 }
 
-async function scanLoop(){
+async function scan(){
 
 if(!stream)return
 
 const video=document.getElementById("video")
 
+if(video.videoWidth===0){
+setTimeout(scan,1000)
+return
+}
+
 const canvas=document.createElement("canvas")
 
-canvas.width=video.videoWidth||1280
-canvas.height=video.videoHeight||720
+canvas.width=video.videoWidth
+canvas.height=video.videoHeight
 
-canvas.getContext("2d").drawImage(video,0,0)
+const ctx=canvas.getContext("2d")
 
-const r=await Tesseract.recognize(canvas,"ita")
+ctx.drawImage(video,0,0)
 
-const testo=r.data.text.toLowerCase()
+const image=canvas.toDataURL("image/png")
+
+const result=await Tesseract.recognize(image,"ita")
+
+const text=result.data.text.toLowerCase()
 
 const rubrica=DB.get("rubrica")
 
 rubrica.forEach(u=>{
 
-if(testo.includes(u.nome.toLowerCase())){
+if(text.includes(u.nome.toLowerCase())){
 
 document.getElementById("nomePacco").value=u.nome
 
 inviaWA(u.nome)
 
-stopScanner()
+stopCamera()
 
 }
 
 })
 
-setTimeout(scanLoop,2500)
+setTimeout(scan,2500)
 
 }
 
-function stopScanner(){
+function stopCamera(){
 
 if(stream){
 stream.getTracks().forEach(t=>t.stop())
 stream=null
 }
 
-document.getElementById("video-container").style.display="none"
+document.getElementById("cameraBox").style.display="none"
 
 }
 
@@ -371,7 +181,9 @@ if(!nome)return
 
 let r=DB.get("rubrica")
 
+if(!r.some(x=>x.nome.toLowerCase()==nome.toLowerCase())){
 r.push({nome,tel})
+}
 
 DB.set("rubrica",r)
 
@@ -406,47 +218,6 @@ renderRubrica()
 
 }
 
-function caricaRubricaFile(e){
-
-const file=e.target.files[0]
-
-if(!file)return
-
-const reader=new FileReader()
-
-reader.onload=function(ev){
-
-let testo=ev.target.result
-
-let rubrica=DB.get("rubrica")
-
-try{
-
-let dati=JSON.parse(testo)
-
-if(Array.isArray(dati)){
-dati.forEach(x=>{if(x.nome)rubrica.push(x)})
-}
-
-}catch{
-
-testo.split("\n").forEach(riga=>{
-let p=riga.split(",")
-if(p[0])rubrica.push({nome:p[0].trim(),tel:p[1]?p[1].trim():""})
-})
-
-}
-
-DB.set("rubrica",rubrica)
-
-renderRubrica()
-
-}
-
-reader.readAsText(file)
-
-}
-
 function renderRubrica(){
 
 let r=DB.get("rubrica")
@@ -465,35 +236,28 @@ r.map(x=>`
 
 }
 
-function filtraRubrica(){
-
-let f=document.getElementById("searchRubrica").value.toLowerCase()
-
-document.querySelectorAll("#listaRubrica .item").forEach(i=>{
-i.style.display=i.innerText.toLowerCase().includes(f)?"flex":"none"
-})
-
-}
-
-function salvaRaccomandata(){
+function salvaRacc(){
 
 let nome=document.getElementById("nomeRacc").value.trim()
 
 if(!nome)return
 
-let r=DB.get("raccomandate")
+let r=DB.get("raccomandate")||[]
 
-r.unshift({id:Date.now(),nome,data:new Date().toISOString()})
+r.unshift({
+nome:nome,
+data:new Date().toISOString()
+})
 
 DB.set("raccomandate",r)
 
 document.getElementById("nomeRacc").value=""
 
-renderRaccomandate()
+renderRacc()
 
 }
 
-function renderRaccomandate(){
+function renderRacc(){
 
 let r=DB.get("raccomandate")
 
@@ -501,102 +265,8 @@ let div=document.getElementById("listaRacc")
 
 div.innerHTML=r.length?
 
-r.map(x=>`
-<div class="item">
-<span>${x.nome}</span>
-</div>
-`).join("")
+r.map(x=>`<div class="item">${x.nome}</div>`).join("")
 
 :"Nessuna raccomandata"
 
 }
-
-function initChart(){
-
-const ctx=document.getElementById("grafico").getContext("2d")
-
-chart=new Chart(ctx,{
-type:"line",
-data:{labels:[],datasets:[{label:"Consegne",data:[],borderColor:"#007aff"}]},
-options:{scales:{y:{beginAtZero:true}}}
-})
-
-updateChart()
-
-}
-
-function updateChart(){
-
-const storico=DB.get("storico")
-
-const dati={}
-
-storico.forEach(s=>{
-
-const d=new Date(s.ritiro).toLocaleDateString("it-IT",{day:"2-digit",month:"2-digit"})
-
-dati[d]=(dati[d]||0)+1
-
-})
-
-chart.data.labels=Object.keys(dati).slice(-7)
-chart.data.datasets[0].data=Object.values(dati).slice(-7)
-
-chart.update()
-
-}
-
-function backup(){
-
-let dati={
-rubrica:DB.get("rubrica"),
-pacchi:DB.get("pacchi"),
-storico:DB.get("storico")
-}
-
-let blob=new Blob([JSON.stringify(dati)],{type:"application/json"})
-
-let a=document.createElement("a")
-
-a.href=URL.createObjectURL(blob)
-
-a.download="backup_portineria.json"
-
-a.click()
-
-}
-
-function ripristinaBackup(e){
-
-let file=e.target.files[0]
-
-let reader=new FileReader()
-
-reader.onload=x=>{
-
-let dati=JSON.parse(x.target.result)
-
-if(dati.rubrica)DB.set("rubrica",dati.rubrica)
-if(dati.pacchi)DB.set("pacchi",dati.pacchi)
-if(dati.storico)DB.set("storico",dati.storico)
-
-render()
-
-}
-
-reader.readAsText(file)
-
-}
-
-function reset(){
-
-if(confirm("Cancellare tutto?")){
-localStorage.clear()
-location.reload()
-}
-
-}
-
-</script>
-</body>
-</html>
