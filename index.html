@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Portineria PRO v3.5 - Sistema Integrale</title>
+    <title>Portineria PRO v3.8 - Integrale</title>
 
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -17,456 +17,306 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--light); margin: 0; padding: env(safe-area-inset-top) 15px 20px 15px;
+            background-color: var(--light); margin: 0; padding: 15px;
             color: var(--dark); -webkit-font-smoothing: antialiased;
         }
 
         .card {
             background: var(--white); padding: 20px; border-radius: 24px;
             margin-bottom: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.05);
-            border: 1px solid rgba(0,0,0,0.05); transition: all 0.3s;
+            border: 1px solid rgba(0,0,0,0.1);
         }
 
-        h1 { font-size: 28px; font-weight: 800; text-align: center; margin: 20px 0; letter-spacing: -1px; }
-        h3 { margin-top: 0; font-size: 18px; display: flex; align-items: center; gap: 10px; color: var(--gray); }
+        h1 { font-size: 26px; font-weight: 800; text-align: center; margin: 15px 0; letter-spacing: -1px; }
+        h3 { margin-top: 0; font-size: 18px; color: var(--gray); display: flex; align-items: center; gap: 8px; }
 
         button {
-            width: 100%; padding: 18px; border: none; border-radius: 16px;
+            width: 100%; padding: 16px; border: none; border-radius: 14px;
             background-color: var(--primary); color: var(--white);
-            font-size: 17px; font-weight: 700; cursor: pointer;
+            font-size: 16px; font-weight: 700; cursor: pointer;
             margin-top: 10px; transition: all 0.2s; -webkit-tap-highlight-color: transparent;
         }
 
         button:active { transform: scale(0.96); opacity: 0.8; }
-        .btn-wa { background-color: var(--success) !important; box-shadow: 0 4px 12px rgba(52,199,89,0.3); }
+        .btn-wa { background-color: var(--success) !important; }
         .btn-dark { background-color: var(--dark) !important; }
         .btn-outline { background: none; border: 2px solid var(--primary); color: var(--primary); }
-        .btn-ritiro { background-color: var(--danger) !important; width: auto; padding: 10px 20px; font-size: 14px; margin: 0; }
+        .btn-ritiro { background-color: var(--danger) !important; width: auto; padding: 8px 15px; font-size: 13px; margin: 0; }
 
         input, textarea {
-            width: 100%; padding: 16px; margin-top: 10px; border: 2px solid #e5e5ea;
-            border-radius: 14px; font-size: 16px; box-sizing: border-box; background: var(--light);
-            appearance: none;
+            width: 100%; padding: 14px; margin-top: 10px; border: 2px solid #e5e5ea;
+            border-radius: 12px; font-size: 16px; box-sizing: border-box; background: var(--light);
         }
 
-        /* Scanner Layout */
         .video-container {
-            position: relative; width: 100%; display: none; border-radius: 22px;
+            position: relative; width: 100%; display: none; border-radius: 20px;
             overflow: hidden; background: #000; margin-top: 15px; aspect-ratio: 4/3;
         }
         .video-container.active { display: block; border: 3px solid var(--success); }
         video { width: 100%; height: 100%; object-fit: cover; }
-        .scan-region {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 80%; height: 40%; border: 2px solid var(--success);
-            border-radius: 15px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.5); pointer-events: none;
+
+        .pacco-card {
+            padding: 15px; background: var(--light); border-radius: 16px;
+            margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px;
         }
 
-        /* Lista Pacchi */
-        .pacco-card {
-            padding: 15px; background: var(--light); border-radius: 18px;
-            margin-bottom: 12px; display: flex; flex-direction: column; gap: 12px;
-        }
-        .img-box { width: 75px; height: 75px; border-radius: 14px; object-fit: cover; background: #d1d1d6; }
-        
-        /* Dashboard */
         .status-pill {
-            text-align: center; padding: 15px; border-radius: 18px;
-            font-weight: 800; color: white; margin-bottom: 20px; font-size: 18px;
+            text-align: center; padding: 12px; border-radius: 14px;
+            font-weight: 800; color: white; margin-bottom: 15px;
         }
 
         #loading-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.95); display: none;
+            background: rgba(255,255,255,0.9); display: none;
             flex-direction: column; align-items: center; justify-content: center; z-index: 9999;
         }
-        .loader-spin { width: 45px; height: 45px; border: 5px solid #f3f3f3; border-top: 5px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        .loader-spin { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-<div id="loading-overlay">
-    <div class="loader-spin"></div>
-    <p style="font-weight: 700; margin-top: 15px;">Elaborazione dati...</p>
-</div>
+<div id="loading-overlay"><div class="loader-spin"></div><p>Eseguendo...</p></div>
 
 <div class="container">
-    <h1>Portineria PRO v3.5</h1>
+    <h1>Portineria PRO</h1>
 
     <div class="card">
-        <div id="status-display" class="status-pill" style="background: var(--gray);">Sincronizzazione...</div>
+        <div id="status-display" class="status-pill" style="background: var(--primary);">ATTIVO</div>
         <div style="display: flex; justify-content: space-around; text-align: center;">
-            <div><small>IN ARRIVO</small><br><b id="stat-oggi" style="font-size: 24px;">0</b></div>
-            <div style="border-left: 1px solid #eee; height: 40px;"></div>
-            <div><small>GIACENZA</small><br><b id="stat-totale" style="font-size: 24px;">0</b></div>
+            <div><small>OGGI</small><br><b id="stat-oggi" style="font-size: 22px;">0</b></div>
+            <div><small>IN DEPOSITO</small><br><b id="stat-totale" style="font-size: 22px;">0</b></div>
         </div>
-        <button onclick="mandaSollecitoTutti()" class="btn-wa">📢 AVVISA TUTTI I GIACENTI</button>
+        <button onclick="mandaSollecitoTutti()" class="btn-wa">📢 SOLLECITO A TUTTI</button>
     </div>
 
     <div class="card">
-        <h3>📷 Acquisizione Intelligente</h3>
+        <h3>📷 Scanner</h3>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <button onclick="toggleScanner('ocr')" class="btn-dark">📄 Leggi Etichetta</button>
-            <button onclick="toggleScanner('barcode')" style="background:#5856d6">🔍 Codice a Barre</button>
+            <button onclick="toggleScanner('ocr')" class="btn-dark">📄 Etichetta</button>
+            <button onclick="toggleScanner('barcode')" style="background:#5856d6">🔍 Barcode</button>
         </div>
         <div id="videoContainer" class="video-container">
             <video id="webcam" autoplay playsinline muted></video>
-            <div class="scan-region"></div>
         </div>
-        <button id="btnStopCam" style="display:none; background: var(--gray); margin-top:15px;" onclick="stopTutto()">Spegni Fotocamera</button>
+        <button id="btnStopCam" style="display:none; background: var(--gray);" onclick="stopTutto()">Chiudi Camera</button>
     </div>
 
     <div class="card">
-        <h3>📦 Registra Ingresso</h3>
-        <label style="font-size: 12px; font-weight: bold; color: var(--gray);">FOTO PACCO (Opzionale)</label>
+        <h3>📦 Nuovo Pacco</h3>
         <input type="file" id="cameraInput" accept="image/*" capture="environment">
-        
-        <input type="text" id="destinatarioNome" placeholder="Nome del condomino...">
-        <button onclick="salvaPaccoEInvia()" class="btn-wa">💾 REGISTRA E AVVISA</button>
+        <input type="text" id="destinatarioNome" placeholder="Nome destinatario...">
+        <button onclick="salvaPaccoEInvia()" class="btn-wa">REGISTRA E AVVISA</button>
     </div>
 
     <div class="card">
-        <h3>📋 Pacchi in Deposito</h3>
-        <input type="text" id="searchBar" placeholder="Cerca condomino..." oninput="updatePacchiUI()">
-        <div id="lista-pacchi" style="margin-top: 20px;"></div>
+        <h3>📋 Giacenze</h3>
+        <div id="lista-pacchi"></div>
     </div>
 
     <div class="card">
-        <h3>👥 Gestione Condomini</h3>
+        <h3>👥 Rubrica Condomini</h3>
         <input type="file" id="importFile" style="display:none" onchange="handleFileImport(this)">
-        <button onclick="document.getElementById('importFile').click()" class="btn-dark">📥 Importa Backup / Lista (.json o .txt)</button>
+        <button onclick="document.getElementById('importFile').click()" class="btn-dark">📥 Importa File (.json / .txt)</button>
         
-        <textarea id="testoNote" placeholder="Incolla dalle Note qui:&#10;Mario Rossi, 3331234567&#10;Luigi Bianchi, 3400000000" style="margin-top:15px;"></textarea>
+        <textarea id="testoNote" placeholder="Incolla qui: Nome, Telefono" style="height:100px; margin-top:10px;"></textarea>
         <button onclick="importaDaTesto()" class="btn-outline">Carica da Testo</button>
         
-        <div id="rubrica-list" style="max-height: 200px; overflow-y: auto; margin-top: 15px; border-radius: 12px; border: 1px solid #eee;"></div>
+        <div id="rubrica-list" style="max-height: 250px; overflow-y: auto; margin-top: 15px; border: 1px solid #eee; border-radius: 12px;"></div>
     </div>
-
-    <div class="card">
-        <h3>📊 Attività Settimanale</h3>
-        <canvas id="mainChart"></canvas>
-        <button onclick="downloadBackup()" style="background: #555; font-size: 14px; margin-top: 20px;">Esporta Database Completo</button>
-        <button onclick="fullReset()" style="background:none; color:var(--danger); font-size:10px; border:none; margin-top:40px;">⚠️ CANCELLAZIONE TOTALE DATI</button>
-    </div>
+    
+    <button onclick="fullReset()" style="background:none; color:red; font-size:10px; border:none; margin-bottom:40px;">⚠️ RESET TOTALE</button>
 </div>
 
 <script>
-/* --- CONFIGURAZIONE E DATABASE --- */
+/* --- CORE LOGIC --- */
 let camStream = null;
-let deliveryChart = null;
 
 const DB = {
     fetch: (key) => JSON.parse(localStorage.getItem(key)) || [],
     save: (key, data) => localStorage.setItem(key, JSON.stringify(data))
 };
 
-window.onload = () => {
-    initApp();
-};
+window.onload = () => updateUI();
 
-function initApp() {
-    updateUI();
-    initChart();
-}
-
-/* --- LOGICA WHATSAPP (SISTEMA SICURO IPHONE) --- */
+/* --- WHATSAPP --- */
 function launchWhatsApp(targetName, isRemind = false) {
     const rubrica = DB.fetch('condomini');
     const searchKey = targetName.toLowerCase().trim();
-    
-    // Ricerca migliorata: trova il nome anche se l'etichetta è parziale
-    const user = rubrica.find(u => 
-        searchKey.includes(u.nome.toLowerCase().trim()) || 
-        u.nome.toLowerCase().trim().includes(searchKey)
-    );
+    const user = rubrica.find(u => searchKey.includes(u.nome.toLowerCase().trim()) || u.nome.toLowerCase().trim().includes(searchKey));
 
     if (user) {
         let phone = user.telefono.replace(/\D/g, '');
         if (phone.length === 10) phone = "39" + phone;
-        
-        const msg = isRemind 
-            ? `Gentile ${user.nome}, le ricordiamo che ha dei pacchi in attesa di ritiro in portineria. Cordiali saluti. 📦`
-            : `Buongiorno ${user.nome}, è appena arrivato un pacco per lei in portineria! 📦`;
-
-        // Metodo diretto window.location per Safari iOS
+        const msg = isRemind ? `Reminder: hai un pacco da ritirare! 📦` : `Ciao ${user.nome}, c'è un pacco per te in portineria! 📦`;
         window.location.href = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
-    } else if (!isRemind) {
-        alert("Attenzione: '" + targetName + "' non è in rubrica. Il pacco è stato salvato ma devi avvisarlo manualmente.");
-    }
+    } else if (!isRemind) alert("Nome non in rubrica.");
 }
 
-async function salvaPaccoEInvia() {
-    const nome = document.getElementById('destinatarioNome').value.trim();
-    if (!nome) return alert("Inserisci un nome destinatario.");
+/* --- RUBRICA & IMPORT (LA PARTE CHE TI SERVE) --- */
+function importaDaTesto() {
+    const area = document.getElementById('testoNote');
+    const righe = area.value.trim().split(/\n/);
+    let rubricaAttuale = DB.fetch('condomini');
+    let aggiunti = 0;
 
-    setLoader(true);
-    const photoFile = document.getElementById('cameraInput').files[0];
-    let photoBase64 = null;
-    
-    if (photoFile) {
-        photoBase64 = await processImage(photoFile);
-    }
-
-    const pacchi = DB.fetch('pacchi');
-    pacchi.unshift({
-        id: Date.now(),
-        nome: nome,
-        time: new Date().toISOString(),
-        foto: photoBase64
-    });
-    DB.save('pacchi', pacchi);
-
-    // Reset Interfaccia
-    document.getElementById('destinatarioNome').value = "";
-    document.getElementById('cameraInput').value = "";
-    
-    setLoader(false);
-    updateUI();
-    launchWhatsApp(nome);
-}
-
-/* --- MOTORE SCANNER (OCR & BARCODE) --- */
-async function toggleScanner(mode) {
-    stopTutto();
-    const vContainer = document.getElementById('videoContainer');
-    const video = document.getElementById('webcam');
-    
-    try {
-        camStream = await navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: "environment", width: { ideal: 1280 } } 
-        });
-        video.srcObject = camStream;
-        vContainer.classList.add('active');
-        document.getElementById('btnStopCam').style.display = "block";
-
-        if (mode === 'ocr') {
-            runOCRScan();
-        } else {
-            const barcodeReader = new ZXing.BrowserBarcodeReader();
-            barcodeReader.decodeFromVideoDevice(null, 'webcam', (result) => {
-                if (result) {
-                    document.getElementById('destinatarioNome').value = result.text;
-                    stopTutto();
-                }
-            });
-        }
-    } catch (err) {
-        alert("Errore accesso fotocamera. Verifica i permessi in Safari.");
-    }
-}
-
-async function runOCRScan() {
-    if (!camStream) return;
-    const video = document.getElementById('webcam');
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0);
-
-    try {
-        const result = await Tesseract.recognize(canvas, 'ita');
-        const text = result.data.text.toLowerCase();
-        const rubrica = DB.fetch('condomini');
-
-        for (let condomino of rubrica) {
-            if (text.includes(condomino.nome.toLowerCase()) && condomino.nome.length > 3) {
-                document.getElementById('destinatarioNome').value = condomino.nome.toUpperCase();
-                stopTutto();
-                return;
+    righe.forEach(riga => {
+        const parti = riga.split(/[,;\t\-]/);
+        if (parti.length >= 2) {
+            const nome = parti[0].trim();
+            const tel = parti[1].trim().replace(/\D/g, '');
+            if (nome.length > 2 && tel.length >= 8) {
+                rubricaAttuale.push({ nome: nome, telefono: tel });
+                aggiunti++;
             }
         }
-    } catch (e) {}
+    });
 
-    if (camStream) setTimeout(runOCRScan, 1500);
+    if (aggiunti > 0) {
+        DB.save('condomini', rubricaAttuale);
+        area.value = "";
+        updateUI();
+        alert("Aggiunti " + aggiunti + " nomi!");
+    } else alert("Formato non valido. Usa: Nome, Telefono");
 }
 
-function stopTutto() {
-    if (camStream) {
-        camStream.getTracks().forEach(t => t.stop());
-        camStream = null;
-    }
-    document.getElementById('videoContainer').classList.remove('active');
-    document.getElementById('btnStopCam').style.display = "none";
-}
-
-/* --- GESTIONE RUBRICA --- */
 function handleFileImport(input) {
     const file = input.files[0];
     const reader = new FileReader();
     reader.onload = (e) => {
+        const contenuto = e.target.result;
         try {
-            const data = JSON.parse(e.target.result);
-            if (Array.isArray(data)) DB.save('condomini', data);
-            else if (data.condomini) DB.save('condomini', data.condomini);
-            alert("Rubrica JSON importata!");
+            const data = JSON.parse(contenuto);
+            DB.save('condomini', Array.isArray(data) ? data : (data.condomini || []));
+            alert("File caricato!");
         } catch {
-            parseTextLines(e.target.result.split('\n'));
+            const righe = contenuto.split(/\n/);
+            document.getElementById('testoNote').value = contenuto;
+            importaDaTesto();
         }
         updateUI();
     };
     reader.readAsText(file);
 }
 
-function importaDaTesto() {
-    const raw = document.getElementById('testoNote').value;
-    if (!raw) return alert("Incolla prima del testo.");
-    parseTextLines(raw.split('\n'));
-    document.getElementById('testoNote').value = "";
+function updateRubricaUI() {
+    const container = document.getElementById('rubrica-list');
+    const rubrica = DB.fetch('condomini');
+    if (rubrica.length === 0) {
+        container.innerHTML = "<p style='padding:20px; text-align:center; color:#999;'>Rubrica vuota</p>";
+        return;
+    }
+    container.innerHTML = rubrica.sort((a,b) => a.nome.localeCompare(b.nome)).map((c, i) => `
+        <div style="padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; background:white;">
+            <span><b>${c.nome.toUpperCase()}</b><br><small>${c.telefono}</small></span>
+            <button onclick="deleteContact(${i})" style="width:auto; padding:5px 10px; background:#fff0f0; color:red; margin:0; font-size:11px;">X</button>
+        </div>
+    `).join('');
+}
+
+/* --- GESTIONE PACCHI --- */
+async function salvaPaccoEInvia() {
+    const nome = document.getElementById('destinatarioNome').value.trim();
+    if (!nome) return alert("Manca il nome!");
+    setLoader(true);
+    const photoFile = document.getElementById('cameraInput').files[0];
+    let photoBase64 = null;
+    if (photoFile) photoBase64 = await processImage(photoFile);
+
+    const pacchi = DB.fetch('pacchi');
+    pacchi.unshift({ id: Date.now(), nome: nome, time: new Date().toISOString(), foto: photoBase64 });
+    DB.save('pacchi', pacchi);
+
+    document.getElementById('destinatarioNome').value = "";
+    document.getElementById('cameraInput').value = "";
+    setLoader(false);
+    updateUI();
+    launchWhatsApp(nome);
+}
+
+function ritiraPacco(idx) {
+    let p = DB.fetch('pacchi');
+    p.splice(idx, 1);
+    DB.save('pacchi', p);
     updateUI();
 }
 
-function parseTextLines(lines) {
-    let current = DB.fetch('condomini');
-    let added = 0;
-    lines.forEach(line => {
-        const parts = line.split(/[,;\t-]/);
-        if (parts.length >= 2) {
-            current.push({ nome: parts[0].trim(), telefono: parts[1].trim().replace(/\s/g, '') });
-            added++;
-        }
-    });
-    DB.save('condomini', current);
-    alert("Aggiunti " + added + " condomini.");
+function updatePacchiUI() {
+    const list = document.getElementById('lista-pacchi');
+    const data = DB.fetch('pacchi');
+    list.innerHTML = data.map((p, i) => `
+        <div class="pacco-card">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <img src="${p.foto || 'https://via.placeholder.com/60?text=📦'}" style="width:50px; height:50px; border-radius:8px; object-fit:cover;">
+                    <span><b>${p.nome.toUpperCase()}</b></span>
+                </div>
+                <button class="btn-ritiro" onclick="ritiraPacco(${i})">RITIRATO</button>
+            </div>
+        </div>
+    `).join('');
 }
 
-/* --- INTERFACCIA E UTILITY --- */
+/* --- UTILS --- */
+function updateUI() {
+    updatePacchiUI();
+    updateRubricaUI();
+    const p = DB.fetch('pacchi');
+    document.getElementById('stat-totale').innerText = p.length;
+    document.getElementById('stat-oggi').innerText = p.filter(x => new Date(x.time).toDateString() === new Date().toDateString()).length;
+}
+
 function processImage(file) {
-    return new Promise((res) => {
+    return new Promise(res => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
-        reader.onload = (ev) => {
+        reader.onload = e => {
             const img = new Image();
-            img.src = ev.target.result;
+            img.src = e.target.result;
             img.onload = () => {
                 const cvs = document.createElement('canvas');
-                const MAX_W = 600;
-                const ratio = MAX_W / img.width;
-                cvs.width = MAX_W;
-                cvs.height = img.height * ratio;
+                cvs.width = 400; cvs.height = img.height * (400/img.width);
                 cvs.getContext('2d').drawImage(img, 0, 0, cvs.width, cvs.height);
-                res(cvs.toDataURL('image/jpeg', 0.7));
+                res(cvs.toDataURL('image/jpeg', 0.6));
             }
         }
     });
 }
 
-function updateUI() {
-    updatePacchiUI();
-    updateRubricaUI();
-    updateDashboard();
-    if (deliveryChart) updateChartData();
-}
-
-function updatePacchiUI() {
-    const list = document.getElementById('lista-pacchi');
-    const filter = document.getElementById('searchBar').value.toLowerCase();
-    const data = DB.fetch('pacchi');
-    list.innerHTML = "";
-
-    data.forEach((p, i) => {
-        if (!p.nome.toLowerCase().includes(filter)) return;
-        const div = document.createElement('div');
-        div.className = 'pacco-card';
-        div.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <div style="display:flex; align-items:center; gap:12px;">
-                    <img src="${p.foto || 'https://via.placeholder.com/75?text=BOX'}" class="img-box" onclick="viewFull('${p.foto}')">
-                    <div>
-                        <b style="font-size:16px;">${p.nome.toUpperCase()}</b><br>
-                        <small style="color:var(--gray);">${new Date(p.time).toLocaleString()}</small>
-                    </div>
-                </div>
-                <button class="btn-ritiro" onclick="ritiraPacco(${i})">RITIRATO</button>
-            </div>
-            <button class="btn-outline" onclick="launchWhatsApp('${p.nome}')" style="padding:10px; font-size:13px; margin-top:5px;">📲 Nuovo Avviso</button>
-        `;
-        list.appendChild(div);
-    });
-}
-
-function ritiraPacco(idx) {
-    let pacchi = DB.fetch('pacchi');
-    let log = DB.fetch('storico_consegne');
-    let item = pacchi.splice(idx, 1)[0];
-    item.ritiratoIl = new Date().toISOString();
-    log.push(item);
-    DB.save('pacchi', pacchi);
-    DB.save('storico_consegne', log);
-    updateUI();
-}
-
-function updateRubricaUI() {
-    const container = document.getElementById('rubrica-list');
-    const rubrica = DB.fetch('condomini');
-    if (rubrica.length === 0) {
-        container.innerHTML = "<p style='padding:15px; text-align:center; color:#999;'>Nessun residente caricato.</p>";
-        return;
+async function toggleScanner(mode) {
+    const v = document.getElementById('webcam');
+    document.getElementById('videoContainer').classList.add('active');
+    document.getElementById('btnStopCam').style.display = "block";
+    camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+    v.srcObject = camStream;
+    if(mode === 'ocr') {
+        const t = setInterval(async () => {
+            if(!camStream) { clearInterval(t); return; }
+            const cvs = document.createElement('canvas');
+            cvs.width = v.videoWidth; cvs.height = v.videoHeight;
+            cvs.getContext('2d').drawImage(v, 0, 0);
+            const res = await Tesseract.recognize(cvs, 'ita');
+            DB.fetch('condomini').forEach(c => {
+                if(res.data.text.toLowerCase().includes(c.nome.toLowerCase())) {
+                    document.getElementById('destinatarioNome').value = c.nome;
+                    stopTutto();
+                }
+            });
+        }, 2000);
     }
-    container.innerHTML = rubrica.sort((a,b) => a.nome.localeCompare(b.nome)).map((c, i) => `
-        <div style="padding:10px; border-bottom:1px solid #f2f2f7; display:flex; justify-content:space-between; align-items:center;">
-            <span>${c.nome}</span>
-            <button onclick="deleteContact(${i})" style="width:auto; padding:5px 10px; background:none; color:red; margin:0; font-size:12px;">Rimuovi</button>
-        </div>
-    `).join('');
 }
 
-function updateDashboard() {
-    const pacchi = DB.fetch('pacchi');
-    const oggi = new Date().toDateString();
-    const countOggi = pacchi.filter(p => new Date(p.time).toDateString() === oggi).length;
-    
-    document.getElementById('stat-oggi').innerText = countOggi;
-    document.getElementById('stat-totale').innerText = pacchi.length;
-
-    const bar = document.getElementById('status-display');
-    if (pacchi.length === 0) { bar.innerText = "DEPOSITO VUOTO"; bar.style.background = var(--success); }
-    else if (pacchi.length > 15) { bar.innerText = "GIACENZA ALTA"; bar.style.background = var(--danger); }
-    else { bar.innerText = "SERVIZIO ATTIVO"; bar.style.background = var(--primary); }
+function stopTutto() {
+    if(camStream) camStream.getTracks().forEach(t => t.stop());
+    camStream = null;
+    document.getElementById('videoContainer').classList.remove('active');
+    document.getElementById('btnStopCam').style.display = "none";
 }
 
-function initChart() {
-    const ctx = document.getElementById('mainChart').getContext('2d');
-    deliveryChart = new Chart(ctx, {
-        type: 'bar',
-        data: { labels: [], datasets: [{ label: 'Consegne', data: [], backgroundColor: '#007aff', borderRadius: 8 }] },
-        options: { responsive: true, plugins: { legend: { display: false } } }
-    });
-    updateChartData();
-}
-
-function updateChartData() {
-    const log = DB.fetch('storico_consegne');
-    const stats = {};
-    for (let i=6; i>=0; i--) {
-        const d = new Date(); d.setDate(d.getDate() - i);
-        stats[d.toLocaleDateString()] = 0;
-    }
-    log.forEach(item => {
-        const dateStr = new Date(item.ritiratoIl).toLocaleDateString();
-        if (stats[dateStr] !== undefined) stats[dateStr]++;
-    });
-    deliveryChart.data.labels = Object.keys(stats);
-    deliveryChart.data.datasets[0].data = Object.values(stats);
-    deliveryChart.update();
-}
-
-function setLoader(val) { document.getElementById('loading-overlay').style.display = val ? 'flex' : 'none'; }
-function viewFull(data) { if(!data) return; const w = window.open(""); w.document.write(`<img src="${data}" style="width:100%">`); }
-function downloadBackup() {
-    const data = { condomini: DB.fetch('condomini'), pacchi: DB.fetch('pacchi'), storico: DB.fetch('storico_consegne') };
-    const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `backup_portineria.json`; a.click();
-}
-function mandaSollecitoTutti() {
-    const pacchi = DB.fetch('pacchi');
-    const nomi = [...new Set(pacchi.map(p => p.nome))];
-    if (nomi.length === 0) return alert("Nessun pacco.");
-    if (confirm("Inviare " + nomi.length + " solleciti?")) nomi.forEach((n, i) => setTimeout(() => launchWhatsApp(n, true), i * 1500));
-}
-function deleteContact(i) { let r = DB.fetch('condomini'); r.splice(i, 1); DB.save('condomini', r); updateUI(); }
-function fullReset() { if (confirm("CANCELLARE TUTTO?")) { localStorage.clear(); location.reload(); } }
+function deleteContact(i) { let r = DB.fetch('condomini'); r.splice(i,1); DB.save('condomini', r); updateUI(); }
+function setLoader(v) { document.getElementById('loading-overlay').style.display = v ? 'flex' : 'none'; }
+function mandaSollecitoTutti() { DB.fetch('pacchi').forEach((p, i) => setTimeout(() => launchWhatsApp(p.nome, true), i*1000)); }
+function fullReset() { if(confirm("CANCELLARE TUTTO?")) { localStorage.clear(); location.reload(); } }
 </script>
 </body>
 </html>
