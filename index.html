@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Portineria Digitale PRO - Full System</title>
+    <title>Portineria PRO v3.5 - Sistema Integrale</title>
 
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -11,657 +11,462 @@
 
     <style>
         :root {
-            --primary: #1a73e8;
-            --success: #25D366;
-            --danger: #e74c3c;
-            --warning: #f1c40f;
-            --info: #3498db;
-            --dark: #2c3e50;
-            --light: #f8f9fa;
+            --primary: #007aff; --success: #34c759; --danger: #ff3b30;
+            --dark: #1c1c1e; --light: #f2f2f7; --white: #ffffff; --gray: #8e8e93;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f0f2f5;
-            margin: 0;
-            padding: 10px;
-            color: var(--dark);
-            -webkit-font-smoothing: antialiased;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--light); margin: 0; padding: env(safe-area-inset-top) 15px 20px 15px;
+            color: var(--dark); -webkit-font-smoothing: antialiased;
         }
-
-        h1 { text-align: center; color: var(--primary); font-size: 28px; margin: 20px 0; font-weight: 800; letter-spacing: -1px; }
-        h3 { margin-top: 0; color: var(--dark); font-size: 20px; border-bottom: 2px solid var(--light); padding-bottom: 10px; margin-bottom: 15px; }
 
         .card {
-            background: white;
-            padding: 20px;
-            border-radius: 24px;
-            margin-bottom: 20px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.05);
-            border: 1px solid rgba(0,0,0,0.02);
+            background: var(--white); padding: 20px; border-radius: 24px;
+            margin-bottom: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.05); transition: all 0.3s;
         }
 
-        /* Bottoni Stile iOS */
-        button, .btn-link {
-            width: 100%;
-            padding: 18px;
-            border: none;
-            border-radius: 16px;
-            background-color: var(--primary);
-            color: white;
-            font-size: 18px;
-            font-weight: 700;
-            margin-top: 12px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: inline-block;
-            text-decoration: none;
-            text-align: center;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
+        h1 { font-size: 28px; font-weight: 800; text-align: center; margin: 20px 0; letter-spacing: -1px; }
+        h3 { margin-top: 0; font-size: 18px; display: flex; align-items: center; gap: 10px; color: var(--gray); }
+
+        button {
+            width: 100%; padding: 18px; border: none; border-radius: 16px;
+            background-color: var(--primary); color: var(--white);
+            font-size: 17px; font-weight: 700; cursor: pointer;
+            margin-top: 10px; transition: all 0.2s; -webkit-tap-highlight-color: transparent;
         }
 
         button:active { transform: scale(0.96); opacity: 0.8; }
+        .btn-wa { background-color: var(--success) !important; box-shadow: 0 4px 12px rgba(52,199,89,0.3); }
+        .btn-dark { background-color: var(--dark) !important; }
+        .btn-outline { background: none; border: 2px solid var(--primary); color: var(--primary); }
+        .btn-ritiro { background-color: var(--danger) !important; width: auto; padding: 10px 20px; font-size: 14px; margin: 0; }
 
-        .btn-wa { background-color: var(--success) !important; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3); }
-        .btn-sec { background-color: var(--info); }
-        .btn-del { background-color: var(--danger) !important; width: auto; padding: 10px 20px; font-size: 14px; margin: 0; border-radius: 12px; }
-        .btn-all { background-color: var(--dark) !important; margin-bottom: 10px; }
-
-        /* Input */
-        input, select, textarea {
-            width: 100%;
-            padding: 16px;
-            margin-top: 10px;
-            border: 2px solid #eee;
-            border-radius: 14px;
-            font-size: 16px;
-            box-sizing: border-box;
-            background: var(--light);
-            transition: all 0.3s;
+        input, textarea {
+            width: 100%; padding: 16px; margin-top: 10px; border: 2px solid #e5e5ea;
+            border-radius: 14px; font-size: 16px; box-sizing: border-box; background: var(--light);
+            appearance: none;
         }
 
-        input:focus, textarea:focus { border-color: var(--primary); outline: none; background: white; }
-        textarea { height: 150px; font-family: 'Courier New', monospace; font-size: 14px; resize: none; }
-
-        /* Camera e Scanner */
-        .video-wrapper {
-            position: relative;
-            width: 100%;
-            display: none;
-            margin-top: 15px;
-            border-radius: 24px;
-            overflow: hidden;
-            background: #000;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        /* Scanner Layout */
+        .video-container {
+            position: relative; width: 100%; display: none; border-radius: 22px;
+            overflow: hidden; background: #000; margin-top: 15px; aspect-ratio: 4/3;
+        }
+        .video-container.active { display: block; border: 3px solid var(--success); }
+        video { width: 100%; height: 100%; object-fit: cover; }
+        .scan-region {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 80%; height: 40%; border: 2px solid var(--success);
+            border-radius: 15px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.5); pointer-events: none;
         }
 
-        .video-wrapper.active { display: block; }
-        video { width: 100%; display: block; }
-
-        .scanner-box {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 80%;
-            height: 140px;
-            border: 4px solid var(--success);
-            border-radius: 20px;
-            box-shadow: 0 0 0 9999px rgba(0,0,0,0.6);
-            pointer-events: none;
+        /* Lista Pacchi */
+        .pacco-card {
+            padding: 15px; background: var(--light); border-radius: 18px;
+            margin-bottom: 12px; display: flex; flex-direction: column; gap: 12px;
         }
-
-        .scanner-line {
-            position: absolute;
-            width: 100%;
-            height: 3px;
-            background: var(--success);
-            top: 0;
-            animation: scan 2.5s infinite linear;
-            box-shadow: 0 0 15px var(--success);
-        }
-
-        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
-
-        /* Liste Pacchi e Condomini */
-        .pacco-item {
-            border-bottom: 1px solid #f0f0f0;
-            padding: 20px 0;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .flex-row { display: flex; align-items: center; justify-content: space-between; width: 100%; }
-        .pacco-info { display: flex; align-items: center; gap: 15px; }
+        .img-box { width: 75px; height: 75px; border-radius: 14px; object-fit: cover; background: #d1d1d6; }
         
-        .img-preview {
-            width: 75px;
-            height: 75px;
-            border-radius: 16px;
-            object-fit: cover;
-            background: #eee;
-            border: 1px solid #ddd;
-            cursor: pointer;
+        /* Dashboard */
+        .status-pill {
+            text-align: center; padding: 15px; border-radius: 18px;
+            font-weight: 800; color: white; margin-bottom: 20px; font-size: 18px;
         }
 
-        .pacco-text b { font-size: 18px; color: var(--dark); display: block; text-transform: uppercase; }
-        .pacco-text small { color: #888; font-size: 13px; }
-
-        .semaforo {
-            font-weight: 800;
-            text-align: center;
-            padding: 18px;
-            border-radius: 18px;
-            margin-bottom: 20px;
-            color: white;
-            text-transform: uppercase;
-            font-size: 14px;
-            letter-spacing: 1px;
-        }
-
-        .rubrica-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 14px;
-            border-bottom: 1px solid #f5f5f5;
-            align-items: center;
-            background: white;
-            transition: background 0.2s;
-        }
-
-        /* Loading */
         #loading-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.9); display: none;
-            justify-content: center; align-items: center; z-index: 9999;
-            flex-direction: column;
+            background: rgba(255,255,255,0.95); display: none;
+            flex-direction: column; align-items: center; justify-content: center; z-index: 9999;
         }
-
-        .spinner {
-            width: 50px; height: 50px;
-            border: 5px solid #f3f3f3; border-top: 5px solid var(--primary);
-            border-radius: 50%; animation: spin 1s linear infinite;
-        }
+        .loader-spin { width: 45px; height: 45px; border: 5px solid #f3f3f3; border-top: 5px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
 <div id="loading-overlay">
-    <div class="spinner"></div>
-    <p style="margin-top:15px; font-weight:bold;">Elaborazione dati...</p>
+    <div class="loader-spin"></div>
+    <p style="font-weight: 700; margin-top: 15px;">Elaborazione dati...</p>
 </div>
 
-<h1>🏢 Portineria Digitale</h1>
+<div class="container">
+    <h1>Portineria PRO v3.5</h1>
 
-<div class="card">
-    <div id="semaforo" class="semaforo" style="background: #95a5a6;">Inizializzazione Sistema...</div>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
-        <div style="background: var(--light); padding: 15px; border-radius: 16px; text-align: center;">
-            <small style="color: #666; font-weight: bold;">OGGI</small><br>
-            <span id="count-oggi" style="font-size: 24px; font-weight: 900; color: var(--primary);">0</span>
+    <div class="card">
+        <div id="status-display" class="status-pill" style="background: var(--gray);">Sincronizzazione...</div>
+        <div style="display: flex; justify-content: space-around; text-align: center;">
+            <div><small>IN ARRIVO</small><br><b id="stat-oggi" style="font-size: 24px;">0</b></div>
+            <div style="border-left: 1px solid #eee; height: 40px;"></div>
+            <div><small>GIACENZA</small><br><b id="stat-totale" style="font-size: 24px;">0</b></div>
         </div>
-        <div style="background: var(--light); padding: 15px; border-radius: 16px; text-align: center;">
-            <small style="color: #666; font-weight: bold;">GIACENZA</small><br>
-            <span id="count-totale" style="font-size: 24px; font-weight: 900; color: var(--danger);">0</span>
+        <button onclick="mandaSollecitoTutti()" class="btn-wa">📢 AVVISA TUTTI I GIACENTI</button>
+    </div>
+
+    <div class="card">
+        <h3>📷 Acquisizione Intelligente</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <button onclick="toggleScanner('ocr')" class="btn-dark">📄 Leggi Etichetta</button>
+            <button onclick="toggleScanner('barcode')" style="background:#5856d6">🔍 Codice a Barre</button>
         </div>
-    </div>
-    <button onclick="avvisaTuttiGiacenti()" class="btn-all btn-wa">📢 AVVISA TUTTI I GIACENTI</button>
-</div>
-
-<div class="card">
-    <h3>📷 Acquisizione Automatica</h3>
-    <button onclick="startScanner('ocr')">📄 Leggi Etichetta Destinatario</button>
-    <button onclick="startScanner('barcode')" style="background:#8e44ad">🔍 Scansiona Codice a Barre</button>
-    <button onclick="stopCamera()" id="btnStop" style="display:none; background:#7f8c8d">Spegni Fotocamera</button>
-    
-    <div id="videoWrapper" class="video-wrapper">
-        <video id="video" autoplay playsinline muted></video>
-        <div class="scanner-box"><div class="scanner-line"></div></div>
-    </div>
-</div>
-
-<div class="card">
-    <h3>📦 Nuovo Ingresso Pacco</h3>
-    <label style="font-size: 13px; font-weight: 700; color: #444;">FOTO PACCO (OBBLIGATORIA PER AVVISO)</label>
-    <input type="file" id="fotoInput" accept="image/*" capture="environment">
-    <input id="nomePacco" placeholder="Nome Condomino (es. Rossi)...">
-    <button onclick="registraPacco()">Salva e Invia Avviso</button>
-</div>
-
-<div class="card">
-    <h3>📋 Pacchi in Attesa di Ritiro</h3>
-    <input id="searchPacchi" placeholder="Cerca un pacco..." oninput="renderPacchi()">
-    <div id="lista-pacchi" style="margin-top: 15px;"></div>
-</div>
-
-<div class="card">
-    <h3>👥 Gestione Condomini</h3>
-    <div style="background: #fffbe6; padding: 15px; border-radius: 16px; border: 1px solid #ffe58f;">
-        <p style="margin-top:0; font-weight: bold; font-size: 14px;">IMPORTAZIONE MASSIVA</p>
-        <textarea id="importMassivo" placeholder="Copia qui la lista dalle Note. Esempio:&#10;Mario Rossi, 3331234567&#10;Luigi Verdi, 3409988776"></textarea>
-        <button onclick="importazioneMassiva()" style="background:#2c3e50; padding: 14px; font-size: 15px;">Carica Lista Intera</button>
-    </div>
-
-    <div style="margin-top: 25px;">
-        <p style="font-weight: bold; font-size: 14px;">AGGIUNGI SINGOLO</p>
-        <input id="nomeCondomino" placeholder="Nome e Cognome">
-        <input id="telefonoCondomino" type="tel" placeholder="Numero di Cellulare">
-        <button onclick="aggiungiCondomino()" class="btn-sec">Salva in Rubrica</button>
-    </div>
-    
-    <div style="margin-top: 30px;">
-        <div class="flex-row">
-            <h4>Rubrica Residente</h4>
-            <input id="searchRubrica" placeholder="Cerca nome..." oninput="renderRubrica()" style="width: 50%; margin-top:0; padding: 8px;">
+        <div id="videoContainer" class="video-container">
+            <video id="webcam" autoplay playsinline muted></video>
+            <div class="scan-region"></div>
         </div>
-        <div id="lista-rubrica" style="max-height: 350px; overflow-y: auto; border: 1px solid #eee; border-radius: 16px; margin-top: 10px;"></div>
+        <button id="btnStopCam" style="display:none; background: var(--gray); margin-top:15px;" onclick="stopTutto()">Spegni Fotocamera</button>
     </div>
-</div>
 
-<div class="card">
-    <h3>📊 Storico e Backup</h3>
-    <canvas id="graficoStorico"></canvas>
-    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-    <button onclick="esportaDatabase()" style="background:#607d8b">Esporta Backup Database (.json)</button>
-    <button onclick="svuotaMemoria()" style="background:transparent; color:red; border:none; font-size:11px; margin-top:20px; font-weight:bold;">⚠️ CANCELLA TUTTI I DATI</button>
+    <div class="card">
+        <h3>📦 Registra Ingresso</h3>
+        <label style="font-size: 12px; font-weight: bold; color: var(--gray);">FOTO PACCO (Opzionale)</label>
+        <input type="file" id="cameraInput" accept="image/*" capture="environment">
+        
+        <input type="text" id="destinatarioNome" placeholder="Nome del condomino...">
+        <button onclick="salvaPaccoEInvia()" class="btn-wa">💾 REGISTRA E AVVISA</button>
+    </div>
+
+    <div class="card">
+        <h3>📋 Pacchi in Deposito</h3>
+        <input type="text" id="searchBar" placeholder="Cerca condomino..." oninput="updatePacchiUI()">
+        <div id="lista-pacchi" style="margin-top: 20px;"></div>
+    </div>
+
+    <div class="card">
+        <h3>👥 Gestione Condomini</h3>
+        <input type="file" id="importFile" style="display:none" onchange="handleFileImport(this)">
+        <button onclick="document.getElementById('importFile').click()" class="btn-dark">📥 Importa Backup / Lista (.json o .txt)</button>
+        
+        <textarea id="testoNote" placeholder="Incolla dalle Note qui:&#10;Mario Rossi, 3331234567&#10;Luigi Bianchi, 3400000000" style="margin-top:15px;"></textarea>
+        <button onclick="importaDaTesto()" class="btn-outline">Carica da Testo</button>
+        
+        <div id="rubrica-list" style="max-height: 200px; overflow-y: auto; margin-top: 15px; border-radius: 12px; border: 1px solid #eee;"></div>
+    </div>
+
+    <div class="card">
+        <h3>📊 Attività Settimanale</h3>
+        <canvas id="mainChart"></canvas>
+        <button onclick="downloadBackup()" style="background: #555; font-size: 14px; margin-top: 20px;">Esporta Database Completo</button>
+        <button onclick="fullReset()" style="background:none; color:var(--danger); font-size:10px; border:none; margin-top:40px;">⚠️ CANCELLAZIONE TOTALE DATI</button>
+    </div>
 </div>
 
 <script>
-/* ============================================================
-   SISTEMA CORE - LOGICA INTEGRALE
-   ============================================================ */
+/* --- CONFIGURAZIONE E DATABASE --- */
+let camStream = null;
+let deliveryChart = null;
 
-let streamCamera = null;
-let myChart = null;
-
-// Gestione Storage Locale
-const AppDB = {
-    pacchi: () => JSON.parse(localStorage.getItem('pacchi')) || [],
-    condomini: () => JSON.parse(localStorage.getItem('condomini')) || [],
-    storico: () => JSON.parse(localStorage.getItem('storico')) || [],
+const DB = {
+    fetch: (key) => JSON.parse(localStorage.getItem(key)) || [],
     save: (key, data) => localStorage.setItem(key, JSON.stringify(data))
 };
 
 window.onload = () => {
-    renderTutto();
-    initChart();
+    initApp();
 };
 
-function renderTutto() {
-    renderPacchi();
-    renderRubrica();
-    aggiornaDashboard();
-    if(myChart) aggiornaGrafico();
+function initApp() {
+    updateUI();
+    initChart();
 }
 
-// --- LOGICA WHATSAPP (FIX IPHONE) ---
-function generaLinkWA(nomeDestinatario, isSollecito = false) {
-    const rubrica = AppDB.condomini();
-    const nomeCerca = nomeDestinatario.toLowerCase().trim();
+/* --- LOGICA WHATSAPP (SISTEMA SICURO IPHONE) --- */
+function launchWhatsApp(targetName, isRemind = false) {
+    const rubrica = DB.fetch('condomini');
+    const searchKey = targetName.toLowerCase().trim();
     
-    // Ricerca intelligente
-    const condomino = rubrica.find(c => 
-        nomeCerca.includes(c.nome.toLowerCase().trim()) || 
-        c.nome.toLowerCase().trim().includes(nomeCerca)
+    // Ricerca migliorata: trova il nome anche se l'etichetta è parziale
+    const user = rubrica.find(u => 
+        searchKey.includes(u.nome.toLowerCase().trim()) || 
+        u.nome.toLowerCase().trim().includes(searchKey)
     );
-    
-    if (!condomino) return null;
 
-    let tel = condomino.telefono.replace(/\D/g, '');
-    if (tel.length === 10) tel = "39" + tel;
-    
-    const messaggio = isSollecito 
-        ? `Ciao ${condomino.nome}, hai ancora dei pacchi da ritirare in portineria. Ti aspettiamo! 📦`
-        : `Ciao ${condomino.nome}, è arrivato un pacco per te! Passa pure a ritirarlo. 📦`;
+    if (user) {
+        let phone = user.telefono.replace(/\D/g, '');
+        if (phone.length === 10) phone = "39" + phone;
+        
+        const msg = isRemind 
+            ? `Gentile ${user.nome}, le ricordiamo che ha dei pacchi in attesa di ritiro in portineria. Cordiali saluti. 📦`
+            : `Buongiorno ${user.nome}, è appena arrivato un pacco per lei in portineria! 📦`;
 
-    return `https://api.whatsapp.com/send?phone=${tel}&text=${encodeURIComponent(messaggio)}`;
-}
-
-function avvisaTuttiGiacenti() {
-    const pacchi = AppDB.pacchi();
-    if(pacchi.length === 0) return alert("Nessun pacco da sollecitare.");
-    
-    const unici = [...new Set(pacchi.map(p => p.nome))];
-    if(confirm(`Inviare un messaggio di sollecito a ${unici.length} condomini?`)) {
-        unici.forEach(nome => {
-            const link = generaLinkWA(nome, true);
-            if(link) window.open(link, '_blank');
-        });
+        // Metodo diretto window.location per Safari iOS
+        window.location.href = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+    } else if (!isRemind) {
+        alert("Attenzione: '" + targetName + "' non è in rubrica. Il pacco è stato salvato ma devi avvisarlo manualmente.");
     }
 }
 
-// --- IMPORTAZIONE MASSIVA (FIXED) ---
-function importazioneMassiva() {
-    const testo = document.getElementById('importMassivo').value;
-    if(!testo) return alert("Il campo è vuoto!");
+async function salvaPaccoEInvia() {
+    const nome = document.getElementById('destinatarioNome').value.trim();
+    if (!nome) return alert("Inserisci un nome destinatario.");
+
+    setLoader(true);
+    const photoFile = document.getElementById('cameraInput').files[0];
+    let photoBase64 = null;
     
-    const righe = testo.split('\n');
-    let listaAttuale = AppDB.condomini();
-    let contatore = 0;
+    if (photoFile) {
+        photoBase64 = await processImage(photoFile);
+    }
 
-    righe.forEach(riga => {
-        // Supporta virgola, punto e virgola, tabulazione o trattino
-        const separator = riga.includes(',') ? ',' : (riga.includes(';') ? ';' : '-');
-        const parti = riga.split(separator);
-        
-        if(parti.length >= 2) {
-            const nome = parti[0].trim();
-            const tel = parti[1].trim().replace(/\s/g, '');
-            if(nome && tel) {
-                listaAttuale.push({ nome, telefono: tel });
-                contatore++;
-            }
-        }
+    const pacchi = DB.fetch('pacchi');
+    pacchi.unshift({
+        id: Date.now(),
+        nome: nome,
+        time: new Date().toISOString(),
+        foto: photoBase64
     });
+    DB.save('pacchi', pacchi);
 
-    AppDB.save('condomini', listaAttuale);
-    document.getElementById('importMassivo').value = "";
-    renderTutto();
-    alert(`Caricati correttamente ${contatore} residenti.`);
+    // Reset Interfaccia
+    document.getElementById('destinatarioNome').value = "";
+    document.getElementById('cameraInput').value = "";
+    
+    setLoader(false);
+    updateUI();
+    launchWhatsApp(nome);
 }
 
-// --- FOTOCAMERA E SCANNER ---
-async function startScanner(modo) {
-    stopCamera();
-    const video = document.getElementById('video');
-    const wrap = document.getElementById('videoWrapper');
+/* --- MOTORE SCANNER (OCR & BARCODE) --- */
+async function toggleScanner(mode) {
+    stopTutto();
+    const vContainer = document.getElementById('videoContainer');
+    const video = document.getElementById('webcam');
     
     try {
-        streamCamera = await navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: "environment" } 
+        camStream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: "environment", width: { ideal: 1280 } } 
         });
-        video.srcObject = streamCamera;
-        wrap.classList.add('active');
-        document.getElementById('btnStop').style.display = "block";
+        video.srcObject = camStream;
+        vContainer.classList.add('active');
+        document.getElementById('btnStopCam').style.display = "block";
 
-        if(modo === 'ocr') {
-            loopOCR();
+        if (mode === 'ocr') {
+            runOCRScan();
         } else {
-            const codeReader = new ZXing.BrowserBarcodeReader();
-            codeReader.decodeFromVideoDevice(null, 'video', (res) => {
-                if (res) {
-                    document.getElementById('nomePacco').value = res.text;
-                    stopCamera();
+            const barcodeReader = new ZXing.BrowserBarcodeReader();
+            barcodeReader.decodeFromVideoDevice(null, 'webcam', (result) => {
+                if (result) {
+                    document.getElementById('destinatarioNome').value = result.text;
+                    stopTutto();
                 }
             });
         }
-    } catch (e) {
-        alert("Errore camera: Assicurati di usare HTTPS e dare i permessi.");
+    } catch (err) {
+        alert("Errore accesso fotocamera. Verifica i permessi in Safari.");
     }
 }
 
-function stopCamera() {
-    if (streamCamera) {
-        streamCamera.getTracks().forEach(t => t.stop());
-        document.getElementById('videoWrapper').classList.remove('active');
-        document.getElementById('btnStop').style.display = "none";
-        streamCamera = null;
-    }
-}
-
-async function loopOCR() {
-    if(!streamCamera) return;
-    const v = document.getElementById('video');
+async function runOCRScan() {
+    if (!camStream) return;
+    const video = document.getElementById('webcam');
     const canvas = document.createElement('canvas');
-    canvas.width = v.videoWidth * 0.8;
-    canvas.height = v.videoHeight * 0.25;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
     const ctx = canvas.getContext('2d');
-    
-    ctx.drawImage(v, v.videoWidth*0.1, v.videoHeight*0.4, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(video, 0, 0);
 
     try {
-        const res = await Tesseract.recognize(canvas, 'ita');
-        const trovato = res.data.text.toLowerCase();
-        
-        const residenti = AppDB.condomini();
-        for (let r of residenti) {
-            if (trovato.includes(r.nome.toLowerCase()) && r.nome.length > 3) {
-                document.getElementById('nomePacco').value = r.nome.toUpperCase();
-                stopCamera();
+        const result = await Tesseract.recognize(canvas, 'ita');
+        const text = result.data.text.toLowerCase();
+        const rubrica = DB.fetch('condomini');
+
+        for (let condomino of rubrica) {
+            if (text.includes(condomino.nome.toLowerCase()) && condomino.nome.length > 3) {
+                document.getElementById('destinatarioNome').value = condomino.nome.toUpperCase();
+                stopTutto();
                 return;
             }
         }
-    } catch (err) {}
+    } catch (e) {}
 
-    if(streamCamera) setTimeout(loopOCR, 2000);
+    if (camStream) setTimeout(runOCRScan, 1500);
 }
 
-// --- GESTIONE PACCHI ---
-async function registraPacco() {
-    const nome = document.getElementById('nomePacco').value.trim();
-    if(!nome) return alert("Devi inserire il nome del destinatario.");
-
-    document.getElementById('loading-overlay').style.display = "flex";
-    const file = document.getElementById('fotoInput').files[0];
-    let imgData = null;
-
-    if(file) {
-        imgData = await processaImmagine(file);
+function stopTutto() {
+    if (camStream) {
+        camStream.getTracks().forEach(t => t.stop());
+        camStream = null;
     }
+    document.getElementById('videoContainer').classList.remove('active');
+    document.getElementById('btnStopCam').style.display = "none";
+}
 
-    const pacchi = AppDB.pacchi();
-    const nuovo = {
-        id: Date.now(),
-        nome: nome,
-        data: new Date().toISOString(),
-        foto: imgData
+/* --- GESTIONE RUBRICA --- */
+function handleFileImport(input) {
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (Array.isArray(data)) DB.save('condomini', data);
+            else if (data.condomini) DB.save('condomini', data.condomini);
+            alert("Rubrica JSON importata!");
+        } catch {
+            parseTextLines(e.target.result.split('\n'));
+        }
+        updateUI();
     };
-
-    pacchi.unshift(nuovo);
-    AppDB.save('pacchi', pacchi);
-    
-    // Pulisci campi
-    document.getElementById('nomePacco').value = "";
-    document.getElementById('fotoInput').value = "";
-    
-    document.getElementById('loading-overlay').style.display = "none";
-    renderTutto();
+    reader.readAsText(file);
 }
 
-function renderPacchi() {
-    const pacchi = AppDB.pacchi();
-    const cerca = document.getElementById('searchPacchi').value.toLowerCase();
-    const container = document.getElementById('lista-pacchi');
-    container.innerHTML = "";
+function importaDaTesto() {
+    const raw = document.getElementById('testoNote').value;
+    if (!raw) return alert("Incolla prima del testo.");
+    parseTextLines(raw.split('\n'));
+    document.getElementById('testoNote').value = "";
+    updateUI();
+}
 
-    pacchi.forEach(p => {
-        if(!p.nome.toLowerCase().includes(cerca)) return;
-
-        const wa = generaLinkWA(p.nome);
-        const dataFormattata = new Date(p.data).toLocaleString('it-IT', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
-        
-        const div = document.createElement('div');
-        div.className = 'pacco-item';
-        div.innerHTML = `
-            <div class="flex-row">
-                <div class="pacco-info">
-                    <img src="${p.foto || 'https://via.placeholder.com/80?text=NO+FOTO'}" class="img-preview" onclick="apriFoto('${p.foto}')">
-                    <div class="pacco-text">
-                        <b>${p.nome.toUpperCase()}</b>
-                        <small>Arrivato: ${dataFormattata}</small>
-                    </div>
-                </div>
-                <button class="btn-del" onclick="consegnaPacco(${p.id})">RITIRATO</button>
-            </div>
-            ${wa ? `<a href="${wa}" target="_blank" class="btn-link btn-wa">📲 INVIA AVVISO WHATSAPP</a>` : `<p style="color:var(--danger); font-size:11px; margin:5px 0;">⚠️ Condomino non trovato in rubrica</p>`}
-        `;
-        container.appendChild(div);
+function parseTextLines(lines) {
+    let current = DB.fetch('condomini');
+    let added = 0;
+    lines.forEach(line => {
+        const parts = line.split(/[,;\t-]/);
+        if (parts.length >= 2) {
+            current.push({ nome: parts[0].trim(), telefono: parts[1].trim().replace(/\s/g, '') });
+            added++;
+        }
     });
+    DB.save('condomini', current);
+    alert("Aggiunti " + added + " condomini.");
 }
 
-function consegnaPacco(id) {
-    let pacchi = AppDB.pacchi();
-    let storico = AppDB.storico();
-    const idx = pacchi.findIndex(p => p.id === id);
-    
-    if(idx > -1) {
-        const p = pacchi[idx];
-        p.dataConsegna = new Date().toISOString();
-        storico.push(p);
-        pacchi.splice(idx, 1);
-        
-        AppDB.save('pacchi', pacchi);
-        AppDB.save('storico', storico);
-        renderTutto();
-    }
-}
-
-// --- RUBRICA ---
-function aggiungiCondomino() {
-    const n = document.getElementById('nomeCondomino').value.trim();
-    const t = document.getElementById('telefonoCondomino').value.trim();
-    if(!n || !t) return alert("Inserisci sia nome che telefono.");
-
-    const lista = AppDB.condomini();
-    lista.push({ nome: n, telefono: t });
-    AppDB.save('condomini', lista);
-    
-    document.getElementById('nomeCondomino').value = "";
-    document.getElementById('telefonoCondomino').value = "";
-    renderTutto();
-}
-
-function renderRubrica() {
-    const lista = AppDB.condomini();
-    const cerca = document.getElementById('searchRubrica').value.toLowerCase();
-    const container = document.getElementById('lista-rubrica');
-    container.innerHTML = "";
-
-    lista.sort((a,b) => a.nome.localeCompare(b.nome)).forEach((c, idx) => {
-        if(!c.nome.toLowerCase().includes(cerca)) return;
-        
-        const div = document.createElement('div');
-        div.className = 'rubrica-item';
-        div.innerHTML = `
-            <span><b>${c.nome}</b><br><small>${c.telefono}</small></span>
-            <button onclick="rimuoviCondomino(${idx})" style="background:none; color:var(--danger); width:auto; margin:0; padding:5px; font-weight:bold;">ELIMINA</button>
-        `;
-        container.appendChild(div);
-    });
-}
-
-function rimuoviCondomino(idx) {
-    if(confirm("Eliminare questo condomino?")) {
-        const lista = AppDB.condomini();
-        lista.splice(idx, 1);
-        AppDB.save('condomini', lista);
-        renderTutto();
-    }
-}
-
-// --- UTILITY E GRAFICA ---
-function processaImmagine(file) {
-    return new Promise((resolve) => {
+/* --- INTERFACCIA E UTILITY --- */
+function processImage(file) {
+    return new Promise((res) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
-        reader.onload = (e) => {
+        reader.onload = (ev) => {
             const img = new Image();
-            img.src = e.target.result;
+            img.src = ev.target.result;
             img.onload = () => {
                 const cvs = document.createElement('canvas');
                 const MAX_W = 600;
-                const r = MAX_W / img.width;
+                const ratio = MAX_W / img.width;
                 cvs.width = MAX_W;
-                cvs.height = img.height * r;
-                const ctx = cvs.getContext('2d');
-                ctx.drawImage(img, 0, 0, cvs.width, cvs.height);
-                resolve(cvs.toDataURL('image/jpeg', 0.8));
-            };
-        };
+                cvs.height = img.height * ratio;
+                cvs.getContext('2d').drawImage(img, 0, 0, cvs.width, cvs.height);
+                res(cvs.toDataURL('image/jpeg', 0.7));
+            }
+        }
     });
 }
 
-function apriFoto(data) {
-    if(!data) return;
-    const w = window.open("");
-    w.document.write(`<body style="margin:0; background:#000; display:flex; align-items:center; justify-content:center;"><img src="${data}" style="max-width:100%; height:auto; border-radius:10px;"></body>`);
+function updateUI() {
+    updatePacchiUI();
+    updateRubricaUI();
+    updateDashboard();
+    if (deliveryChart) updateChartData();
 }
 
-function aggiornaDashboard() {
-    const pacchi = AppDB.pacchi();
-    const oggi = new Date().toDateString();
-    const numOggi = pacchi.filter(p => new Date(p.data).toDateString() === oggi).length;
-    
-    document.getElementById('count-oggi').innerText = numOggi;
-    document.getElementById('count-totale').innerText = pacchi.length;
+function updatePacchiUI() {
+    const list = document.getElementById('lista-pacchi');
+    const filter = document.getElementById('searchBar').value.toLowerCase();
+    const data = DB.fetch('pacchi');
+    list.innerHTML = "";
 
-    const sem = document.getElementById('semaforo');
-    if(pacchi.length === 0) {
-        sem.innerText = "Portineria Libera";
-        sem.style.background = "var(--success)";
-    } else if(pacchi.length > 15) {
-        sem.innerText = "Giacenza Eccessiva";
-        sem.style.background = "var(--danger)";
-    } else {
-        sem.innerText = "Giacenza Ordinaria";
-        sem.style.background = "var(--info)";
+    data.forEach((p, i) => {
+        if (!p.nome.toLowerCase().includes(filter)) return;
+        const div = document.createElement('div');
+        div.className = 'pacco-card';
+        div.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <img src="${p.foto || 'https://via.placeholder.com/75?text=BOX'}" class="img-box" onclick="viewFull('${p.foto}')">
+                    <div>
+                        <b style="font-size:16px;">${p.nome.toUpperCase()}</b><br>
+                        <small style="color:var(--gray);">${new Date(p.time).toLocaleString()}</small>
+                    </div>
+                </div>
+                <button class="btn-ritiro" onclick="ritiraPacco(${i})">RITIRATO</button>
+            </div>
+            <button class="btn-outline" onclick="launchWhatsApp('${p.nome}')" style="padding:10px; font-size:13px; margin-top:5px;">📲 Nuovo Avviso</button>
+        `;
+        list.appendChild(div);
+    });
+}
+
+function ritiraPacco(idx) {
+    let pacchi = DB.fetch('pacchi');
+    let log = DB.fetch('storico_consegne');
+    let item = pacchi.splice(idx, 1)[0];
+    item.ritiratoIl = new Date().toISOString();
+    log.push(item);
+    DB.save('pacchi', pacchi);
+    DB.save('storico_consegne', log);
+    updateUI();
+}
+
+function updateRubricaUI() {
+    const container = document.getElementById('rubrica-list');
+    const rubrica = DB.fetch('condomini');
+    if (rubrica.length === 0) {
+        container.innerHTML = "<p style='padding:15px; text-align:center; color:#999;'>Nessun residente caricato.</p>";
+        return;
     }
+    container.innerHTML = rubrica.sort((a,b) => a.nome.localeCompare(b.nome)).map((c, i) => `
+        <div style="padding:10px; border-bottom:1px solid #f2f2f7; display:flex; justify-content:space-between; align-items:center;">
+            <span>${c.nome}</span>
+            <button onclick="deleteContact(${i})" style="width:auto; padding:5px 10px; background:none; color:red; margin:0; font-size:12px;">Rimuovi</button>
+        </div>
+    `).join('');
+}
+
+function updateDashboard() {
+    const pacchi = DB.fetch('pacchi');
+    const oggi = new Date().toDateString();
+    const countOggi = pacchi.filter(p => new Date(p.time).toDateString() === oggi).length;
+    
+    document.getElementById('stat-oggi').innerText = countOggi;
+    document.getElementById('stat-totale').innerText = pacchi.length;
+
+    const bar = document.getElementById('status-display');
+    if (pacchi.length === 0) { bar.innerText = "DEPOSITO VUOTO"; bar.style.background = var(--success); }
+    else if (pacchi.length > 15) { bar.innerText = "GIACENZA ALTA"; bar.style.background = var(--danger); }
+    else { bar.innerText = "SERVIZIO ATTIVO"; bar.style.background = var(--primary); }
 }
 
 function initChart() {
-    const ctx = document.getElementById('graficoStorico').getContext('2d');
-    myChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [{
-                label: 'Pacchi Consegnati',
-                data: [],
-                borderColor: '#1a73e8',
-                backgroundColor: 'rgba(26, 115, 232, 0.1)',
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: { responsive: true, maintainAspectRatio: false }
+    const ctx = document.getElementById('mainChart').getContext('2d');
+    deliveryChart = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: [], datasets: [{ label: 'Consegne', data: [], backgroundColor: '#007aff', borderRadius: 8 }] },
+        options: { responsive: true, plugins: { legend: { display: false } } }
     });
+    updateChartData();
 }
 
-function aggiornaGrafico() {
-    const storico = AppDB.storico();
-    const conteggio = {};
-    
-    // Ultime 7 date
-    for(let i=6; i>=0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        conteggio[d.toLocaleDateString()] = 0;
+function updateChartData() {
+    const log = DB.fetch('storico_consegne');
+    const stats = {};
+    for (let i=6; i>=0; i--) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        stats[d.toLocaleDateString()] = 0;
     }
-
-    storico.forEach(s => {
-        const dataStr = new Date(s.dataConsegna).toLocaleDateString();
-        if(conteggio[dataStr] !== undefined) conteggio[dataStr]++;
+    log.forEach(item => {
+        const dateStr = new Date(item.ritiratoIl).toLocaleDateString();
+        if (stats[dateStr] !== undefined) stats[dateStr]++;
     });
-
-    myChart.data.labels = Object.keys(conteggio);
-    myChart.data.datasets[0].data = Object.values(conteggio);
-    myChart.update();
+    deliveryChart.data.labels = Object.keys(stats);
+    deliveryChart.data.datasets[0].data = Object.values(stats);
+    deliveryChart.update();
 }
 
-function esportaDatabase() {
-    const data = {
-        pacchi: AppDB.pacchi(),
-        condomini: AppDB.condomini(),
-        storico: AppDB.storico()
-    };
-    const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `portineria_backup_${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
+function setLoader(val) { document.getElementById('loading-overlay').style.display = val ? 'flex' : 'none'; }
+function viewFull(data) { if(!data) return; const w = window.open(""); w.document.write(`<img src="${data}" style="width:100%">`); }
+function downloadBackup() {
+    const data = { condomini: DB.fetch('condomini'), pacchi: DB.fetch('pacchi'), storico: DB.fetch('storico_consegne') };
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `backup_portineria.json`; a.click();
 }
-
-function svuotaMemoria() {
-    if(confirm("SEI SICURO? Perderai tutti i pacchi, la rubrica e le foto definitivamente.")) {
-        localStorage.clear();
-        location.reload();
-    }
+function mandaSollecitoTutti() {
+    const pacchi = DB.fetch('pacchi');
+    const nomi = [...new Set(pacchi.map(p => p.nome))];
+    if (nomi.length === 0) return alert("Nessun pacco.");
+    if (confirm("Inviare " + nomi.length + " solleciti?")) nomi.forEach((n, i) => setTimeout(() => launchWhatsApp(n, true), i * 1500));
 }
+function deleteContact(i) { let r = DB.fetch('condomini'); r.splice(i, 1); DB.save('condomini', r); updateUI(); }
+function fullReset() { if (confirm("CANCELLARE TUTTO?")) { localStorage.clear(); location.reload(); } }
 </script>
-
 </body>
 </html>
