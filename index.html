@@ -1,255 +1,434 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Portineria Digitale PRO v6.1</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Portineria Digitale PRO v7</title>
 
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <style>
-        :root { --p: #007aff; --s: #34c759; --d: #ff3b30; --bg: #f2f2f7; --w: #ffffff; --g: #8e8e93; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #1c1c1e; -webkit-font-smoothing: antialiased; }
-        .card { background: var(--w); padding: 20px; border-radius: 24px; margin-bottom: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.05); }
-        h1 { font-size: 26px; font-weight: 800; text-align: center; margin: 10px 0 20px; letter-spacing: -0.5px; }
-        h3 { margin: 0 0 15px 0; color: var(--g); font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
-        
-        button { width: 100%; padding: 16px; border: none; border-radius: 14px; background: var(--p); color: white; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s; margin-top: 10px; -webkit-tap-highlight-color: transparent; }
-        button:active { transform: scale(0.97); opacity: 0.8; }
-        .btn-wa { background: var(--s); }
-        .btn-sec { background: #5856d6; }
-        .btn-outline { background: none; border: 2px solid var(--p); color: var(--p); }
-        .btn-del { background: var(--d); width: auto; padding: 6px 12px; font-size: 11px; margin: 0; }
-
-        input, textarea { width: 100%; padding: 14px; margin: 10px 0; border: 2px solid #e5e5ea; border-radius: 12px; font-size: 16px; box-sizing: border-box; background: #fafafa; }
-        input:focus { border-color: var(--p); outline: none; background: #fff; }
-        
-        .item { padding: 14px; border-bottom: 1px solid #f2f2f7; display: flex; justify-content: space-between; align-items: center; }
-        .item:last-child { border-bottom: none; }
-        
-        #video-container { width: 100%; display: none; border-radius: 20px; overflow: hidden; margin-top: 15px; background: #000; aspect-ratio: 4/3; border: 2px solid var(--p); }
-        video { width: 100%; height: 100%; object-fit: cover; }
-        
-        #lista-rubrica, #lista-pacchi { max-height: 300px; overflow-y: auto; border-radius: 12px; }
-        .empty-msg { padding: 20px; text-align: center; color: var(--g); font-style: italic; }
-        canvas { max-width: 100% !important; height: auto !important; }
-    </style>
+<style>
+:root { --p:#007aff; --s:#34c759; --d:#ff3b30; --bg:#f2f2f7; --w:#fff; --g:#8e8e93;}
+body{font-family:-apple-system,system-ui;background:var(--bg);margin:0;padding:15px;color:#1c1c1e}
+.card{background:var(--w);padding:20px;border-radius:24px;margin-bottom:20px;box-shadow:0 8px 20px rgba(0,0,0,0.05)}
+h1{text-align:center}
+h3{color:var(--g);font-size:14px;text-transform:uppercase}
+button{width:100%;padding:16px;border:none;border-radius:14px;background:var(--p);color:white;font-size:16px;font-weight:700;margin-top:10px}
+.btn-wa{background:var(--s)}
+.btn-sec{background:#5856d6}
+.btn-outline{background:none;border:2px solid var(--p);color:var(--p)}
+.btn-del{background:var(--d);width:auto;padding:6px 12px;font-size:11px;margin:0}
+input,textarea{width:100%;padding:14px;margin:10px 0;border:2px solid #e5e5ea;border-radius:12px;font-size:16px}
+.item{padding:14px;border-bottom:1px solid #f2f2f7;display:flex;justify-content:space-between;align-items:center}
+#video-container{width:100%;display:none;border-radius:20px;overflow:hidden;margin-top:15px;background:#000;aspect-ratio:4/3;border:2px solid var(--p)}
+video{width:100%;height:100%;object-fit:cover}
+#lista-rubrica,#lista-pacchi{max-height:300px;overflow-y:auto;border-radius:12px}
+.empty-msg{padding:20px;text-align:center;color:var(--g);font-style:italic}
+canvas{max-width:100%!important;height:auto!important}
+</style>
 </head>
+
 <body>
 
-    <h1>Portineria Digitale</h1>
+<h1>Portineria Digitale</h1>
 
-    <div class="card" style="display: flex; justify-content: space-around; text-align: center; padding: 15px;">
-        <div style="flex:1; border-right: 1px solid #eee;"><small>GIACENZA</small><br><b id="count-giacenza" style="font-size: 22px; color: var(--p);">0</b></div>
-        <div style="flex:1;"><small>ARRIVI OGGI</small><br><b id="count-oggi" style="font-size: 22px; color: var(--s);">0</b></div>
-    </div>
+<div class="card" style="display:flex;justify-content:space-around;text-align:center;padding:15px;">
+<div style="flex:1;border-right:1px solid #eee;"><small>GIACENZA</small><br><b id="count-giacenza" style="font-size:22px;color:var(--p);">0</b></div>
+<div style="flex:1;"><small>ARRIVI OGGI</small><br><b id="count-oggi" style="font-size:22px;color:var(--s);">0</b></div>
+</div>
 
-    <div class="card">
-        <h3>📦 Registrazione Pacco</h3>
-        <button onclick="avviaOCR()" class="btn-sec">📷 SCANSIONA ETICHETTA</button>
-        <div id="video-container"><video id="webcam" autoplay playsinline muted></video></div>
-        <input type="text" id="inputNome" placeholder="Nome destinatario...">
-        <button class="btn-wa" onclick="salvaPacco()">REGISTRA E INVIA NOTIFICA WA</button>
-    </div>
+<div class="card">
+<h3>📦 Registrazione Pacco</h3>
+<button onclick="avviaOCR()" class="btn-sec">📷 SCANSIONA ETICHETTA</button>
+<div id="video-container"><video id="webcam" autoplay playsinline muted></video></div>
+<input type="text" id="inputNome" placeholder="Nome destinatario...">
+<button class="btn-wa" onclick="salvaPacco()">REGISTRA E INVIA NOTIFICA WA</button>
+</div>
 
-    <div class="card">
-        <h3>📋 Pacchi in Deposito</h3>
-        <div id="lista-pacchi"></div>
-    </div>
+<div class="card">
+<h3>📋 Pacchi in Deposito</h3>
 
-    <div class="card">
-        <h3>👥 Rubrica Residenti</h3>
-        <textarea id="inputRubrica" placeholder="Incolla qui la lista (es: Mario Rossi, 333123456)"></textarea>
-        <button onclick="importaRubrica()" class="btn-outline">AGGIORNA RUBRICA</button>
-        <div id="lista-rubrica" style="margin-top:15px; background: #f9f9f9;"></div>
-    </div>
+<input type="text" id="cercaPacco" placeholder="🔎 Cerca pacco..." oninput="filtraPacchi()">
 
-    <div class="card">
-        <h3>📊 Statistiche Consegne</h3>
-        <canvas id="graficoConsegne"></canvas>
-        <div style="margin-top:20px; display: flex; gap: 10px;">
-            <button onclick="scaricaDati()" style="background:#444; flex:1;">💾 BACKUP</button>
-            <button onclick="resetTotale()" style="background:var(--d); flex:1;">⚠️ RESET</button>
-        </div>
-    </div>
+<div id="lista-pacchi"></div>
+</div>
+
+<div class="card">
+<h3>👥 Rubrica Residenti</h3>
+
+<textarea id="inputRubrica" placeholder="Incolla qui la lista (es: Mario Rossi, 333123456)"></textarea>
+
+<button onclick="importaRubrica()" class="btn-outline">AGGIORNA RUBRICA</button>
+
+<input type="text" id="cercaRubrica" placeholder="🔎 Cerca residente..." oninput="filtraRubrica()">
+
+<div id="lista-rubrica" style="margin-top:15px;background:#f9f9f9;"></div>
+
+</div>
+
+<div class="card">
+
+<h3>📊 Statistiche Consegne</h3>
+
+<canvas id="graficoConsegne"></canvas>
+
+<div style="margin-top:20px;display:flex;gap:10px;flex-direction:column;">
+
+<button onclick="scaricaDati()" style="background:#444;">💾 BACKUP</button>
+
+<input type="file" onchange="importaBackup(event)">
+
+<button onclick="resetTotale()" style="background:var(--d);">⚠️ RESET</button>
+
+</div>
+
+</div>
 
 <script>
-    let stream = null;
-    let chart = null;
 
-    const DB = {
-        get: (k) => JSON.parse(localStorage.getItem(k)) || [],
-        set: (k, v) => localStorage.setItem(k, JSON.stringify(v))
-    };
+let stream=null
+let chart=null
 
-    window.onload = () => { renderTutto(); initChart(); };
+const DB={
+get:(k)=>JSON.parse(localStorage.getItem(k))||[],
+set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))
+}
 
-    function renderTutto() {
-        renderPacchi();
-        renderRubrica();
-        aggiornaContatori();
-    }
+if(!localStorage.getItem("storico")){
+localStorage.setItem("storico","[]")
+}
 
-    function aggiornaContatori() {
-        const pacchi = DB.get('pacchi');
-        document.getElementById('count-giacenza').innerText = pacchi.length;
-        const oggi = pacchi.filter(p => new Date(p.data).toDateString() === new Date().toDateString()).length;
-        document.getElementById('count-oggi').innerText = oggi;
-    }
+window.onload=()=>{renderTutto();initChart()}
 
-    function importaRubrica() {
-        const testo = document.getElementById('inputRubrica').value.trim();
-        if (!testo) return;
-        
-        let rubrica = DB.get('rubrica');
-        testo.split('\n').forEach(riga => {
-            const parti = riga.split(/[,;\t-]/);
-            if (parti[0]) {
-                const nome = parti[0].trim();
-                const tel = parti[1] ? parti[1].trim().replace(/\D/g, '') : "";
-                if (nome.length > 2 && !rubrica.some(x => x.nome.toLowerCase() === nome.toLowerCase())) {
-                    rubrica.push({ nome, tel });
-                }
-            }
-        });
-        DB.set('rubrica', rubrica);
-        document.getElementById('inputRubrica').value = "";
-        renderRubrica();
-        alert("Rubrica aggiornata!");
-    }
+function renderTutto(){
+renderPacchi()
+renderRubrica()
+aggiornaContatori()
+setTimeout(evidenziaPacchiVecchi,200)
+}
 
-    function renderRubrica() {
-        const r = DB.get('rubrica').sort((a,b) => a.nome.localeCompare(b.nome));
-        const div = document.getElementById('lista-rubrica');
-        div.innerHTML = r.length ? r.map((c, i) => `
-            <div class="item">
-                <span><b>${c.nome}</b><br><small style="color:var(--g)">${c.tel || 'Nessun numero'}</small></span>
-                <button onclick="eliminaContatto('${c.nome}')" class="btn-del" style="background:none; color:var(--d); border:none;">Rimuovi</button>
-            </div>
-        `).join('') : '<div class="empty-msg">Rubrica vuota</div>';
-    }
+function aggiornaContatori(){
+const pacchi=DB.get('pacchi')
+document.getElementById('count-giacenza').innerText=pacchi.length
+const oggi=pacchi.filter(p=>new Date(p.data).toDateString()===new Date().toDateString()).length
+document.getElementById('count-oggi').innerText=oggi
+}
 
-    function eliminaContatto(nome) {
-        if(!confirm("Eliminare " + nome + "?")) return;
-        let r = DB.get('rubrica').filter(x => x.nome !== nome);
-        DB.set('rubrica', r);
-        renderRubrica();
-    }
+function importaRubrica(){
 
-    function salvaPacco() {
-        const nome = document.getElementById('inputNome').value.trim();
-        if (!nome) return alert("Inserisci un nome!");
-        let pacchi = DB.get('pacchi');
-        pacchi.unshift({ id: Date.now(), nome, data: new Date().toISOString() });
-        DB.set('pacchi', pacchi);
-        document.getElementById('inputNome').value = "";
-        renderTutto();
-        inviaWA(nome);
-    }
+const testo=document.getElementById('inputRubrica').value.trim()
 
-    function ritiraPacco(id) {
-        let pacchi = DB.get('pacchi');
-        let storico = DB.get('storico');
-        const idx = pacchi.findIndex(p => p.id === id);
-        if (idx > -1) {
-            let p = pacchi.splice(idx, 1)[0];
-            p.ritiro = new Date().toISOString();
-            storico.push(p);
-            DB.set('pacchi', pacchi);
-            DB.set('storico', storico);
-            renderTutto();
-            updateChart();
-        }
-    }
+if(!testo)return
 
-    function renderPacchi() {
-        const p = DB.get('pacchi');
-        const div = document.getElementById('lista-pacchi');
-        div.innerHTML = p.length ? p.map(x => `
-            <div class="item">
-                <span><b>${x.nome.toUpperCase()}</b><br><small>${new Date(x.data).toLocaleTimeString()}</small></span>
-                <button class="btn-del" onclick="ritiraPacco(${x.id})">RITIRATO</button>
-            </div>
-        `).join('') : '<div class="empty-msg">Nessun pacco in giacenza</div>';
-    }
+let rubrica=DB.get('rubrica')
 
-    function inviaWA(nome) {
-        const c = DB.get('rubrica').find(u => nome.toLowerCase().includes(u.nome.toLowerCase()) || u.nome.toLowerCase().includes(nome.toLowerCase()));
-        if (c && c.tel) {
-            const tel = c.tel.startsWith('39') ? c.tel : "39" + c.tel;
-            window.open(`https://wa.me/${tel}?text=${encodeURIComponent("Ciao " + c.nome + ", è arrivato un pacco per te! 📦")}`, '_blank');
-        }
-    }
+testo.split('\n').forEach(riga=>{
 
-    async function avviaOCR() {
-        const vBox = document.getElementById('video-container');
-        vBox.style.display = 'block';
-        try {
-            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-            document.getElementById('webcam').srcObject = stream;
-            const timer = setInterval(async () => {
-                if (!stream) return clearInterval(timer);
-                const canvas = document.createElement('canvas');
-                const video = document.getElementById('webcam');
-                canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-                canvas.getContext('2d').drawImage(video, 0, 0);
-                const { data: { text } } = await Tesseract.recognize(canvas, 'ita');
-                const rubrica = DB.get('rubrica');
-                for (let u of rubrica) {
-                    if (text.toLowerCase().includes(u.nome.toLowerCase())) {
-                        document.getElementById('inputNome').value = u.nome;
-                        stopCamera();
-                        clearInterval(timer);
-                        break;
-                    }
-                }
-            }, 2500);
-        } catch (e) { alert("Accesso camera negato."); }
-    }
+const parti=riga.split(/[,;\t-]/)
 
-    function stopCamera() {
-        if (stream) stream.getTracks().forEach(t => t.stop());
-        stream = null;
-        document.getElementById('video-container').style.display = 'none';
-    }
+if(parti[0]){
 
-    function initChart() {
-        const ctx = document.getElementById('graficoConsegne').getContext('2d');
-        chart = new Chart(ctx, {
-            type: 'line',
-            data: { labels: [], datasets: [{ label: 'Consegne', data: [], borderColor: '#007aff', tension: 0.3, fill: true, backgroundColor: 'rgba(0,122,255,0.1)' }] },
-            options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
-        });
-        updateChart();
-    }
+const nome=parti[0].trim()
 
-    function updateChart() {
-        const storico = DB.get('storico');
-        const dati = {};
-        storico.forEach(s => {
-            const d = new Date(s.ritiro).toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit'});
-            dati[d] = (dati[d] || 0) + 1;
-        });
-        chart.data.labels = Object.keys(dati).slice(-7);
-        chart.data.datasets[0].data = Object.values(dati).slice(-7);
-        chart.update();
-    }
+const tel=parti[1]?parti[1].trim().replace(/\D/g,''):""
 
-    function scaricaDati() {
-        const blob = new Blob([JSON.stringify(localStorage)], {type: 'application/json'});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = "backup_portineria.json";
-        a.click();
-    }
+if(nome.length>2&&!rubrica.some(x=>x.nome.toLowerCase()===nome.toLowerCase())){
 
-    function resetTotale() {
-        if (confirm("Vuoi cancellare TUTTO (rubrica e pacchi)?")) {
-            localStorage.clear();
-            location.reload();
-        }
-    }
+rubrica.push({nome,tel})
+
+}
+
+}
+
+})
+
+DB.set('rubrica',rubrica)
+
+document.getElementById('inputRubrica').value=""
+
+renderRubrica()
+
+alert("Rubrica aggiornata!")
+
+}
+
+function renderRubrica(){
+
+const r=DB.get('rubrica').sort((a,b)=>a.nome.localeCompare(b.nome))
+
+const div=document.getElementById('lista-rubrica')
+
+div.innerHTML=r.length?
+
+r.map(c=>`
+
+<div class="item">
+
+<span><b>${c.nome}</b><br><small style="color:var(--g)">${c.tel||'Nessun numero'}</small></span>
+
+<button onclick="eliminaContatto('${c.nome}')" class="btn-del" style="background:none;color:var(--d);border:none;">Rimuovi</button>
+
+</div>
+
+`).join('')
+
+:'<div class="empty-msg">Rubrica vuota</div>'
+
+}
+
+function eliminaContatto(nome){
+
+if(!confirm("Eliminare "+nome+"?"))return
+
+let r=DB.get('rubrica').filter(x=>x.nome!==nome)
+
+DB.set('rubrica',r)
+
+renderRubrica()
+
+}
+
+function salvaPacco(){
+
+const nome=document.getElementById('inputNome').value.trim()
+
+if(!nome)return alert("Inserisci un nome!")
+
+let pacchi=DB.get('pacchi')
+
+pacchi.unshift({id:Date.now(),nome,data:new Date().toISOString()})
+
+DB.set('pacchi',pacchi)
+
+document.getElementById('inputNome').value=""
+
+renderTutto()
+
+inviaWA(nome)
+
+}
+
+function ritiraPacco(id){
+
+let pacchi=DB.get('pacchi')
+
+let storico=DB.get('storico')||[]
+
+const idx=pacchi.findIndex(p=>p.id===id)
+
+if(idx>-1){
+
+let p=pacchi.splice(idx,1)[0]
+
+p.ritiro=new Date().toISOString()
+
+storico.push(p)
+
+DB.set('pacchi',pacchi)
+
+DB.set('storico',storico)
+
+renderTutto()
+
+updateChart()
+
+}
+
+}
+
+function renderPacchi(){
+
+const p=DB.get('pacchi')
+
+const div=document.getElementById('lista-pacchi')
+
+div.innerHTML=p.length?
+
+p.map(x=>`
+
+<div class="item">
+
+<span><b>${x.nome.toUpperCase()}</b><br><small>${new Date(x.data).toLocaleTimeString()}</small></span>
+
+<button class="btn-del" onclick="ritiraPacco(${x.id})">RITIRATO</button>
+
+</div>
+
+`).join('')
+
+:'<div class="empty-msg">Nessun pacco in giacenza</div>'
+
+}
+
+function inviaWA(nome){
+
+const c=DB.get('rubrica').find(u=>u.nome.toLowerCase()===nome.toLowerCase())
+
+if(c&&c.tel){
+
+const tel=c.tel.startsWith('39')?c.tel:"39"+c.tel
+
+window.open(`https://wa.me/${tel}?text=${encodeURIComponent("Ciao "+c.nome+", è arrivato un pacco per te! 📦")}`,'_blank')
+
+}
+
+}
+
+function filtraPacchi(){
+
+const filtro=document.getElementById("cercaPacco").value.toLowerCase()
+
+const items=document.querySelectorAll("#lista-pacchi .item")
+
+items.forEach(i=>{
+
+const nome=i.innerText.toLowerCase()
+
+i.style.display=nome.includes(filtro)?"flex":"none"
+
+})
+
+}
+
+function filtraRubrica(){
+
+const filtro=document.getElementById("cercaRubrica").value.toLowerCase()
+
+const items=document.querySelectorAll("#lista-rubrica .item")
+
+items.forEach(i=>{
+
+const nome=i.innerText.toLowerCase()
+
+i.style.display=nome.includes(filtro)?"flex":"none"
+
+})
+
+}
+
+function evidenziaPacchiVecchi(){
+
+const pacchi=DB.get("pacchi")
+
+const oggi=new Date()
+
+document.querySelectorAll("#lista-pacchi .item").forEach((el,index)=>{
+
+const p=pacchi[index]
+
+if(!p)return
+
+const data=new Date(p.data)
+
+const diff=(oggi-data)/(1000*60*60*24)
+
+if(diff>7){
+
+el.style.background="#fff3cd"
+
+}
+
+})
+
+}
+
+function importaBackup(event){
+
+const file=event.target.files[0]
+
+if(!file)return
+
+const reader=new FileReader()
+
+reader.onload=function(e){
+
+const dati=JSON.parse(e.target.result)
+
+if(dati.rubrica)DB.set("rubrica",dati.rubrica)
+if(dati.pacchi)DB.set("pacchi",dati.pacchi)
+if(dati.storico)DB.set("storico",dati.storico)
+
+alert("Backup ripristinato")
+
+location.reload()
+
+}
+
+reader.readAsText(file)
+
+}
+
+function initChart(){
+
+const ctx=document.getElementById('graficoConsegne').getContext('2d')
+
+chart=new Chart(ctx,{
+type:'line',
+data:{labels:[],datasets:[{label:'Consegne',data:[],borderColor:'#007aff',tension:0.3,fill:true,backgroundColor:'rgba(0,122,255,0.1)'}]},
+options:{scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
+})
+
+updateChart()
+
+}
+
+function updateChart(){
+
+const storico=DB.get('storico')
+
+const dati={}
+
+storico.forEach(s=>{
+
+const d=new Date(s.ritiro).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})
+
+dati[d]=(dati[d]||0)+1
+
+})
+
+chart.data.labels=Object.keys(dati).slice(-7)
+
+chart.data.datasets[0].data=Object.values(dati).slice(-7)
+
+chart.update()
+
+}
+
+function scaricaDati(){
+
+const dati={
+
+rubrica:DB.get("rubrica"),
+pacchi:DB.get("pacchi"),
+storico:DB.get("storico")
+
+}
+
+const blob=new Blob([JSON.stringify(dati)],{type:'application/json'})
+
+const a=document.createElement('a')
+
+a.href=URL.createObjectURL(blob)
+
+a.download="backup_portineria.json"
+
+a.click()
+
+}
+
+function resetTotale(){
+
+if(confirm("Vuoi cancellare TUTTO (rubrica e pacchi)?")){
+
+localStorage.clear()
+
+location.reload()
+
+}
+
+}
+
 </script>
 </body>
 </html>
