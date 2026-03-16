@@ -311,13 +311,21 @@ let rubrica=DB.get("rubrica")
 
 let nomeMaiuscolo=nome.toUpperCase()
 
-let trovato=rubrica.find(r=>{
+// 1 ricerca nome completo
+let trovato=rubrica.find(r=>r.nome===nomeMaiuscolo)
+
+// 2 se non trovato cerca cognome
+if(!trovato){
+
+trovato=rubrica.find(r=>{
 
 let cognome=r.nome.split(" ").pop()
 
 return nomeMaiuscolo.includes(cognome)
 
 })
+
+}
 
 if(!trovato || !trovato.tel){
 alert("Numero non trovato in rubrica")
@@ -338,18 +346,33 @@ window.open(
 
 async function startCamera(){
 
-document.getElementById("cameraBox").style.display="block"
+const cameraBox=document.getElementById("cameraBox")
+const video=document.getElementById("video")
+
+cameraBox.style.display="block"
+
+try{
 
 stream=await navigator.mediaDevices.getUserMedia({
 video:{facingMode:"environment"}
 })
 
-const video=document.getElementById("video")
-
 video.srcObject=stream
 
-video.onloadedmetadata=()=>{
+video.onloadedmetadata=function(){
+
+video.play()
+
+setTimeout(()=>{
 scan()
+},1000)
+
+}
+
+}catch(e){
+
+alert("Impossibile aprire la fotocamera")
+
 }
 
 }
@@ -360,8 +383,8 @@ if(!stream)return
 
 const video=document.getElementById("video")
 
-if(video.videoWidth===0){
-setTimeout(scan,1000)
+if(video.readyState!==4){
+setTimeout(scan,500)
 return
 }
 
