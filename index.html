@@ -1,16 +1,54 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<title>Portineria</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portineria PRO</title>
 
 <style>
-body{font-family:sans-serif;padding:15px;background:#f2f2f7}
-.card{background:#fff;padding:15px;border-radius:10px;margin-bottom:15px}
-input,button{width:100%;padding:12px;margin-top:5px}
-button{background:#007aff;color:#fff;border:none;border-radius:6px}
-.del{background:#ff3b30}
-.item{border-bottom:1px solid #ddd;padding:8px}
+body{font-family:sans-serif;background:#f2f2f7;margin:0;padding:15px}
+.card{background:#fff;padding:15px;border-radius:12px;margin-bottom:15px}
+input{width:100%;padding:18px;font-size:20px;border-radius:10px;border:1px solid #ccc}
+
+.mode{
+display:flex;
+gap:10px;
+margin-bottom:10px;
+}
+
+.mode button{
+flex:1;
+padding:15px;
+border:none;
+border-radius:10px;
+font-weight:bold;
+color:#fff;
+font-size:16px;
+opacity:0.5;
+}
+
+.active{opacity:1}
+
+.pacco{background:#007aff}
+.rac{background:#5856d6}
+
+.item{
+padding:15px;
+border-bottom:1px solid #eee;
+font-size:18px;
+}
+
+.item:active{background:#ddd}
+
+.del{
+background:#ff3b30;
+color:#fff;
+border:none;
+padding:5px 10px;
+border-radius:6px;
+}
+
+.small{font-size:13px;color:#666}
 </style>
 
 </head>
@@ -18,113 +56,118 @@ button{background:#007aff;color:#fff;border:none;border-radius:6px}
 <body>
 
 <div class="card">
-<h3>📦 Cerca (Scanner)</h3>
-<input id="q" placeholder="Nome o cognome" oninput="cerca()">
+<h2>⚡ Ricerca veloce</h2>
+
+<div class="mode">
+<button id="btnPacco" class="pacco active" onclick="setMode('PACCO')">PACCO</button>
+<button id="btnRac" class="rac" onclick="setMode('RACCOMANDATA')">RACCOMANDATA</button>
+</div>
+
+<input id="q" placeholder="Scrivi nome..." oninput="cerca()">
 <div id="res"></div>
 </div>
 
-<div id="manuale" class="card" style="display:none">
-<h3>Non trovato</h3>
-<input id="nomeM" placeholder="Nome Cognome">
-<input id="telM" placeholder="Telefono">
-<button onclick="invioManuale('PACCO')">PACCO</button>
-<button onclick="invioManuale('RACCOMANDATA')">RACCOMANDATA</button>
-</div>
-
 <div class="card">
-<h3>📂 Importa rubrica</h3>
-<input type="file" onchange="importa(event)">
-</div>
-
-<div class="card">
-<h3>👥 Condomini</h3>
+<h2>👥 Condomini</h2>
 <div id="lista"></div>
 </div>
 
 <div class="card">
-<h3>📥 Giacenza</h3>
+<h2>📥 Giacenza</h2>
 <div id="g"></div>
 </div>
 
 <script>
-let rubrica=[]
+
+// DATI
+let rubrica=[
+ {nome:"ROSSI MARIO",tel:"3331234567"},
+ {nome:"BIANCHI LUCA",tel:"3339999999"},
+ {nome:"VERDI ANNA",tel:"3331111111"}
+]
+
 let giacenza=[]
+let mode="PACCO"
 
 // NORMALIZZA
 function norm(t){
 return (t||"").toUpperCase().trim()
 }
 
-// CERCA AUTOMATICA
+// CAMBIO MODALITÀ
+function setMode(m){
+mode=m
+
+btnPacco.classList.remove("active")
+btnRac.classList.remove("active")
+
+if(m==="PACCO") btnPacco.classList.add("active")
+if(m==="RACCOMANDATA") btnRac.classList.add("active")
+}
+
+// CERCA ISTANTANEA
 function cerca(){
 let val=norm(q.value)
 
 if(!val){
 res.innerHTML=""
-manuale.style.display="none"
 return
 }
 
-let trovato=rubrica.find(x=>norm(x.nome).includes(val))
+let trovati=rubrica.filter(x=>norm(x.nome).includes(val))
 
-if(trovato){
-invia(trovato.nome,trovato.tel,"PACCO")
-q.value=""
-res.innerHTML=""
-manuale.style.display="none"
-}else{
-res.innerHTML="Non trovato"
-manuale.style.display="block"
+res.innerHTML=trovati.map(x=>
+`<div class="item" onclick="invia('${x.nome}','${x.tel}')">${x.nome}</div>`
+).join("")
+
+// AUTO INVIO
+if(trovati.length===1){
+invia(trovati[0].nome,trovati[0].tel)
+reset()
 }
 }
 
-// INVIO WHATSAPP
-function invia(nome,tel,tipo){
-let numero=(tel||"").replace(/\D/g,'')
+// INVIO
+function invia(nome,tel){
+let numero=tel.replace(/\D/g,'')
 let pref=numero.startsWith("39")?"":"39"
 
-let msg=`Buongiorno ${nome}, è arrivato un ${tipo} in portineria`
+let msg=`Buongiorno ${nome}, è arrivata una ${mode} in portineria`
+
+if(mode==="PACCO"){
+msg=`Buongiorno ${nome}, è arrivato un pacco in portineria`
+}
+
 window.open(`https://wa.me/${pref}${numero}?text=${encodeURIComponent(msg)}`)
 
-// SALVA GIACENZA
 giacenza.unshift({
 nome,
-tipo,
+tipo:mode,
 data:new Date().toLocaleDateString('it-IT')
 })
 
 render()
 }
 
-// MANUALE
-function invioManuale(tipo){
-let n=nomeM.value.trim()
-let t=telM.value.trim()
-
-if(!n||!t){
-alert("Inserisci nome e telefono")
-return
-}
-
-invia(n,t,tipo)
-
-nomeM.value=""
-telM.value=""
-manuale.style.display="none"
+// RESET VELOCE
+function reset(){
+q.value=""
+res.innerHTML=""
 }
 
 // RENDER
 function render(){
-lista.innerHTML=rubrica.map(x=>`
-<div class="item">${x.nome}</div>
-`).join("")||"Vuota"
+lista.innerHTML=rubrica.map(x=>
+`<div class="item" onclick="invia('${x.nome}','${x.tel}')">${x.nome}</div>`
+).join("")
 
 g.innerHTML=giacenza.map((x,i)=>`
 <div class="item">
-<b>${x.nome}</b> - ${x.tipo} (${x.data})
-<button class="del" onclick="rimuovi(${i})">CONSEGNATO</button>
+<b>${x.nome}</b><br>
+<span class="small">${x.tipo} - ${x.data}</span>
+<button class="del" onclick="event.stopPropagation(); rimuovi(${i})">OK</button>
 </div>
-`).join("")||"Nessun pacco"
+`).join("")||"<div class='small'>Vuoto</div>"
 }
 
 // RIMUOVI
@@ -133,30 +176,8 @@ giacenza.splice(i,1)
 render()
 }
 
-// IMPORT RUBRICA
-function importa(e){
-let file=e.target.files[0]
-if(!file)return
+window.onload=render
 
-let reader=new FileReader()
-
-reader.onload=function(ev){
-try{
-let data=JSON.parse(ev.target.result)
-
-if(!Array.isArray(data)) throw "errore"
-
-rubrica=data
-render()
-
-alert("Rubrica caricata")
-}catch{
-alert("File non valido")
-}
-}
-
-reader.readAsText(file)
-}
 </script>
 
 </body>
