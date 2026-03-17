@@ -31,24 +31,18 @@ width:100%;
 margin-top:10px;
 }
 
-/* MIRINO */
-#overlay{
+/* 🔴 MIRINO */
+#reader::after{
+content:"";
 position:absolute;
-top:0;
-left:0;
-width:100%;
-height:100%;
-display:none;
-justify-content:center;
-align-items:center;
-pointer-events:none;
-}
-
-.scan-box{
-width:200px;
-height:200px;
+top:50%;
+left:50%;
+width:180px;
+height:180px;
+transform:translate(-50%,-50%);
 border:3px solid red;
 border-radius:12px;
+pointer-events:none;
 }
 </style>
 </head>
@@ -68,11 +62,7 @@ border-radius:12px;
 <button class="pacco" onclick="startQR()">📷 SCANNER</button>
 <button class="gray" onclick="stopQR()">⛔ STOP</button>
 
-<div id="reader">
-  <div id="overlay">
-    <div class="scan-box"></div>
-  </div>
-</div>
+<div id="reader"></div>
 
 <div id="res"></div>
 </div>
@@ -108,14 +98,12 @@ border-radius:12px;
 
 <script>
 
-// ===== SCANNER FIX DEFINITIVO =====
+// ===== SCANNER FIXATO (SOLO QUI MODIFICA) =====
 let qr
 
 function startQR(){
 
 qr = new Html5Qrcode("reader")
-
-document.getElementById("overlay").style.display="flex"
 
 let letto = false
 
@@ -123,46 +111,53 @@ Html5Qrcode.getCameras().then(devices => {
 
 if(devices && devices.length){
 
-let camera = devices.find(c =>
-c.label.toLowerCase().includes("back") ||
-c.label.toLowerCase().includes("rear")
-) || devices[devices.length-1]
+let cameraId = devices[0].id
 
 qr.start(
-camera.id,
+cameraId,
 {
-fps:10,
-qrbox:{width:200,height:200}
+fps: 10,
+
+// 🔥 AREA CENTRALE DINAMICA (FIX VERO)
+qrbox: function(w,h){
+let size = Math.min(w,h) * 0.4
+return { width:size, height:size }
+}
+
 },
-msg=>{
+msg => {
 
 if(letto) return
 
-let codice=(msg||"").toUpperCase().trim()
+let codice = (msg || "").toUpperCase().trim()
 
-let trovato=rubrica.find(x=>{
-let nome=(x.nome||"").toUpperCase().trim()
-return codice.includes(nome)||nome.includes(codice)
+let trovato = rubrica.find(x => {
+let nome = (x.nome || "").toUpperCase().trim()
+return codice.includes(nome) || nome.includes(codice)
 })
 
 if(trovato){
 
-letto=true
+letto = true
 
+// 🔊 beep
 try{
 new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play()
 }catch(e){}
 
+// 📳 vibrazione
 if(navigator.vibrate) navigator.vibrate(200)
 
 stopQR()
-invia(trovato.nome,trovato.tel)
+invia(trovato.nome, trovato.tel)
 
 }
 
 }
 )
 
+}else{
+alert("Nessuna fotocamera trovata")
 }
 
 })
@@ -170,11 +165,12 @@ invia(trovato.nome,trovato.tel)
 }
 
 function stopQR(){
-if(qr){qr.stop()}
-document.getElementById("overlay").style.display="none"
+if(qr){
+qr.stop()
+}
 }
 
-// ===== RESTO CODICE IDENTICO =====
+// ===== RESTO IDENTICO =====
 let rubrica=JSON.parse(localStorage.getItem("rubrica"))||[
 {nome:"ROSSI MARIO",tel:"3331234567"}
 ]
@@ -210,7 +206,7 @@ return
 
 res.innerHTML=trovati.map(x=>
 `<div class="item" onclick="invia('${x.nome}','${x.tel}')">${x.nome}</div>`
-).join("")||"<div class='small'>Nessun risultato</div>"
+).join("") || "<div class='small'>Nessun risultato</div>"
 }
 
 function invia(nome,tel){
