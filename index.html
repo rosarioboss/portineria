@@ -47,7 +47,9 @@ button{width:100%;padding:14px;margin-top:6px;border:none;border-radius:10px;col
 </div>
 
 <div class="card">
-  <h2>👥 Rubrica</h2>
+  <h2 onclick="toggleRubrica()" style="cursor:pointer">
+👥 Rubrica (tocca per aprire/chiudere)
+</h2>
   <input id="nomeNew" placeholder="Nome Cognome">
   <input id="telNew" placeholder="Telefono">
   <button class="pacco" onclick="aggiungi()">AGGIUNGI</button>
@@ -58,7 +60,7 @@ button{width:100%;padding:14px;margin-top:6px;border:none;border-radius:10px;col
     <button class="gray" onclick="document.getElementById('fileImport').click()">📥 Import</button>
   </div>
 
-  <div id="lista"></div>
+  <div id="lista" style="display:none"></div>
 </div>
 
 <div class="card">
@@ -202,7 +204,12 @@ function rimuovi(i){
   save('giacenza', giacenza);
   render();
 }
+function toggleRubrica(){
+  let el = document.getElementById("lista")
+  el.style.display = el.style.display==="none" ? "block" : "none"
+}
 
+window.onload=render
 // --- RENDER ---
 function render(){
   const lista = document.getElementById("lista");
