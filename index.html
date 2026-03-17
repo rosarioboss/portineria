@@ -3,132 +3,131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
-    <title>Portineria OK</title>
+    <title>Portineria Pro</title>
+    <script src="https://unpkg.com/@zxing/library@latest"></script>
     <style>
         body { font-family: -apple-system, sans-serif; background: #f2f2f7; margin: 0; padding: 15px; }
         .card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        h2 { margin: 0 0 10px 0; font-size: 18px; }
-        input { width: 100%; padding: 15px; font-size: 18px; border-radius: 10px; border: 1px solid #ccc; box-sizing: border-box; }
-        .suggerimento { padding: 15px; border-bottom: 1px solid #eee; background: #fff; font-weight: bold; color: #007aff; }
-        .btn { width: 100%; padding: 18px; border: none; border-radius: 12px; color: white; font-weight: bold; font-size: 16px; margin-top: 10px; cursor: pointer; text-align: center; display: block; text-decoration: none; }
+        input { width: 100%; padding: 15px; font-size: 18px; border-radius: 10px; border: 1px solid #ccc; box-sizing: border-box; margin-bottom: 10px; }
+        .btn { width: 100%; padding: 18px; border: none; border-radius: 12px; color: white; font-weight: bold; font-size: 16px; margin-bottom: 10px; cursor: pointer; text-align: center; }
+        .btn-scan { background: #ff9500; }
         .btn-pacco { background: #007aff; }
         .btn-rac { background: #5856d6; }
-        .btn-ritiro { background: #ff3b30; padding: 8px 12px; font-size: 12px; width: auto; margin: 0; }
+        .btn-red { background: #ff3b30; width: auto; padding: 8px 12px; font-size: 12px; }
         .item { background: white; padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        #video { width: 100%; border-radius: 12px; display: none; margin-bottom: 10px; background: #000; }
+        .suggerimento { padding: 15px; border-bottom: 1px solid #eee; background: #fff; font-weight: bold; color: #007aff; }
         .hidden { display: none; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>📦 1. Cerca Condomino</h2>
-    <input id="cercaInput" placeholder="Scrivi il cognome..." oninput="cerca()">
-    <div id="risultati"></div>
-</div>
+    <h2>➕ Arrivo Pacco / Raccomandata</h2>
+    <video id="video"></video>
+    <button class="btn btn-scan" onclick="avviaScanner()">📷 SCANSIONA CODICE</button>
+    
+    <input id="nomeInput" placeholder="Cerca Cognome..." oninput="cerca()">
+    <div id="suggerimenti"></div>
 
-<div id="sezioneAzioni" class="card hidden">
-    <h2 id="nomeDisplay">---</h2>
-    <button class="btn btn-pacco" onclick="eseguiRegistrazione('PACCO')">AVVISA PER PACCO ➔</button>
-    <button class="btn btn-rac" onclick="eseguiRegistrazione('RACCOMANDATA')">AVVISA PER RACCOMANDATA ➔</button>
-    <button class="btn" style="background:#8e8e93" onclick="annulla()">ANNULLA</button>
+    <div id="comandi" class="hidden">
+        <button class="btn btn-pacco" onclick="salvaEAvvisa('PACCO')">AVVISA PER PACCO ➔</button>
+        <button class="btn btn-rac" onclick="salvaEAvvisa('RACCOMANDATA')">AVVISA PER RACCOMANDATA ➔</button>
+    </div>
 </div>
 
 <div class="card">
-    <h2>📥 In Giacenza</h2>
+    <h2>📥 Giacenza</h2>
     <div id="listaGiacenza"></div>
 </div>
 
 <button onclick="document.getElementById('admin').classList.toggle('hidden')" style="width:100%; background:none; border:none; color:gray; padding:10px;">⚙️ Gestisci Rubrica</button>
 
 <div id="admin" class="card hidden">
-    <h3>Aggiungi Contatto</h3>
-    <input id="rNome" placeholder="Nome Cognome" style="margin-bottom:10px">
-    <input id="rTel" placeholder="3331234567" style="margin-bottom:10px">
-    <button class="btn btn-pacco" onclick="aggiungiRubrica()">SALVA IN RUBRICA</button>
-    <div id="listaRubrica" style="margin-top:10px; font-size:12px;"></div>
+    <input id="rNome" placeholder="Nome Cognome">
+    <input id="rTel" placeholder="3331234567">
+    <button class="btn btn-pacco" onclick="salvaRubrica()">SALVA IN RUBRICA</button>
 </div>
 
 <script>
-const STORAGE = {
-    save: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
-    load: k => JSON.parse(localStorage.getItem(k)) || []
+const DB = {
+    get: k => JSON.parse(localStorage.getItem(k)) || [],
+    set: (k, v) => localStorage.setItem(k, JSON.stringify(v))
 };
 
-let selezionato = null;
+const codeReader = new ZXing.BrowserMultiFormatReader();
+let corrente = null;
+
+function avviaScanner() {
+    const v = document.getElementById('video');
+    v.style.display = 'block';
+    codeReader.decodeFromVideoDevice(null, 'video', (result) => {
+        if (result) {
+            codeReader.reset();
+            v.style.display = 'none';
+            alert("Codice: " + result.text);
+        }
+    });
+}
 
 function cerca() {
-    let q = document.getElementById("cercaInput").value.toUpperCase();
-    let res = document.getElementById("risultati");
-    if (q.length < 1) { res.innerHTML = ""; return; }
-    let rubrica = STORAGE.load("rubrica");
-    let trovati = rubrica.filter(u => u.nome.includes(q));
-    res.innerHTML = trovati.map(u => `<div class="suggerimento" onclick="selezionaCondomino('${u.nome}', '${u.tel}')">${u.nome}</div>`).join("");
+    let q = document.getElementById("nomeInput").value.toUpperCase();
+    let box = document.getElementById("suggerimenti");
+    if (q.length < 1) { box.innerHTML = ""; return; }
+    let trovati = DB.get("rubrica").filter(u => u.nome.includes(q));
+    box.innerHTML = trovati.map(u => `<div class="suggerimento" onclick="seleziona('${u.nome}', '${u.tel}')">${u.nome}</div>`).join("");
 }
 
-function selezionaCondomino(nome, tel) {
-    selezionato = { nome, tel };
-    document.getElementById("nomeDisplay").innerText = nome;
-    document.getElementById("sezioneAzioni").classList.remove("hidden");
-    document.getElementById("risultati").innerHTML = "";
-    document.getElementById("cercaInput").value = "";
+function seleziona(nome, tel) {
+    corrente = { nome, tel };
+    document.getElementById("nomeInput").value = nome;
+    document.getElementById("suggerimenti").innerHTML = "";
+    document.getElementById("comandi").classList.remove("hidden");
 }
 
-function eseguiRegistrazione(tipo) {
-    if (!selezionato) return;
+function salvaEAvvisa(tipo) {
+    if (!corrente) return;
+    let g = DB.get("giacenza");
+    g.unshift({ nome: corrente.nome, tipo: tipo, data: new Date().toLocaleDateString('it-IT') });
+    DB.set("giacenza", g);
 
-    // 1. REGISTRA IN GIACENZA
-    let g = STORAGE.load("giacenza");
-    g.unshift({ nome: selezionato.nome, tipo: tipo, data: new Date().toLocaleDateString('it-IT') });
-    STORAGE.save("giacenza", g);
-
-    // 2. APRI WHATSAPP
-    let tel = selezionato.tel;
-    let pref = tel.startsWith("39") ? "" : "39";
-    let msg = `Buongiorno ${selezionato.nome}, ti avviso che è arrivato un ${tipo} per te in portineria.`;
+    let pref = corrente.tel.startsWith("39") ? "" : "39";
+    let msg = `Buongiorno ${corrente.nome}, c'è un ${tipo} per te in portineria.`;
     
-    // Reset interfaccia prima di aprire WA per evitare blocchi
-    annulla();
-    renderGiacenza();
-
-    // Apertura forzata WhatsApp
-    window.location.href = `https://wa.me/${pref}${tel}?text=${encodeURIComponent(msg)}`;
+    document.getElementById("comandi").classList.add("hidden");
+    document.getElementById("nomeInput").value = "";
+    render();
+    
+    window.location.href = `https://wa.me/${pref}${corrente.tel}?text=${encodeURIComponent(msg)}`;
 }
 
-function renderGiacenza() {
-    let g = STORAGE.load("giacenza");
+function render() {
+    let g = DB.get("giacenza");
     document.getElementById("listaGiacenza").innerHTML = g.map((x, i) => `
         <div class="item">
             <div><b>${x.nome}</b><br><small>${x.tipo} - ${x.data}</small></div>
-            <button class="btn btn-ritiro" onclick="ritira(${i})">RITIRATO</button>
+            <button class="btn btn-red" onclick="ritira(${i})">OK</button>
         </div>
-    `).join("") || "Nessun pacco";
+    `).join("") || "Vuoto";
 }
 
 function ritira(i) {
-    let g = STORAGE.load("giacenza");
+    let g = DB.get("giacenza");
     g.splice(i, 1);
-    STORAGE.save("giacenza", g);
-    renderGiacenza();
+    DB.set("giacenza", g);
+    render();
 }
 
-function aggiungiRubrica() {
+function salvaRubrica() {
     let n = document.getElementById("rNome").value.toUpperCase().trim();
     let t = document.getElementById("rTel").value.trim();
-    if (!n || !t) return alert("Inserisci tutti i dati!");
-    let r = STORAGE.load("rubrica");
+    let r = DB.get("rubrica");
     r.push({ nome: n, tel: t });
-    STORAGE.save("rubrica", r);
+    DB.set("rubrica", r);
     alert("Salvato!");
-    document.getElementById("rNome").value = "";
-    document.getElementById("rTel").value = "";
 }
 
-function annulla() {
-    selezionato = null;
-    document.getElementById("sezioneAzioni").classList.add("hidden");
-}
-
-window.onload = renderGiacenza;
+window.onload = render;
 </script>
 </body>
 </html>
