@@ -1,183 +1,230 @@
-<<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Portineria PRO</title>
+<title>Portineria</title>
 
 <style>
 body{font-family:sans-serif;background:#f2f2f7;margin:0;padding:15px}
 .card{background:#fff;padding:15px;border-radius:12px;margin-bottom:15px}
-input{width:100%;padding:18px;font-size:20px;border-radius:10px;border:1px solid #ccc}
-
-.mode{
-display:flex;
-gap:10px;
-margin-bottom:10px;
-}
-
-.mode button{
-flex:1;
-padding:15px;
-border:none;
-border-radius:10px;
-font-weight:bold;
-color:#fff;
-font-size:16px;
-opacity:0.5;
-}
-
-.active{opacity:1}
-
+h2{margin:0 0 10px}
+input{width:100%;padding:14px;margin:6px 0;font-size:18px;border-radius:10px;border:1px solid #ccc}
+button{width:100%;padding:14px;margin-top:6px;border:none;border-radius:10px;color:#fff;font-weight:bold}
+.row{display:flex;gap:10px}
+.row button{flex:1}
 .pacco{background:#007aff}
 .rac{background:#5856d6}
-
-.item{
-padding:15px;
-border-bottom:1px solid #eee;
-font-size:18px;
-}
-
-.item:active{background:#ddd}
-
-.del{
-background:#ff3b30;
-color:#fff;
-border:none;
-padding:5px 10px;
-border-radius:6px;
-}
-
-.small{font-size:13px;color:#666}
+.gray{background:#8e8e93}
+.del{background:#ff3b30}
+.item{padding:10px;border-bottom:1px solid #eee}
+.small{font-size:12px;color:#666}
+.mode{display:flex;gap:10px;margin-bottom:10px}
+.mode button{flex:1;opacity:.5}
+.active{opacity:1}
 </style>
-
 </head>
 
 <body>
 
 <div class="card">
-<h2>⚡ Ricerca veloce</h2>
+  <h2>⚡ Ricerca</h2>
 
-<div class="mode">
-<button id="btnPacco" class="pacco active" onclick="setMode('PACCO')">PACCO</button>
-<button id="btnRac" class="rac" onclick="setMode('RACCOMANDATA')">RACCOMANDATA</button>
-</div>
+  <div class="mode">
+    <button id="btnPacco" class="pacco active" onclick="setMode('PACCO')">PACCO</button>
+    <button id="btnRac" class="rac" onclick="setMode('RACCOMANDATA')">RACCOMANDATA</button>
+  </div>
 
-<input id="q" placeholder="Scrivi nome..." oninput="cerca()">
-<div id="res"></div>
-</div>
-
-<div class="card">
-<h2>👥 Condomini</h2>
-<div id="lista"></div>
+  <input id="q" placeholder="Scrivi nome..." oninput="cerca()">
+  <div id="res"></div>
 </div>
 
 <div class="card">
-<h2>📥 Giacenza</h2>
-<div id="g"></div>
+  <h2>✉️ Invio manuale</h2>
+  <input id="nomeManuale" placeholder="Nome Cognome">
+  <input id="telManuale" placeholder="Telefono">
+  <button class="pacco" onclick="inviaManuale()">INVIA</button>
+</div>
+
+<div class="card">
+  <h2>👥 Rubrica</h2>
+  <input id="nomeNew" placeholder="Nome Cognome">
+  <input id="telNew" placeholder="Telefono">
+  <button class="pacco" onclick="aggiungi()">AGGIUNGI</button>
+
+  <div class="row">
+    <button class="gray" onclick="esporta()">📤 Backup</button>
+    <input type="file" id="fileImport" style="display:none" onchange="importa(event)">
+    <button class="gray" onclick="document.getElementById('fileImport').click()">📥 Import</button>
+  </div>
+
+  <div id="lista"></div>
+</div>
+
+<div class="card">
+  <h2>📥 Giacenza</h2>
+  <div id="g"></div>
 </div>
 
 <script>
+// --- STATO ---
+let rubrica = load('rubrica') || [
+  {nome:"ROSSI MARIO",tel:"3331234567"}
+];
+let giacenza = load('giacenza') || [];
+let mode = "PACCO";
 
-// DATI
-let rubrica=[
- {nome:"ROSSI MARIO",tel:"3331234567"},
- {nome:"BIANCHI LUCA",tel:"3339999999"},
- {nome:"VERDI ANNA",tel:"3331111111"}
-]
+// --- UTILS ---
+function norm(t){ return (t||"").toUpperCase().trim(); }
+function save(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+function load(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch{ return null; } }
 
-let giacenza=[]
-let mode="PACCO"
-
-// NORMALIZZA
-function norm(t){
-return (t||"").toUpperCase().trim()
-}
-
-// CAMBIO MODALITÀ
+// --- MODALITÀ ---
 function setMode(m){
-mode=m
-
-btnPacco.classList.remove("active")
-btnRac.classList.remove("active")
-
-if(m==="PACCO") btnPacco.classList.add("active")
-if(m==="RACCOMANDATA") btnRac.classList.add("active")
+  mode = m;
+  document.getElementById("btnPacco").classList.toggle("active", m==="PACCO");
+  document.getElementById("btnRac").classList.toggle("active", m==="RACCOMANDATA");
 }
 
-// CERCA ISTANTANEA
+// --- CERCA ---
 function cerca(){
-let val=norm(q.value)
+  const q = document.getElementById("q");
+  const res = document.getElementById("res");
+  const val = norm(q.value);
 
-if(!val){
-res.innerHTML=""
-return
+  if(!val){ res.innerHTML=""; return; }
+
+  const trovati = rubrica.filter(x => norm(x.nome).includes(val));
+
+  res.innerHTML = trovati.map(x =>
+    `<div class="item" data-nome="${x.nome}" data-tel="${x.tel}"
+      onclick="invia(this.dataset.nome,this.dataset.tel)">
+      ${x.nome}
+     </div>`
+  ).join("") || "<div class='small'>Nessun risultato</div>";
 }
 
-let trovati=rubrica.filter(x=>norm(x.nome).includes(val))
-
-res.innerHTML=trovati.map(x=>
-`<div class="item" onclick="invia('${x.nome}','${x.tel}')">${x.nome}</div>`
-).join("")
-
-// AUTO INVIO
-if(trovati.length===1){
-invia(trovati[0].nome,trovati[0].tel)
-reset()
-}
-}
-
-// INVIO
+// --- INVIO ---
 function invia(nome,tel){
-let numero=tel.replace(/\D/g,'')
-let pref=numero.startsWith("39")?"":"39"
+  const numero = (tel||"").replace(/\D/g,'');
+  if(numero.length < 8){
+    alert("Numero non valido");
+    return;
+  }
+  const pref = numero.startsWith("39") ? "" : "39";
 
-let msg=`Buongiorno ${nome}, è arrivata una ${mode} in portineria`
+  const msg = (mode==="PACCO")
+    ? `Buongiorno ${nome}, è arrivato un pacco in portineria`
+    : `Buongiorno ${nome}, è arrivata una raccomandata in portineria`;
 
-if(mode==="PACCO"){
-msg=`Buongiorno ${nome}, è arrivato un pacco in portineria`
+  // iPhone-safe (niente popup bloccati)
+  window.location.href = `https://wa.me/${pref}${numero}?text=${encodeURIComponent(msg)}`;
+
+  giacenza.unshift({
+    nome, tipo:mode,
+    data:new Date().toLocaleDateString('it-IT')
+  });
+  save('giacenza', giacenza);
+
+  render();
 }
 
-window.open(`https://wa.me/${pref}${numero}?text=${encodeURIComponent(msg)}`)
+// --- INVIO MANUALE ---
+function inviaManuale(){
+  const n = document.getElementById("nomeManuale").value.trim();
+  const t = document.getElementById("telManuale").value.trim();
+  if(!n || !t){ alert("Inserisci dati"); return; }
 
-giacenza.unshift({
-nome,
-tipo:mode,
-data:new Date().toLocaleDateString('it-IT')
-})
+  invia(n, t);
 
-render()
+  document.getElementById("nomeManuale").value="";
+  document.getElementById("telManuale").value="";
 }
 
-// RESET VELOCE
-function reset(){
-q.value=""
-res.innerHTML=""
+// --- RUBRICA ---
+function aggiungi(){
+  const n = document.getElementById("nomeNew").value.trim();
+  const t = document.getElementById("telNew").value.trim();
+  if(!n || !t){ alert("Inserisci dati"); return; }
+
+  if(rubrica.some(x => x.nome === n.toUpperCase())){
+    alert("Già presente");
+    return;
+  }
+
+  rubrica.push({nome:n.toUpperCase(), tel:t});
+  save('rubrica', rubrica);
+
+  document.getElementById("nomeNew").value="";
+  document.getElementById("telNew").value="";
+
+  render();
 }
 
-// RENDER
-function render(){
-lista.innerHTML=rubrica.map(x=>
-`<div class="item" onclick="invia('${x.nome}','${x.tel}')">${x.nome}</div>`
-).join("")
-
-g.innerHTML=giacenza.map((x,i)=>`
-<div class="item">
-<b>${x.nome}</b><br>
-<span class="small">${x.tipo} - ${x.data}</span>
-<button class="del" onclick="event.stopPropagation(); rimuovi(${i})">OK</button>
-</div>
-`).join("")||"<div class='small'>Vuoto</div>"
+function eliminaRubrica(i){
+  rubrica.splice(i,1);
+  save('rubrica', rubrica);
+  render();
 }
 
-// RIMUOVI
+// --- IMPORT / EXPORT ---
+function esporta(){
+  const blob = new Blob([JSON.stringify(rubrica,null,2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "rubrica.json";
+  a.click();
+}
+
+function importa(e){
+  const file = e.target.files[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try{
+      const data = JSON.parse(ev.target.result);
+      if(!Array.isArray(data)) throw "err";
+      rubrica = data;
+      save('rubrica', rubrica);
+      render();
+      alert("Rubrica caricata");
+    }catch{
+      alert("File non valido");
+    }
+  };
+  reader.readAsText(file);
+}
+
+// --- GIACENZA ---
 function rimuovi(i){
-giacenza.splice(i,1)
-render()
+  giacenza.splice(i,1);
+  save('giacenza', giacenza);
+  render();
 }
 
-window.onload=render
+// --- RENDER ---
+function render(){
+  const lista = document.getElementById("lista");
+  const g = document.getElementById("g");
 
+  lista.innerHTML = rubrica.map((x,i)=>
+    `<div class="item">
+      <b onclick="invia('${x.nome}','${x.tel}')">${x.nome}</b>
+      <button class="del" onclick="event.stopPropagation(); eliminaRubrica(${i})">ELIMINA</button>
+     </div>`
+  ).join("") || "<div class='small'>Rubrica vuota</div>";
+
+  g.innerHTML = giacenza.map((x,i)=>`
+    <div class="item">
+      <b>${x.nome}</b><br>
+      <span class="small">${x.tipo} - ${x.data}</span>
+      <button class="del" onclick="event.stopPropagation(); rimuovi(${i})">CONSEGNATO</button>
+    </div>
+  `).join("") || "<div class='small'>Nessun pacco</div>";
+}
+
+window.onload = render;
 </script>
 
 </body>
