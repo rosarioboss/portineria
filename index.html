@@ -25,14 +25,10 @@ button{width:100%;padding:14px;margin-top:6px;border:none;border-radius:10px;col
 .mode button{flex:1;opacity:.5}
 .active{opacity:1}
 
-#reader{
-position:relative;
-width:100%;
-margin-top:10px;
-}
+#reader{position:relative;width:100%;margin-top:10px}
 
-/* 🔴 MIRINO */
-#reader::after{
+/* MIRINO SOLO ATTIVO */
+#reader.active::after{
 content:"";
 position:absolute;
 top:50%;
@@ -57,7 +53,7 @@ pointer-events:none;
 <button id="btnRac" class="rac" onclick="setMode('RACCOMANDATA')">RACCOMANDATA</button>
 </div>
 
-<input id="q" placeholder="Scrivi nome..." oninput="cerca()">
+<input id="q" placeholder="Scrivi cognome o nome..." oninput="cerca()">
 
 <button class="pacco" onclick="startQR()">📷 SCANNER</button>
 <button class="gray" onclick="stopQR()">⛔ STOP</button>
@@ -72,11 +68,14 @@ pointer-events:none;
 <input id="nomeManuale" placeholder="Nome Cognome">
 <input id="telManuale" placeholder="Telefono">
 <button class="pacco" onclick="inviaManuale()">INVIA</button>
+
+<!-- NUOVO PULSANTE -->
+<button class="rac" onclick="inviaRacManuale()">📩 SOLO RACCOMANDATA</button>
 </div>
 
 <div class="card">
 <h2 onclick="toggleRubrica()" style="cursor:pointer">
-👥 Rubrica (tocca per aprire/chiudere)
+👥 Rubrica
 </h2>
 <input id="nomeNew" placeholder="Nome Cognome">
 <input id="telNew" placeholder="Telefono">
@@ -98,10 +97,14 @@ pointer-events:none;
 
 <script>
 
-// ===== SCANNER FIXATO (SOLO QUI MODIFICA) =====
+// ===== SCANNER FIX =====
 let qr
 
 function startQR(){
+
+if(qr){ stopQR() }
+
+document.getElementById("reader").classList.add("active")
 
 qr = new Html5Qrcode("reader")
 
@@ -111,45 +114,45 @@ Html5Qrcode.getCameras().then(devices => {
 
 if(devices && devices.length){
 
-let cameraId = devices[0].id
+let backCam = devices.find(d => 
+d.label.toLowerCase().includes("back") || 
+d.label.toLowerCase().includes("rear")
+)
+
+let cameraId = backCam ? backCam.id : devices[devices.length-1].id
 
 qr.start(
 cameraId,
 {
-fps: 10,
-
-// 🔥 AREA CENTRALE DINAMICA (FIX VERO)
-qrbox: function(w,h){
-let size = Math.min(w,h) * 0.4
-return { width:size, height:size }
+fps:10,
+qrbox:(w,h)=>{
+let size=Math.min(w,h)*0.4
+return {width:size,height:size}
 }
-
 },
-msg => {
+msg=>{
 
-if(letto) return
+if(letto)return
 
-let codice = (msg || "").toUpperCase().trim()
+let codice=(msg||"").toUpperCase().trim()
 
-let trovato = rubrica.find(x => {
-let nome = (x.nome || "").toUpperCase().trim()
+let trovato=rubrica.find(x=>{
+let nome=(x.nome||"").toUpperCase()
 return codice.includes(nome) || nome.includes(codice)
 })
 
 if(trovato){
 
-letto = true
+letto=true
 
-// 🔊 beep
 try{
 new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play()
 }catch(e){}
 
-// 📳 vibrazione
 if(navigator.vibrate) navigator.vibrate(200)
 
 stopQR()
-invia(trovato.nome, trovato.tel)
+invia(trovato.nome,trovato.tel)
 
 }
 
@@ -166,11 +169,14 @@ alert("Nessuna fotocamera trovata")
 
 function stopQR(){
 if(qr){
-qr.stop()
+qr.stop().then(()=>{
+qr.clear()
+document.getElementById("reader").classList.remove("active")
+})
 }
 }
 
-// ===== RESTO IDENTICO =====
+// ===== DATI =====
 let rubrica=JSON.parse(localStorage.getItem("rubrica"))||[
 {nome:"ROSSI MARIO",tel:"3331234567"}
 ]
@@ -180,23 +186,25 @@ let mode="PACCO"
 
 function norm(t){return(t||"").toUpperCase().trim()}
 
+// ===== MODE =====
 function setMode(m){
 mode=m
 btnPacco.classList.toggle("active",m==="PACCO")
 btnRac.classList.toggle("active",m==="RACCOMANDATA")
 }
 
+// ===== RICERCA INTELLIGENTE =====
 function cerca(){
 let val=norm(q.value)
 if(!val){res.innerHTML="";return}
 
-let parole=val.split(" ")
-
+// cerca anche solo cognome
 let trovati=rubrica.filter(x=>{
 let nome=norm(x.nome)
-return parole.every(p=>nome.includes(p))
+return nome.includes(val)
 })
 
+// auto invio se 1 solo
 if(trovati.length===1){
 invia(trovati[0].nome,trovati[0].tel)
 q.value=""
@@ -209,9 +217,12 @@ res.innerHTML=trovati.map(x=>
 ).join("") || "<div class='small'>Nessun risultato</div>"
 }
 
+// ===== INVIO =====
 function invia(nome,tel){
+
 let numero=tel.replace(/\D/g,'')
 if(numero.length<8)return alert("Numero non valido")
+
 let pref=numero.startsWith("39")?"":"39"
 
 let msg=mode==="PACCO"
@@ -226,6 +237,21 @@ localStorage.setItem("giacenza",JSON.stringify(giacenza))
 render()
 }
 
+// ===== SOLO RACCOMANDATA =====
+function inviaRacManuale(){
+let n=nomeManuale.value.trim()
+let t=telManuale.value.trim()
+if(!n||!t)return alert("Inserisci dati")
+
+let numero=t.replace(/\D/g,'')
+let pref=numero.startsWith("39")?"":"39"
+
+let msg=`Buongiorno ${n}, è arrivata una raccomandata in portineria`
+
+window.location.href=`https://wa.me/${pref}${numero}?text=${encodeURIComponent(msg)}`
+}
+
+// ===== RESTO =====
 function inviaManuale(){
 let n=nomeManuale.value.trim()
 let t=telManuale.value.trim()
@@ -281,7 +307,6 @@ function render(){
 lista.innerHTML=rubrica.map((x,i)=>
 `<div class="item">
 <b onclick="invia('${x.nome}','${x.tel}')">${x.nome}</b>
-<button class="del" onclick="event.stopPropagation();rimuovi(${i})">ELIMINA</button>
 </div>`).join("")
 
 g.innerHTML=giacenza.map((x,i)=>
