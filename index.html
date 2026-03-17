@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Portineria</title>
 
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
 body{font-family:sans-serif;background:#f2f2f7;margin:0;padding:15px}
@@ -25,27 +25,30 @@ button{width:100%;padding:14px;margin-top:6px;border:none;border-radius:10px;col
 .mode button{flex:1;opacity:.5}
 .active{opacity:1}
 
-video{
+#reader{
+position:relative;
 width:100%;
-height:220px;
-object-fit:cover;
 margin-top:10px;
-border-radius:10px
 }
 
-.wrap{position:relative}
-
-/* 🔧 FIX MIRINO */
-.mirino{
+/* MIRINO */
+#overlay{
 position:absolute;
-top:40%;
-left:20%;
-width:60%;
-height:15%;
-border:3px solid red;
-border-radius:10px;
-pointer-events:none;
+top:0;
+left:0;
+width:100%;
+height:100%;
 display:none;
+justify-content:center;
+align-items:center;
+pointer-events:none;
+}
+
+.scan-box{
+width:200px;
+height:200px;
+border:3px solid red;
+border-radius:12px;
 }
 </style>
 </head>
@@ -62,12 +65,13 @@ display:none;
 
 <input id="q" placeholder="Scrivi nome..." oninput="cerca()">
 
-<button class="pacco" onclick="startOCR()">📷 SCANNER</button>
-<button class="gray" onclick="stopOCR()">⛔ STOP</button>
+<button class="pacco" onclick="startQR()">📷 SCANNER</button>
+<button class="gray" onclick="stopQR()">⛔ STOP</button>
 
-<div class="wrap">
-<video id="video" autoplay playsinline></video>
-<div class="mirino"></div>
+<div id="reader">
+  <div id="overlay">
+    <div class="scan-box"></div>
+  </div>
 </div>
 
 <div id="res"></div>
@@ -104,107 +108,73 @@ display:none;
 
 <script>
 
-// ===== SCANNER FIX =====
-let stream
-let scanning=false
-let lastScan=""
+// ===== SCANNER FIX DEFINITIVO =====
+let qr
 
-function beep(){
-try{
-const ctx=new (window.AudioContext||window.webkitAudioContext)()
-const osc=ctx.createOscillator()
-osc.type="sine"
-osc.frequency.value=1000
-osc.connect(ctx.destination)
-osc.start()
-setTimeout(()=>osc.stop(),150)
-}catch(e){}
-}
+function startQR(){
 
-async function startOCR(){
-if(scanning){stopOCR();return}
-scanning=true
+qr = new Html5Qrcode("reader")
 
-const video=document.getElementById("video")
-const mirino=document.querySelector(".mirino")
+document.getElementById("overlay").style.display="flex"
 
-mirino.style.display="block"
+let letto = false
 
-stream=await navigator.mediaDevices.getUserMedia({
-video:{facingMode:{ideal:"environment"}}
+Html5Qrcode.getCameras().then(devices => {
+
+if(devices && devices.length){
+
+let camera = devices.find(c =>
+c.label.toLowerCase().includes("back") ||
+c.label.toLowerCase().includes("rear")
+) || devices[devices.length-1]
+
+qr.start(
+camera.id,
+{
+fps:10,
+qrbox:{width:200,height:200}
+},
+msg=>{
+
+if(letto) return
+
+let codice=(msg||"").toUpperCase().trim()
+
+let trovato=rubrica.find(x=>{
+let nome=(x.nome||"").toUpperCase().trim()
+return codice.includes(nome)||nome.includes(codice)
 })
 
-video.srcObject=stream
-await video.play()
+if(trovato){
 
-scanLoop()
-}
+letto=true
 
-function stopOCR(){
-scanning=false
-document.querySelector(".mirino").style.display="none"
-if(stream) stream.getTracks().forEach(t=>t.stop())
-}
+try{
+new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play()
+}catch(e){}
 
-async function scanLoop(){
+if(navigator.vibrate) navigator.vibrate(200)
 
-if(!scanning) return
-
-const video=document.getElementById("video")
-
-if(video.readyState !== 4){
-setTimeout(scanLoop,500)
-return
-}
-
-const canvas=document.createElement("canvas")
-const ctx=canvas.getContext("2d")
-
-let w=video.videoWidth
-let h=video.videoHeight
-
-let x = w * 0.2
-let y = h * 0.4
-let cw = w * 0.6
-let ch = h * 0.15
-
-canvas.width=cw
-canvas.height=ch
-
-ctx.drawImage(video,x,y,cw,ch,0,0,cw,ch)
-
-let { data:{ text } } = await Tesseract.recognize(canvas,'eng')
-
-let testo=text.toUpperCase().replace(/[^A-Z\s]/g," ").trim()
-
-if(testo.length > 3 && testo !== lastScan){
-
-lastScan = testo
-
-let parole = testo
-.split(" ")
-.map(p => p.trim())
-.filter(p => p.length > 3)
-.filter(p => !/\d/.test(p))
-
-if(parole.length > 0){
-
-let candidato = parole[0]
-
-document.getElementById("q").value = candidato
-cerca()
-
-beep()
-if(navigator.vibrate) navigator.vibrate(100)
+stopQR()
+invia(trovato.nome,trovato.tel)
 
 }
 
 }
+)
 
-setTimeout(scanLoop,1200)
 }
 
-// ===== RESTO IDENTICO =====
+})
+
+}
+
+function stopQR(){
+if(qr){qr.stop()}
+document.getElementById("overlay").style.display="none"
+}
+
+// ===== RESTO CODICE IDENTICO =====
 let rubrica=JSON.parse(localStorage.getItem("rubrica"))||[
 {nome:"ROSSI MARIO",tel:"3331234567"}
 ]
@@ -240,7 +210,7 @@ return
 
 res.innerHTML=trovati.map(x=>
 `<div class="item" onclick="invia('${x.nome}','${x.tel}')">${x.nome}</div>`
-).join("") || "<div class='small'>Nessun risultato</div>"
+).join("")||"<div class='small'>Nessun risultato</div>"
 }
 
 function invia(nome,tel){
