@@ -3,65 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
-    <title>Portineria Pro iOS</title>
+    <title>Portineria Digitale PRO</title>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     <style>
-        body{font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica; background:#f2f2f7; padding:15px; margin:0; -webkit-tap-highlight-color:transparent; -webkit-user-select: none;}
-        .card{background:white; padding:15px; border-radius:12px; margin-bottom:15px; box-shadow:0 2px 8px rgba(0,0,0,0.08)}
-        h2, h3 {margin-top:0; color:#1c1c1e}
-        button{width:100%; padding:14px; margin-top:8px; border:none; border-radius:10px; background:#007aff; color:white; font-weight:bold; font-size:16px; transition:opacity 0.2s}
-        button:active{opacity:0.7}
-        .btn-red{background:#ff3b30}
-        .btn-gray{background:#8e8e93; margin-top:10px}
-        input, textarea{width:100%; padding:12px; margin-top:10px; border-radius:10px; border:1px solid #d1d1d6; box-sizing:border-box; font-size:16px; -webkit-user-select: text;} 
-        .item{padding:12px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center}
-        .hidden{display:none}
-        #cameraBox{display:none; position:relative; background:#000; border-radius:15px; overflow:hidden; margin-top:10px}
-        #scanBox{position:absolute; border:3px solid #00ff88; width:70%; height:30%; top:35%; left:15%; box-shadow:0 0 0 1000px rgba(0,0,0,0.4); pointer-events:none}
-        #status{color:#00ff88; position:absolute; top:10px; left:10px; font-size:12px; font-weight:bold; text-shadow:1px 1px 2px #000}
-        #video{width:100%; height:auto; display:block; border-radius:15px}
-        #risultati .item {background:#e9e9eb; margin-top:5px; border-radius:8px; border:none}
+        :root { --blue: #007aff; --red: #ff3b30; --green: #34c759; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: #f2f2f7; padding: 15px; margin: 0; }
+        .card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h2, h3 { margin: 0 0 10px 0; color: #1c1c1e; }
+        button { width: 100%; padding: 14px; margin-top: 8px; border: none; border-radius: 10px; background: var(--blue); color: white; font-weight: bold; font-size: 16px; }
+        button:active { opacity: 0.7; }
+        .btn-red { background: var(--red); }
+        .btn-green { background: var(--green); }
+        .btn-gray { background: #8e8e93; }
+        input, textarea { width: 100%; padding: 12px; margin-top: 10px; border-radius: 10px; border: 1px solid #d1d1d6; box-sizing: border-box; font-size: 16px; }
+        #cameraBox { display: none; position: relative; background: #000; border-radius: 15px; overflow: hidden; margin-top: 10px; }
+        #video { width: 100%; height: auto; display: block; transform: scaleX(1); }
+        #scanArea { position: absolute; border: 3px solid var(--green); width: 70%; height: 25%; top: 37.5%; left: 15%; box-shadow: 0 0 0 1000px rgba(0,0,0,0.5); pointer-events: none; }
+        #status { position: absolute; top: 10px; left: 10px; color: var(--green); font-weight: bold; font-size: 12px; text-shadow: 1px 1px 2px #000; }
+        .item { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .badge { background: #ff9500; color: white; padding: 2px 6px; border-radius: 6px; font-size: 11px; margin-left: 5px; vertical-align: middle; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
-<h2>🏢 Portineria</h2>
-
 <div class="card">
-    <button onclick="startScanner()">📷 Avvia Scanner Pacchi</button>
+    <h2>📦 Portineria</h2>
+    <button onclick="startScanner()">📷 SCANSIONA PACCO</button>
     <div id="cameraBox">
         <div id="status">INIZIALIZZAZIONE...</div>
         <video id="video" autoplay playsinline muted></video>
-        <div id="scanBox"></div>
-        <button class="btn-red" onclick="stopScanner()">Chiudi Fotocamera</button>
+        <div id="scanArea"></div>
+        <button class="btn-red" onclick="stopScanner()">CHIUDI</button>
     </div>
-    <input id="search" placeholder="Cerca condomino manuale..." oninput="filtra()">
+    <input id="search" placeholder="Cerca o inserisci nome..." oninput="filtra()">
     <div id="risultati"></div>
 </div>
 
 <div class="card">
-    <h3>📦 Pacchi in attesa</h3>
-    <div id="listaPacchi"></div>
+    <h3>📥 IN GIACENZA</h3>
+    <div id="listaGiacenza"></div>
 </div>
 
 <div class="card">
-    <h3>✉️ Raccomandate</h3>
-    <input id="racNome" placeholder="Nome destinatario">
-    <button onclick="aggiungiRac()">Registra</button>
-    <div id="listaRac"></div>
+    <h3>✉️ REGISTRA MANUALE</h3>
+    <input id="manualNome" placeholder="Nome destinatario...">
+    <button class="btn-green" onclick="aggiungiManuale('RACCOMANDATA')">REGISTRA RACCOMANDATA</button>
+    <button class="btn-gray" onclick="aggiungiManuale('PACCO')">REGISTRA PACCO</button>
 </div>
 
-<button onclick="toggleAdmin()" class="btn-gray">⚙️ Gestisci Rubrica</button>
+<button onclick="toggleAdmin()" class="btn-gray" style="margin-bottom: 30px;">⚙️ GESTISCI RUBRICA</button>
 
 <div class="card hidden" id="admin">
-    <h3>📇 Rubrica</h3>
-    <input id="nome" placeholder="Nome e Cognome">
-    <input id="tel" placeholder="Telefono (es. 3331234567)">
-    <button onclick="aggiungi()">Salva Contatto</button>
-    <hr>
-    <textarea id="importa" placeholder="MARIO ROSSI,393331234567 (uno per riga)"></textarea>
-    <button onclick="importaRubrica()">Importa Lista</button>
-    <div id="listaRubricaCompleta" style="margin-top:15px; font-size:14px; max-height:200px; overflow-y:auto"></div>
+    <h3>📇 RUBRICA</h3>
+    <input id="nome" placeholder="NOME COGNOME">
+    <input id="tel" placeholder="3331234567">
+    <button onclick="salvaContatto()">SALVA</button>
+    <textarea id="importa" placeholder="NOME COGNOME,393330000000 (uno per riga)"></textarea>
+    <button onclick="importaRubrica()">IMPORTA LISTA</button>
+    <div id="listaRubrica" style="margin-top:10px; font-size:12px; max-height:150px; overflow-y:auto"></div>
 </div>
 
 <script>
@@ -72,187 +72,174 @@ const DB = {
 
 let stream = null;
 let isScanning = false;
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let worker = null;
+let audioCtx = null;
 
-function toggleAdmin() {
-    const el = document.getElementById("admin");
-    el.classList.toggle("hidden");
-    if(!el.classList.contains("hidden")) renderRubricaAdmin();
-}
-
-function aggiungi() {
-    let nome = document.getElementById("nome").value.toUpperCase().trim();
-    let tel = document.getElementById("tel").value.trim();
-    if (!nome) return;
-    let r = DB.get("rubrica");
-    let i = r.findIndex(x => x.nome === nome);
-    if (i > -1) r[i].tel = tel; else r.push({nome, tel});
-    DB.set("rubrica", r);
-    document.getElementById("nome").value = "";
-    document.getElementById("tel").value = "";
-    renderRubricaAdmin();
-}
-
-function importaRubrica() {
-    let testo = document.getElementById("importa").value;
-    let r = DB.get("rubrica");
-    testo.split("\n").forEach(l => {
-        let p = l.split(",");
-        if (p[0] && p[1]) {
-            let nome = p[0].toUpperCase().trim();
-            let tel = p[1].trim();
-            let i = r.findIndex(x => x.nome === nome);
-            if (i > -1) r[i].tel = tel; else r.push({nome, tel});
-        }
-    });
-    DB.set("rubrica", r);
-    alert("Lista importata!");
-    document.getElementById("importa").value = "";
-    renderRubricaAdmin();
-}
-
-function renderRubricaAdmin() {
-    let r = DB.get("rubrica");
-    document.getElementById("listaRubricaCompleta").innerHTML = r.map(x => `
-        <div class="item">
-            <span>${x.nome}</span>
-            <button class="btn-red" style="width:auto; padding:5px 10px" onclick="eliminaContatto('${x.nome}')">X</button>
-        </div>
-    `).join("");
-}
-
-function eliminaContatto(nome) {
-    if(confirm("Eliminare " + nome + "?")) {
-        let r = DB.get("rubrica").filter(x => x.nome !== nome);
-        DB.set("rubrica", r);
-        renderRubricaAdmin();
+// Sblocca l'audio Context dell'iPhone
+function initAudio() {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     }
 }
 
-function filtra() {
-    let q = document.getElementById("search").value.toUpperCase();
-    if (q.length < 2) { document.getElementById("risultati").innerHTML = ""; return; }
-    let res = DB.get("rubrica").filter(x => x.nome.includes(q));
-    document.getElementById("risultati").innerHTML = res.map(x => `
-        <div class="item" onclick="seleziona('${x.nome}')">${x.nome} ➔</div>
-    `).join("");
-}
+// --- LOGICA DI INVIO ---
+function elaboraArrivo(nome, tipo) {
+    let rubrica = DB.get("rubrica");
+    let u = rubrica.find(x => x.nome === nome);
+    
+    if (u) {
+        let tel = u.tel.startsWith("39") ? u.tel : "39" + u.tel;
+        let msg = `Ciao ${nome}, c'è un ${tipo} per te in portineria! 📦`;
+        window.open(`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`, '_blank');
+    }
 
-function seleziona(nome) {
-    let u = DB.get("rubrica").find(x => x.nome === nome);
-    if (!u) return;
-    let tel = u.tel.startsWith("39") ? u.tel : "39" + u.tel;
-    let msg = `Ciao ${u.nome}, c'è un pacco per te in portineria! 📦`;
-    window.open(`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`, '_blank');
-    let p = DB.get("pacchi");
-    p.unshift({nome, data: new Date().toLocaleTimeString()});
-    DB.set("pacchi", p);
+    let giacenza = DB.get("giacenza");
+    giacenza.unshift({nome, tipo, data: new Date().toLocaleString('it-IT', {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'})});
+    DB.set("giacenza", giacenza);
+    
+    renderGiacenza();
     document.getElementById("search").value = "";
     document.getElementById("risultati").innerHTML = "";
-    renderPacchi();
+    document.getElementById("manualNome").value = "";
 }
 
+// --- SCANNER OCR ---
 async function startScanner() {
+    initAudio();
     document.getElementById("cameraBox").style.display = "block";
     isScanning = true;
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+
     try {
         stream = await navigator.mediaDevices.getUserMedia({ 
             video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } } 
         });
-        const video = document.getElementById("video");
-        video.srcObject = stream;
-        video.setAttribute("playsinline", true);
-        video.play();
-        video.onloadedmetadata = () => setTimeout(scan, 1500);
-    } catch (e) { 
-        alert("Errore camera: Assicurati di usare Safari e HTTPS."); 
+        const v = document.getElementById("video");
+        v.srcObject = stream;
+        v.play();
+
+        // Inizializza Tesseract solo se serve
+        if (!worker) {
+            document.getElementById("status").innerText = "CARICAMENTO MOTORE OCR...";
+            worker = await Tesseract.createWorker();
+            await worker.loadLanguage('ita');
+            await worker.initialize('ita');
+        }
+        
+        v.onloadedmetadata = () => setTimeout(scan, 1000);
+    } catch (e) {
+        alert("Errore camera: Assicurati di usare HTTPS e Safari.");
         stopScanner();
     }
 }
 
 function stopScanner() {
     isScanning = false;
-    if (stream) {
-        stream.getTracks().forEach(t => t.stop());
-        stream = null;
-    }
+    if (stream) stream.getTracks().forEach(t => t.stop());
     document.getElementById("cameraBox").style.display = "none";
 }
 
 async function scan() {
     if (!isScanning) return;
-    document.getElementById("status").innerText = "ANALISI...";
-    const video = document.getElementById("video");
+    document.getElementById("status").innerText = "ANALISI IN CORSO...";
+    
+    const v = document.getElementById("video");
     const canvas = document.createElement("canvas");
-    
-    const cw = video.videoWidth * 0.7;
-    const ch = video.videoHeight * 0.3;
-    canvas.width = 640; 
-    canvas.height = (ch / cw) * 640;
-    
     const ctx = canvas.getContext("2d");
-    ctx.filter = 'grayscale(1) contrast(1.6)';
-    ctx.drawImage(video, video.videoWidth*0.15, video.videoHeight*0.35, cw, ch, 0, 0, canvas.width, canvas.height);
+    
+    // Ritaglio centrato dell'immagine
+    canvas.width = 640; canvas.height = 480;
+    ctx.filter = 'grayscale(1) contrast(1.5)';
+    ctx.drawImage(v, v.videoWidth*0.15, v.videoHeight*0.35, v.videoWidth*0.7, v.videoHeight*0.3, 0, 0, 640, 480);
     
     try {
-        const result = await Tesseract.recognize(canvas, 'ita');
-        const text = result.data.text.toUpperCase();
-        
+        const { data: { text } } = await worker.recognize(canvas);
+        const textUpper = text.toUpperCase();
+        console.log("Letto:", textUpper);
+
         let rubrica = DB.get("rubrica");
         for (let u of rubrica) {
             let cognome = u.nome.split(" ").pop();
-            if (cognome.length > 2 && text.includes(cognome)) {
+            if (cognome.length > 2 && textUpper.includes(cognome)) {
                 beep();
                 stopScanner();
-                if(confirm("Trovato: " + u.nome + "?")) seleziona(u.nome);
+                if (confirm("Trovato: " + u.nome + "?")) {
+                    elaboraArrivo(u.nome, 'PACCO');
+                }
                 return;
             }
         }
-    } catch (e) { console.log(e); }
-    
+    } catch (e) { console.error(e); }
+
     document.getElementById("status").innerText = "IN ATTESA...";
     if (isScanning) setTimeout(scan, 2000);
 }
 
-function renderPacchi() {
-    let p = DB.get("pacchi");
-    document.getElementById("listaPacchi").innerHTML = p.map((x, i) => `
-        <div class="item"><span>${x.nome}</span> <button class="btn-red" style="width:auto" onclick="ritira(${i})">RITIRATO</button></div>
+// --- UI & AMMINISTRAZIONE ---
+function filtra() {
+    let q = document.getElementById("search").value.toUpperCase();
+    if (q.length < 2) { document.getElementById("risultati").innerHTML = ""; return; }
+    let res = DB.get("rubrica").filter(x => x.nome.includes(q));
+    document.getElementById("risultati").innerHTML = res.map(x => `
+        <div class="item" onclick="elaboraArrivo('${x.nome}', 'PACCO')">${x.nome} ➔</div>
+    `).join("");
+}
+
+function aggiungiManuale(tipo) {
+    let n = document.getElementById("manualNome").value.toUpperCase().trim();
+    if (!n) return;
+    elaboraArrivo(n, tipo);
+}
+
+function renderGiacenza() {
+    let g = DB.get("giacenza");
+    document.getElementById("listaGiacenza").innerHTML = g.map((x, i) => `
+        <div class="item">
+            <span><b>${x.nome}</b> <span class="badge">${x.tipo}</span><br><small>${x.data}</small></span>
+            <button class="btn-red" style="width:auto; padding:8px 15px" onclick="ritira(${i})">OK</button>
+        </div>
     `).join("");
 }
 
 function ritira(i) {
-    let p = DB.get("pacchi"); p.splice(i, 1); DB.set("pacchi", p); renderPacchi();
+    let g = DB.get("giacenza"); g.splice(i, 1); DB.set("giacenza", g); renderGiacenza();
 }
 
-function aggiungiRac() {
-    let nome = document.getElementById("racNome").value.toUpperCase().trim();
-    if (!nome) return;
-    let r = DB.get("rac"); r.unshift({nome}); DB.set("rac", r);
-    document.getElementById("racNome").value = ""; renderRac();
+function salvaContatto() {
+    let n = document.getElementById("nome").value.toUpperCase().trim();
+    let t = document.getElementById("tel").value.replace(/\D/g,'');
+    if(!n || !t) return;
+    let r = DB.get("rubrica"); r.push({nome: n, tel: t}); DB.set("rubrica", r);
+    document.getElementById("nome").value=""; document.getElementById("tel").value="";
+    renderRubricaAdmin();
 }
 
-function renderRac() {
-    let r = DB.get("rac");
-    document.getElementById("listaRac").innerHTML = r.map((x, i) => `
-        <div class="item"><span>${x.nome}</span> <button class="btn-red" style="width:auto" onclick="delRac(${i})">OK</button></div>
-    `).join("");
+function importaRubrica() {
+    let text = document.getElementById("importa").value;
+    let r = DB.get("rubrica");
+    text.split("\n").forEach(line => {
+        let parts = line.split(",");
+        if(parts[0] && parts[1]) r.push({nome: parts[0].toUpperCase().trim(), tel: parts[1].trim()});
+    });
+    DB.set("rubrica", r); renderRubricaAdmin(); alert("Importati!");
 }
 
-function delRac(i) {
-    let r = DB.get("rac"); r.splice(i, 1); DB.set("rac", r); renderRac();
+function renderRubricaAdmin() {
+    let r = DB.get("rubrica");
+    document.getElementById("listaRubrica").innerHTML = r.map(x => `<div>${x.nome} (${x.tel})</div>`).join("");
 }
+
+function toggleAdmin() { document.getElementById("admin").classList.toggle("hidden"); renderRubricaAdmin(); }
 
 function beep() {
+    if (!audioCtx) return;
     const osc = audioCtx.createOscillator();
     const g = audioCtx.createGain();
     osc.connect(g); g.connect(audioCtx.destination);
-    osc.frequency.value = 800; g.gain.value = 0.1;
+    osc.frequency.value = 880; g.gain.value = 0.1;
     osc.start(); osc.stop(audioCtx.currentTime + 0.1);
 }
 
-window.onload = () => { renderPacchi(); renderRac(); };
+window.onload = renderGiacenza;
 </script>
 </body>
 </html>
