@@ -4,18 +4,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Portineria Scanner PRO</title>
+<title>Portineria</title>
 
 <style>
 body{font-family:sans-serif;background:#f2f2f7;padding:15px}
 .card{background:#fff;padding:15px;border-radius:12px;margin-bottom:15px}
-input{width:100%;padding:15px;margin:5px 0;font-size:16px}
-button{padding:15px;border:none;border-radius:10px;margin-top:5px;color:#fff;font-weight:bold;width:100%}
+input{width:100%;padding:12px;margin:5px 0;font-size:16px}
+button{padding:10px;border:none;border-radius:8px;margin-top:5px;color:#fff;font-weight:bold;width:100%}
 .pacco{background:#007aff}
 .rac{background:#5856d6}
 .del{background:#ff3b30}
-.hidden{display:none}
-.item{display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid #eee}
+.item{padding:10px;border-bottom:1px solid #eee}
+.row{display:flex;justify-content:space-between;align-items:center}
+.small{font-size:12px;color:#666}
 </style>
 
 </head>
@@ -23,142 +24,169 @@ button{padding:15px;border:none;border-radius:10px;margin-top:5px;color:#fff;fon
 <body>
 
 <div class="card">
-<h3>📦 Scanner / Nome Pacco</h3>
-<input id="scan" placeholder="Scansiona o scrivi nome..." oninput="cercaScan()">
-<div id="risScan"></div>
+<h3>📦 Scanner / Ricerca</h3>
+<input id="scan" placeholder="Scrivi nome o cognome..." oninput="cerca()">
+<div id="risultato"></div>
+</div>
+
+<div id="manuale" class="card" style="display:none">
+<h3>⚠️ Non trovato</h3>
+<input id="nomeManuale" placeholder="Nome Cognome">
+<input id="telManuale" placeholder="Telefono">
+<button class="pacco" onclick="inviaManuale('PACCO')">PACCO</button>
+<button class="rac" onclick="inviaManuale('RACCOMANDATA')">RACCOMANDATA</button>
 </div>
 
 <div class="card">
-<h3>✉️ Raccomandata (manuale)</h3>
-<input id="cerca" placeholder="Cerca condomino..." oninput="cercaManuale()">
-<div id="risManuale"></div>
-</div>
-
-<div id="azioni" class="card hidden">
-<h3 id="nomeSel"></h3>
-<button class="pacco" onclick="avvisa('PACCO')">AVVISA PACCO</button>
-<button class="rac" onclick="avvisa('RACCOMANDATA')">AVVISA RACCOMANDATA</button>
-</div>
-
-<div class="card">
-<h3>📥 Giacenza</h3>
-<div id="lista"></div>
-</div>
-
-<div class="card">
-<h3>👤 Aggiungi Condomino</h3>
-<input id="nome" placeholder="Nome Cognome">
-<input id="tel" placeholder="Telefono">
-<button class="pacco" onclick="salva()">SALVA</button>
-</div>
-
-<div class="card">
-<h3>📂 Importa Lista</h3>
+<h3>📂 Importa Condomini</h3>
 <input type="file" onchange="importa(event)">
 </div>
 
 <div class="card">
-<button class="pacco" onclick="backup()">📤 Backup</button>
-<button class="rac" onclick="location.reload()">🔄 Aggiorna</button>
-<button class="del" onclick="reset()">🗑️ Reset</button>
+<h3>👥 Lista Condomini</h3>
+<div id="listaCondomini"></div>
+</div>
+
+<div class="card">
+<h3>📥 Giacenza</h3>
+<div id="giacenza"></div>
 </div>
 
 <script>
 const DB={
-get:k=>JSON.parse(localStorage.getItem(k))||[],
+get:k=>{
+try{return JSON.parse(localStorage.getItem(k))||[]}
+catch{return []}
+},
 set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))
 }
 
-let attuale=null
-
-function cercaScan(){
-let q=scan.value.toUpperCase()
-if(!q)return risScan.innerHTML=""
-let r=DB.get("rubrica").filter(x=>x.nome.includes(q))
-risScan.innerHTML=r.map(x=>`<div onclick="sel('${x.nome}','${x.tel}')">${x.nome}</div>`).join("")
+// normalizzazione testo
+function norm(t){
+return t.toUpperCase().trim()
 }
 
-function cercaManuale(){
-let q=cerca.value.toUpperCase()
-if(!q)return risManuale.innerHTML=""
-let r=DB.get("rubrica").filter(x=>x.nome.includes(q))
-risManuale.innerHTML=r.map(x=>`<div onclick="sel('${x.nome}','${x.tel}')">${x.nome}</div>`).join("")
+// ricerca
+function cerca(){
+let q=norm(scan.value)
+if(!q){
+risultato.innerHTML=""
+manuale.style.display="none"
+return
 }
 
-function sel(n,t){
-attuale={n,t}
-nomeSel.innerText=n
-azioni.classList.remove("hidden")
-}
+let lista=DB.get("rubrica")
 
-function avvisa(tipo){
-if(!attuale)return
-let tel=attuale.t.replace(/\D/g,'')
-let p=tel.startsWith("39")?"":"39"
-let msg=`Buongiorno ${attuale.n}, è arrivato un ${tipo} in portineria.`
-window.open(`https://wa.me/${p}${tel}?text=${encodeURIComponent(msg)}`)
+let trovato=lista.find(x=>{
+return norm(x.nome).includes(q)
+})
 
+if(trovato){
+manuale.style.display="none"
+
+// whatsapp
+let tel=trovato.tel.replace(/\D/g,'')
+let pref=tel.startsWith("39")?"":"39"
+let msg=`Buongiorno ${trovato.nome}, è arrivato un pacco in portineria.`
+window.open(`https://wa.me/${pref}${tel}?text=${encodeURIComponent(msg)}`)
+
+// salva
 let g=DB.get("giacenza")
-g.unshift({n:attuale.n,tipo,data:new Date().toLocaleDateString()})
+g.unshift({
+nome:trovato.nome,
+tipo:"PACCO",
+data:new Date().toLocaleDateString('it-IT')
+})
 DB.set("giacenza",g)
 
-azioni.classList.add("hidden")
+scan.value=""
+render()
+
+}else{
+risultato.innerHTML="<div class='small'>Non trovato</div>"
+manuale.style.display="block"
+}
+}
+
+// manuale
+function inviaManuale(tipo){
+let n=nomeManuale.value.trim()
+let t=telManuale.value.trim()
+
+if(!n||!t){
+alert("Inserisci nome e telefono")
+return
+}
+
+let tel=t.replace(/\D/g,'')
+let pref=tel.startsWith("39")?"":"39"
+
+let msg=`Buongiorno ${n}, è arrivato un ${tipo} in portineria.`
+window.open(`https://wa.me/${pref}${tel}?text=${encodeURIComponent(msg)}`)
+
+let g=DB.get("giacenza")
+g.unshift({
+nome:n,
+tipo:tipo,
+data:new Date().toLocaleDateString('it-IT')
+})
+DB.set("giacenza",g)
+
+nomeManuale.value=""
+telManuale.value=""
 render()
 }
 
-function render(){
-let g=DB.get("giacenza")
-lista.innerHTML=g.map((x,i)=>`
-<div class="item">
-<div>${x.n} - ${x.tipo}</div>
-<button class="del" onclick="ritira(${i})">OK</button>
-</div>`).join("")||"Vuoto"
+// importa
+function importa(e){
+let file=e.target.files[0]
+if(!file)return
+
+let reader=new FileReader()
+reader.onload=function(ev){
+try{
+let data=JSON.parse(ev.target.result)
+
+if(!Array.isArray(data)){
+throw "errore"
 }
 
+DB.set("rubrica",data)
+render()
+alert("Rubrica caricata")
+
+}catch{
+alert("File non valido")
+}
+}
+reader.readAsText(file)
+}
+
+// render
+function render(){
+let r=DB.get("rubrica")
+listaCondomini.innerHTML=r.map(x=>
+`<div class="item">${x.nome}</div>`
+).join("")||"<div class='small'>Nessun condomino</div>"
+
+let g=DB.get("giacenza")
+giacenza.innerHTML=g.map((x,i)=>`
+<div class="item row">
+<div>
+<b>${x.nome}</b><br>
+<span class="small">${x.tipo} - ${x.data}</span>
+</div>
+<button class="del" onclick="ritira(${i})">CONSEGNATO</button>
+</div>
+`).join("")||"<div class='small'>Nessun pacco</div>"
+}
+
+// ritiro
 function ritira(i){
 let g=DB.get("giacenza")
 g.splice(i,1)
 DB.set("giacenza",g)
 render()
-}
-
-function salva(){
-let n=nome.value.toUpperCase()
-let t=tel.value
-if(!n||!t)return alert("Dati mancanti")
-let r=DB.get("rubrica")
-r.push({nome:n,tel:t})
-DB.set("rubrica",r)
-alert("Salvato")
-nome.value=""
-tel.value=""
-}
-
-function importa(e){
-let f=e.target.files[0]
-let r=new FileReader()
-r.onload=x=>{
-let data=JSON.parse(x.target.result)
-DB.set("rubrica",data)
-alert("Importato")
-}
-r.readAsText(f)
-}
-
-function backup(){
-let data=DB.get("rubrica")
-let b=new Blob([JSON.stringify(data)],{type:"application/json"})
-let a=document.createElement("a")
-a.href=URL.createObjectURL(b)
-a.download="rubrica.json"
-a.click()
-}
-
-function reset(){
-if(confirm("Cancello tutto?")){
-localStorage.clear()
-render()
-}
 }
 
 window.onload=render
