@@ -109,27 +109,22 @@ border-radius:12px;
 <script>
 
 // ===== SCANNER FIX DEFINITIVO =====
-let qr
+let qr = null
+let scanning = false
 
 function startQR(){
 
-qr = new Html5Qrcode("reader")
+if(scanning) return
 
+scanning = true
 document.getElementById("overlay").style.display="flex"
+
+qr = new Html5Qrcode("reader")
 
 let letto = false
 
-Html5Qrcode.getCameras().then(devices => {
-
-if(devices && devices.length){
-
-let camera = devices.find(c =>
-c.label.toLowerCase().includes("back") ||
-c.label.toLowerCase().includes("rear")
-) || devices[devices.length-1]
-
 qr.start(
-camera.id,
+{ facingMode: "environment" },
 {
 fps:10,
 qrbox:{width:200,height:200}
@@ -147,7 +142,7 @@ return codice.includes(nome)||nome.includes(codice)
 
 if(trovato){
 
-letto=true
+letto = true
 
 try{
 new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play()
@@ -161,16 +156,25 @@ invia(trovato.nome,trovato.tel)
 }
 
 }
-)
-
-}
-
+).catch(err=>{
+console.log("Errore camera:",err)
+alert("Errore accesso fotocamera")
+stopQR()
 })
 
 }
 
 function stopQR(){
-if(qr){qr.stop()}
+
+scanning = false
+
+if(qr){
+qr.stop().then(()=>{
+qr.clear()
+}).catch(()=>{})
+qr = null
+}
+
 document.getElementById("overlay").style.display="none"
 }
 
@@ -209,7 +213,7 @@ return
 }
 
 res.innerHTML=trovati.map(x=>
-`<div class="item" onclick="invia('${x.nome}','${x.tel}')">${x.nome}</div>`
+<div class="item" onclick="invia('${x.nome}','${x.tel}')">${x.nome}</div>
 ).join("")||"<div class='small'>Nessun risultato</div>"
 }
 
@@ -219,10 +223,10 @@ if(numero.length<8)return alert("Numero non valido")
 let pref=numero.startsWith("39")?"":"39"
 
 let msg=mode==="PACCO"
-?`Buongiorno ${nome}, è arrivato un pacco in portineria`
-:`Buongiorno ${nome}, è arrivata una raccomandata in portineria`
+?Buongiorno ${nome}, è arrivato un pacco in portineria
+:Buongiorno ${nome}, è arrivata una raccomandata in portineria
 
-window.location.href=`https://wa.me/${pref}${numero}?text=${encodeURIComponent(msg)}`
+window.location.href=https://wa.me/${pref}${numero}?text=${encodeURIComponent(msg)}
 
 giacenza.unshift({nome,tipo:mode,data:new Date().toLocaleDateString('it-IT')})
 localStorage.setItem("giacenza",JSON.stringify(giacenza))
@@ -301,4 +305,3 @@ window.onload=render
 </script>
 
 </body>
-</html>
