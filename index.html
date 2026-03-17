@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Portineria</title>
 
+<!-- OCR -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+
 <style>
 body{font-family:sans-serif;background:#f2f2f7;margin:0;padding:15px}
 .card{background:#fff;padding:15px;border-radius:12px;margin-bottom:15px}
@@ -22,6 +25,7 @@ button{width:100%;padding:14px;margin-top:6px;border:none;border-radius:10px;col
 .mode{display:flex;gap:10px;margin-bottom:10px}
 .mode button{flex:1;opacity:.5}
 .active{opacity:1}
+video{width:100%;margin-top:10px;border-radius:10px}
 </style>
 </head>
 
@@ -36,6 +40,11 @@ button{width:100%;padding:14px;margin-top:6px;border:none;border-radius:10px;col
   </div>
 
   <input id="q" placeholder="Scrivi nome..." oninput="cerca()">
+  
+  <!-- SCANNER -->
+  <button class="pacco" onclick="startOCR()">📷 SCANNER NOME</button>
+  <video id="video" autoplay></video>
+
   <div id="res"></div>
 </div>
 
@@ -69,26 +78,79 @@ button{width:100%;padding:14px;margin-top:6px;border:none;border-radius:10px;col
 </div>
 
 <script>
-// --- STATO ---
+
+// --- OCR ---
+let stream
+
+async function startOCR(){
+
+const video = document.getElementById("video")
+
+stream = await navigator.mediaDevices.getUserMedia({
+video: { facingMode: "environment" }
+})
+
+video.srcObject = stream
+
+setTimeout(scanFrame, 2000)
+}
+
+function scanFrame(){
+
+const video = document.getElementById("video")
+
+const canvas = document.createElement("canvas")
+canvas.width = video.videoWidth
+canvas.height = video.videoHeight
+
+const ctx = canvas.getContext("2d")
+ctx.drawImage(video, 0, 0)
+
+Tesseract.recognize(canvas, 'ita').then(({ data: { text } }) => {
+
+let testo = text.toUpperCase()
+
+// pulizia testo
+testo = testo.replace(/[^A-Z\s]/g, " ")
+
+console.log("OCR:", testo)
+
+// trova nome migliore
+let trovato = rubrica.find(x =>
+testo.includes(x.nome)
+)
+
+if(trovato){
+invia(trovato.nome, trovato.tel)
+}else{
+document.getElementById("q").value = testo
+cerca()
+alert("Nome non trovato preciso, controlla")
+}
+
+// stop camera
+stream.getTracks().forEach(t => t.stop())
+
+})
+}
+
+// --- RESTO CODICE (TUO INVARIATO) ---
 let rubrica = load('rubrica') || [
   {nome:"ROSSI MARIO",tel:"3331234567"}
 ];
 let giacenza = load('giacenza') || [];
 let mode = "PACCO";
 
-// --- UTILS ---
 function norm(t){ return (t||"").toUpperCase().trim(); }
 function save(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
 function load(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch{ return null; } }
 
-// --- MODALITÀ ---
 function setMode(m){
   mode = m;
   document.getElementById("btnPacco").classList.toggle("active", m==="PACCO");
   document.getElementById("btnRac").classList.toggle("active", m==="RACCOMANDATA");
 }
 
-// --- CERCA ---
 function cerca(){
   const q = document.getElementById("q");
   const res = document.getElementById("res");
@@ -106,32 +168,24 @@ function cerca(){
   ).join("") || "<div class='small'>Nessun risultato</div>";
 }
 
-// --- INVIO ---
 function invia(nome,tel){
   const numero = (tel||"").replace(/\D/g,'');
-  if(numero.length < 8){
-    alert("Numero non valido");
-    return;
-  }
+  if(numero.length < 8){ alert("Numero non valido"); return; }
+
   const pref = numero.startsWith("39") ? "" : "39";
 
   const msg = (mode==="PACCO")
     ? `Buongiorno ${nome}, è arrivato un pacco in portineria`
     : `Buongiorno ${nome}, è arrivata una raccomandata in portineria`;
 
-  // iPhone-safe (niente popup bloccati)
   window.location.href = `https://wa.me/${pref}${numero}?text=${encodeURIComponent(msg)}`;
 
-  giacenza.unshift({
-    nome, tipo:mode,
-    data:new Date().toLocaleDateString('it-IT')
-  });
+  giacenza.unshift({nome, tipo:mode, data:new Date().toLocaleDateString('it-IT')});
   save('giacenza', giacenza);
 
   render();
 }
 
-// --- INVIO MANUALE ---
 function inviaManuale(){
   const n = document.getElementById("nomeManuale").value.trim();
   const t = document.getElementById("telManuale").value.trim();
@@ -143,7 +197,6 @@ function inviaManuale(){
   document.getElementById("telManuale").value="";
 }
 
-// --- RUBRICA ---
 function aggiungi(){
   const n = document.getElementById("nomeNew").value.trim();
   const t = document.getElementById("telNew").value.trim();
@@ -169,7 +222,6 @@ function eliminaRubrica(i){
   render();
 }
 
-// --- IMPORT / EXPORT ---
 function esporta(){
   const blob = new Blob([JSON.stringify(rubrica,null,2)], {type:"application/json"});
   const a = document.createElement("a");
@@ -198,19 +250,17 @@ function importa(e){
   reader.readAsText(file);
 }
 
-// --- GIACENZA ---
 function rimuovi(i){
   giacenza.splice(i,1);
   save('giacenza', giacenza);
   render();
 }
+
 function toggleRubrica(){
   let el = document.getElementById("lista")
   el.style.display = el.style.display==="none" ? "block" : "none"
 }
 
-window.onload=render
-// --- RENDER ---
 function render(){
   const lista = document.getElementById("lista");
   const g = document.getElementById("g");
@@ -232,6 +282,7 @@ function render(){
 }
 
 window.onload = render;
+
 </script>
 
 </body>
