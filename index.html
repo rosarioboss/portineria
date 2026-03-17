@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Portineria</title>
 
-<!-- QR -->
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
@@ -26,12 +25,24 @@ button{width:100%;padding:14px;margin-top:6px;border:none;border-radius:10px;col
 .mode button{flex:1;opacity:.5}
 .active{opacity:1}
 
-video{display:none} /* disattivato */
-.wrap{display:none} /* disattivato */
-
 #reader{
+position:relative;
 width:100%;
 margin-top:10px;
+}
+
+/* 🔴 MIRINO */
+#reader::after{
+content:"";
+position:absolute;
+top:50%;
+left:50%;
+width:200px;
+height:200px;
+transform:translate(-50%,-50%);
+border:3px solid red;
+border-radius:12px;
+pointer-events:none;
 }
 </style>
 </head>
@@ -87,16 +98,30 @@ margin-top:10px;
 
 <script>
 
-// ===== NUOVO SCANNER QR =====
+// ===== SCANNER QR =====
 let qr
 
 function startQR(){
+
 qr = new Html5Qrcode("reader")
 
+let letto = false
+
+Html5Qrcode.getCameras().then(devices => {
+
+if(devices && devices.length){
+
+let cameraId = devices[0].id
+
 qr.start(
-{ facingMode: "environment" },
-{ fps: 10 },
+cameraId,
+{
+fps: 10,
+qrbox: { width:200, height:200 }
+},
 msg => {
+
+if(letto) return
 
 let codice = (msg || "").toUpperCase().trim()
 
@@ -106,14 +131,34 @@ return codice.includes(nome) || nome.includes(codice)
 })
 
 if(trovato){
+
+letto = true
+
+// 🔊 BEEP
+try{
+let audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg")
+audio.play()
+}catch(e){}
+
+// 📳 vibrazione
+if(navigator.vibrate) navigator.vibrate(200)
+
 stopQR()
 invia(trovato.nome, trovato.tel)
+
 }else{
 console.log("QR non trovato:", codice)
 }
 
 }
 )
+
+}else{
+alert("Nessuna fotocamera trovata")
+}
+
+})
+
 }
 
 function stopQR(){
@@ -122,7 +167,7 @@ qr.stop()
 }
 }
 
-// ===== RESTO CODICE IDENTICO =====
+// ===== RESTO IDENTICO =====
 let rubrica=JSON.parse(localStorage.getItem("rubrica"))||[
 {nome:"ROSSI MARIO",tel:"3331234567"}
 ]
