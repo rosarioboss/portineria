@@ -60,6 +60,7 @@ pointer-events:none;
 <input id="q" placeholder="Scrivi nome..." oninput="cerca()">
 
 <button class="pacco" onclick="startOCR()">📷 SCANNER</button>
+<button class="gray" onclick="stopOCR()">⛔ STOP</button>
 
 <div class="wrap">
 <video id="video" autoplay></video>
@@ -100,35 +101,31 @@ pointer-events:none;
 
 <script>
 
-// ===== SCANNER AUTOMATICO =====
+// ===== SCANNER =====
 let stream
-let scanning = false
+let scanning=false
+let ultimoInvio=0
 
 async function startOCR(){
 
-if(scanning){
-stopOCR()
-return
-}
+if(scanning){stopOCR();return}
 
-scanning = true
+scanning=true
 
-const video = document.getElementById("video")
+const video=document.getElementById("video")
 
-stream = await navigator.mediaDevices.getUserMedia({
+stream=await navigator.mediaDevices.getUserMedia({
 video:{facingMode:"environment"}
 })
 
-video.srcObject = stream
+video.srcObject=stream
 
 scanLoop()
 }
 
 function stopOCR(){
-scanning = false
-if(stream){
-stream.getTracks().forEach(t=>t.stop())
-}
+scanning=false
+if(stream) stream.getTracks().forEach(t=>t.stop())
 }
 
 async function scanLoop(){
@@ -156,19 +153,41 @@ let { data:{ text } } = await Tesseract.recognize(canvas,'ita')
 
 let testo=text.toUpperCase().replace(/[^A-Z\s]/g," ")
 
+console.log("OCR:",testo)
+
+// 🔥 MATCHING MIGLIORATO
 let trovato=null
 let punteggioMax=0
 
 rubrica.forEach(x=>{
-let parole=x.nome.split(" ")
-let match=parole.filter(p=>testo.includes(p)).length
+
+let nome=x.nome.toUpperCase()
+let parole=nome.split(" ")
+let match=0
+
+parole.forEach(p=>{
+if(p.length>2 && testo.includes(p)) match++
+})
+
+parole.forEach(p=>{
+if(p.length>3){
+let short=p.slice(0,4)
+if(testo.includes(short)) match++
+}
+})
+
 if(match>punteggioMax){
 punteggioMax=match
 trovato=x
 }
+
 })
 
-if(trovato && punteggioMax>0){
+let ora=Date.now()
+
+if(trovato && punteggioMax>0 && (ora-ultimoInvio>3000)){
+
+ultimoInvio=ora
 
 if(navigator.vibrate) navigator.vibrate(200)
 
@@ -177,15 +196,15 @@ invia(trovato.nome,trovato.tel)
 return
 }
 
-setTimeout(scanLoop,1200)
+setTimeout(scanLoop,1000)
 }
 
-// ===== TUO CODICE =====
-let rubrica = load('rubrica') || [
+// ===== RESTO =====
+let rubrica=JSON.parse(localStorage.getItem("rubrica"))||[
 {nome:"ROSSI MARIO",tel:"3331234567"}
 ]
 
-let giacenza = load('giacenza') || []
+let giacenza=JSON.parse(localStorage.getItem("giacenza"))||[]
 let mode="PACCO"
 
 function norm(t){return(t||"").toUpperCase().trim()}
@@ -196,32 +215,26 @@ btnPacco.classList.toggle("active",m==="PACCO")
 btnRac.classList.toggle("active",m==="RACCOMANDATA")
 }
 
-// 🔥 RICERCA MIGLIORATA
 function cerca(){
 
-let val = norm(document.getElementById("q").value)
+let val=norm(q.value)
+if(!val){res.innerHTML="";return}
 
-if(!val){
-document.getElementById("res").innerHTML=""
-return
-}
+let parole=val.split(" ")
 
-let parole = val.split(" ")
-
-let trovati = rubrica.filter(x=>{
-let nome = norm(x.nome)
-return parole.every(p => nome.includes(p))
+let trovati=rubrica.filter(x=>{
+let nome=norm(x.nome)
+return parole.every(p=>nome.includes(p))
 })
 
-// auto invio
-if(trovati.length === 1){
-invia(trovati[0].nome, trovati[0].tel)
-document.getElementById("q").value=""
-document.getElementById("res").innerHTML=""
+if(trovati.length===1){
+invia(trovati[0].nome,trovati[0].tel)
+q.value=""
+res.innerHTML=""
 return
 }
 
-document.getElementById("res").innerHTML = trovati.map(x =>
+res.innerHTML=trovati.map(x=>
 `<div class="item" onclick="invia('${x.nome}','${x.tel}')">${x.nome}</div>`
 ).join("") || "<div class='small'>Nessun risultato</div>"
 }
@@ -238,7 +251,7 @@ let msg=mode==="PACCO"
 window.location.href=`https://wa.me/${pref}${numero}?text=${encodeURIComponent(msg)}`
 
 giacenza.unshift({nome,tipo:mode,data:new Date().toLocaleDateString('it-IT')})
-save("giacenza",giacenza)
+localStorage.setItem("giacenza",JSON.stringify(giacenza))
 
 render()
 }
@@ -257,10 +270,14 @@ let n=nomeNew.value.trim()
 let t=telNew.value.trim()
 if(!n||!t)return alert("Inserisci dati")
 rubrica.push({nome:n.toUpperCase(),tel:t})
-save("rubrica",rubrica)
+localStorage.setItem("rubrica",JSON.stringify(rubrica))
 nomeNew.value=""
 telNew.value=""
 render()
+}
+
+function toggleRubrica(){
+lista.style.display=lista.style.display==="none"?"block":"none"
 }
 
 function esporta(){
@@ -277,7 +294,7 @@ let reader=new FileReader()
 reader.onload=x=>{
 try{
 rubrica=JSON.parse(x.target.result)
-save("rubrica",rubrica)
+localStorage.setItem("rubrica",JSON.stringify(rubrica))
 render()
 }catch{alert("File non valido")}
 }
@@ -286,12 +303,8 @@ reader.readAsText(file)
 
 function rimuovi(i){
 giacenza.splice(i,1)
-save("giacenza",giacenza)
+localStorage.setItem("giacenza",JSON.stringify(giacenza))
 render()
-}
-
-function toggleRubrica(){
-lista.style.display=lista.style.display==="none"?"block":"none"
 }
 
 function render(){
@@ -308,9 +321,6 @@ g.innerHTML=giacenza.map((x,i)=>
 <button class="del" onclick="event.stopPropagation();rimuovi(${i})">OK</button>
 </div>`).join("")
 }
-
-function save(k,v){localStorage.setItem(k,JSON.stringify(v))}
-function load(k){try{return JSON.parse(localStorage.getItem(k))}catch{return null}}
 
 window.onload=render
 
