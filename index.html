@@ -1,396 +1,258 @@
 <!DOCTYPE html>
 <html lang="it">
-
 <head>
-
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
-<title>Portineria Digitale</title>
-
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
-
-<style>
-
-body{
-font-family:Arial;
-background:#f2f2f7;
-padding:15px
-}
-
-.card{
-background:white;
-padding:20px;
-border-radius:15px;
-margin-bottom:20px
-}
-
-button{
-width:100%;
-padding:12px;
-margin-top:10px;
-border:none;
-border-radius:10px;
-background:#007aff;
-color:white;
-font-weight:bold
-}
-
-.btn-red{background:#ff3b30}
-.btn-green{background:#34c759}
-
-input,textarea{
-width:100%;
-padding:10px;
-margin-top:10px;
-border-radius:8px;
-border:1px solid #ddd
-}
-
-.item{
-padding:10px;
-border-bottom:1px solid #eee
-}
-
-#cameraBox{
-display:none;
-position:relative
-}
-
-#scanBox{
-position:absolute;
-border:3px solid #00ff88;
-width:60%;
-height:35%;
-top:32%;
-left:20%;
-border-radius:10px;
-pointer-events:none
-}
-
-</style>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+    <title>Portineria Pro iOS</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+    <style>
+        body{font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica; background:#f2f2f7; padding:15px; margin:0; -webkit-tap-highlight-color:transparent; -webkit-user-select: none;}
+        .card{background:white; padding:15px; border-radius:12px; margin-bottom:15px; box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+        h2, h3 {margin-top:0; color:#1c1c1e}
+        button{width:100%; padding:14px; margin-top:8px; border:none; border-radius:10px; background:#007aff; color:white; font-weight:bold; font-size:16px; transition:opacity 0.2s}
+        button:active{opacity:0.7}
+        .btn-red{background:#ff3b30}
+        .btn-gray{background:#8e8e93; margin-top:10px}
+        input, textarea{width:100%; padding:12px; margin-top:10px; border-radius:10px; border:1px solid #d1d1d6; box-sizing:border-box; font-size:16px; -webkit-user-select: text;} 
+        .item{padding:12px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center}
+        .hidden{display:none}
+        #cameraBox{display:none; position:relative; background:#000; border-radius:15px; overflow:hidden; margin-top:10px}
+        #scanBox{position:absolute; border:3px solid #00ff88; width:70%; height:30%; top:35%; left:15%; box-shadow:0 0 0 1000px rgba(0,0,0,0.4); pointer-events:none}
+        #status{color:#00ff88; position:absolute; top:10px; left:10px; font-size:12px; font-weight:bold; text-shadow:1px 1px 2px #000}
+        #video{width:100%; height:auto; display:block; border-radius:15px}
+        #risultati .item {background:#e9e9eb; margin-top:5px; border-radius:8px; border:none}
+    </style>
 </head>
-
 <body>
 
-<h2>Portineria Digitale</h2>
+<h2>🏢 Portineria</h2>
 
 <div class="card">
-
-<button onclick="startCamera()">📷 Scanner</button>
-
-<div id="cameraBox">
-
-<video id="video" autoplay playsinline muted style="width:100%"></video>
-
-<div id="scanBox"></div>
-
-<button class="btn-red" onclick="stopCamera()">Chiudi scanner</button>
-
-</div>
-
-<input id="nomePacco" placeholder="Destinatario">
-
-<button class="btn-green" onclick="salvaPacco()">Registra pacco</button>
-
-<button onclick="inviaWhatsApp()">Avvisa con WhatsApp</button>
-
+    <button onclick="startScanner()">📷 Avvia Scanner Pacchi</button>
+    <div id="cameraBox">
+        <div id="status">INIZIALIZZAZIONE...</div>
+        <video id="video" autoplay playsinline muted></video>
+        <div id="scanBox"></div>
+        <button class="btn-red" onclick="stopScanner()">Chiudi Fotocamera</button>
+    </div>
+    <input id="search" placeholder="Cerca condomino manuale..." oninput="filtra()">
+    <div id="risultati"></div>
 </div>
 
 <div class="card">
-
-<h3>Pacchi registrati</h3>
-
-<div id="listaPacchi"></div>
-
+    <h3>📦 Pacchi in attesa</h3>
+    <div id="listaPacchi"></div>
 </div>
 
 <div class="card">
+    <h3>✉️ Raccomandate</h3>
+    <input id="racNome" placeholder="Nome destinatario">
+    <button onclick="aggiungiRac()">Registra</button>
+    <div id="listaRac"></div>
+</div>
 
-<h3>Rubrica condomini</h3>
+<button onclick="toggleAdmin()" class="btn-gray">⚙️ Gestisci Rubrica</button>
 
-<input id="nomeManuale" placeholder="Nome Cognome">
-
-<input id="telManuale" placeholder="Telefono">
-
-<button onclick="aggiungiCondomino()">Aggiungi condomino</button>
-
-<textarea id="fileRubrica" placeholder="MARIO ROSSI,333123456"></textarea>
-
-<button onclick="importaRubrica()">Importa lista</button>
-
-<button onclick="backupRubrica()">Backup rubrica</button>
-
-<input type="file" onchange="ripristinaRubrica(event)">
-
-<div id="listaRubrica"></div>
-
+<div class="card hidden" id="admin">
+    <h3>📇 Rubrica</h3>
+    <input id="nome" placeholder="Nome e Cognome">
+    <input id="tel" placeholder="Telefono (es. 3331234567)">
+    <button onclick="aggiungi()">Salva Contatto</button>
+    <hr>
+    <textarea id="importa" placeholder="MARIO ROSSI,393331234567 (uno per riga)"></textarea>
+    <button onclick="importaRubrica()">Importa Lista</button>
+    <div id="listaRubricaCompleta" style="margin-top:15px; font-size:14px; max-height:200px; overflow-y:auto"></div>
 </div>
 
 <script>
+const DB = {
+    get: k => JSON.parse(localStorage.getItem(k)) || [],
+    set: (k, v) => localStorage.setItem(k, JSON.stringify(v))
+};
 
-const DB={
-get:k=>JSON.parse(localStorage.getItem(k))||[],
-set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))
+let stream = null;
+let isScanning = false;
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function toggleAdmin() {
+    const el = document.getElementById("admin");
+    el.classList.toggle("hidden");
+    if(!el.classList.contains("hidden")) renderRubricaAdmin();
 }
 
-let stream=null
-let scannerTimer=null
-
-window.onload=render
-
-function render(){
-renderPacchi()
-renderRubrica()
+function aggiungi() {
+    let nome = document.getElementById("nome").value.toUpperCase().trim();
+    let tel = document.getElementById("tel").value.trim();
+    if (!nome) return;
+    let r = DB.get("rubrica");
+    let i = r.findIndex(x => x.nome === nome);
+    if (i > -1) r[i].tel = tel; else r.push({nome, tel});
+    DB.set("rubrica", r);
+    document.getElementById("nome").value = "";
+    document.getElementById("tel").value = "";
+    renderRubricaAdmin();
 }
 
-function beep(){
-let audio=new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=")
-audio.play()
+function importaRubrica() {
+    let testo = document.getElementById("importa").value;
+    let r = DB.get("rubrica");
+    testo.split("\n").forEach(l => {
+        let p = l.split(",");
+        if (p[0] && p[1]) {
+            let nome = p[0].toUpperCase().trim();
+            let tel = p[1].trim();
+            let i = r.findIndex(x => x.nome === nome);
+            if (i > -1) r[i].tel = tel; else r.push({nome, tel});
+        }
+    });
+    DB.set("rubrica", r);
+    alert("Lista importata!");
+    document.getElementById("importa").value = "";
+    renderRubricaAdmin();
 }
 
-function salvaPacco(){
-
-let nome=document.getElementById("nomePacco").value.trim().toUpperCase()
-
-if(!nome)return
-
-let pacchi=DB.get("pacchi")
-
-pacchi.unshift({id:Date.now(),nome})
-
-DB.set("pacchi",pacchi)
-
-render()
-
+function renderRubricaAdmin() {
+    let r = DB.get("rubrica");
+    document.getElementById("listaRubricaCompleta").innerHTML = r.map(x => `
+        <div class="item">
+            <span>${x.nome}</span>
+            <button class="btn-red" style="width:auto; padding:5px 10px" onclick="eliminaContatto('${x.nome}')">X</button>
+        </div>
+    `).join("");
 }
 
-function renderPacchi(){
-
-let pacchi=DB.get("pacchi")
-
-let div=document.getElementById("listaPacchi")
-
-div.innerHTML=pacchi.length?
-
-pacchi.map(p=>`<div class="item">${p.nome}</div>`).join("")
-
-:"Nessun pacco"
-
+function eliminaContatto(nome) {
+    if(confirm("Eliminare " + nome + "?")) {
+        let r = DB.get("rubrica").filter(x => x.nome !== nome);
+        DB.set("rubrica", r);
+        renderRubricaAdmin();
+    }
 }
 
-function aggiungiCondomino(){
-
-let nome=document.getElementById("nomeManuale").value.trim().toUpperCase()
-let tel=document.getElementById("telManuale").value.trim()
-
-if(!nome)return
-
-let rubrica=DB.get("rubrica")
-
-if(!rubrica.some(x=>x.nome===nome)){
-rubrica.push({nome,tel})
+function filtra() {
+    let q = document.getElementById("search").value.toUpperCase();
+    if (q.length < 2) { document.getElementById("risultati").innerHTML = ""; return; }
+    let res = DB.get("rubrica").filter(x => x.nome.includes(q));
+    document.getElementById("risultati").innerHTML = res.map(x => `
+        <div class="item" onclick="seleziona('${x.nome}')">${x.nome} ➔</div>
+    `).join("");
 }
 
-DB.set("rubrica",rubrica)
-
-renderRubrica()
-
+function seleziona(nome) {
+    let u = DB.get("rubrica").find(x => x.nome === nome);
+    if (!u) return;
+    let tel = u.tel.startsWith("39") ? u.tel : "39" + u.tel;
+    let msg = `Ciao ${u.nome}, c'è un pacco per te in portineria! 📦`;
+    window.open(`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`, '_blank');
+    let p = DB.get("pacchi");
+    p.unshift({nome, data: new Date().toLocaleTimeString()});
+    DB.set("pacchi", p);
+    document.getElementById("search").value = "";
+    document.getElementById("risultati").innerHTML = "";
+    renderPacchi();
 }
 
-function importaRubrica(){
-
-let testo=document.getElementById("fileRubrica").value.trim()
-
-let rubrica=DB.get("rubrica")
-
-testo.split("\n").forEach(r=>{
-
-let p=r.split(",")
-
-if(p[0]){
-
-let nome=p[0].trim().toUpperCase()
-let tel=p[1]?p[1].trim():""
-
-if(!rubrica.some(x=>x.nome===nome)){
-rubrica.push({nome,tel})
+async function startScanner() {
+    document.getElementById("cameraBox").style.display = "block";
+    isScanning = true;
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } } 
+        });
+        const video = document.getElementById("video");
+        video.srcObject = stream;
+        video.setAttribute("playsinline", true);
+        video.play();
+        video.onloadedmetadata = () => setTimeout(scan, 1500);
+    } catch (e) { 
+        alert("Errore camera: Assicurati di usare Safari e HTTPS."); 
+        stopScanner();
+    }
 }
 
+function stopScanner() {
+    isScanning = false;
+    if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+    }
+    document.getElementById("cameraBox").style.display = "none";
 }
 
-})
-
-DB.set("rubrica",rubrica)
-
-renderRubrica()
-
+async function scan() {
+    if (!isScanning) return;
+    document.getElementById("status").innerText = "ANALISI...";
+    const video = document.getElementById("video");
+    const canvas = document.createElement("canvas");
+    
+    const cw = video.videoWidth * 0.7;
+    const ch = video.videoHeight * 0.3;
+    canvas.width = 640; 
+    canvas.height = (ch / cw) * 640;
+    
+    const ctx = canvas.getContext("2d");
+    ctx.filter = 'grayscale(1) contrast(1.6)';
+    ctx.drawImage(video, video.videoWidth*0.15, video.videoHeight*0.35, cw, ch, 0, 0, canvas.width, canvas.height);
+    
+    try {
+        const result = await Tesseract.recognize(canvas, 'ita');
+        const text = result.data.text.toUpperCase();
+        
+        let rubrica = DB.get("rubrica");
+        for (let u of rubrica) {
+            let cognome = u.nome.split(" ").pop();
+            if (cognome.length > 2 && text.includes(cognome)) {
+                beep();
+                stopScanner();
+                if(confirm("Trovato: " + u.nome + "?")) seleziona(u.nome);
+                return;
+            }
+        }
+    } catch (e) { console.log(e); }
+    
+    document.getElementById("status").innerText = "IN ATTESA...";
+    if (isScanning) setTimeout(scan, 2000);
 }
 
-function renderRubrica(){
-
-let rubrica=DB.get("rubrica")
-
-let div=document.getElementById("listaRubrica")
-
-div.innerHTML=rubrica.length?
-
-rubrica.map(r=>`<div class="item">${r.nome} (${r.tel})</div>`).join("")
-
-:"Rubrica vuota"
-
+function renderPacchi() {
+    let p = DB.get("pacchi");
+    document.getElementById("listaPacchi").innerHTML = p.map((x, i) => `
+        <div class="item"><span>${x.nome}</span> <button class="btn-red" style="width:auto" onclick="ritira(${i})">RITIRATO</button></div>
+    `).join("");
 }
 
-function backupRubrica(){
-
-let rubrica=DB.get("rubrica")
-
-let blob=new Blob([JSON.stringify(rubrica)],{type:"application/json"})
-
-let a=document.createElement("a")
-
-a.href=URL.createObjectURL(blob)
-
-a.download="rubrica.json"
-
-a.click()
-
+function ritira(i) {
+    let p = DB.get("pacchi"); p.splice(i, 1); DB.set("pacchi", p); renderPacchi();
 }
 
-function ripristinaRubrica(event){
-
-let file=event.target.files[0]
-
-let reader=new FileReader()
-
-reader.onload=function(e){
-
-let dati=JSON.parse(e.target.result)
-
-DB.set("rubrica",dati)
-
-renderRubrica()
-
+function aggiungiRac() {
+    let nome = document.getElementById("racNome").value.toUpperCase().trim();
+    if (!nome) return;
+    let r = DB.get("rac"); r.unshift({nome}); DB.set("rac", r);
+    document.getElementById("racNome").value = ""; renderRac();
 }
 
-reader.readAsText(file)
-
+function renderRac() {
+    let r = DB.get("rac");
+    document.getElementById("listaRac").innerHTML = r.map((x, i) => `
+        <div class="item"><span>${x.nome}</span> <button class="btn-red" style="width:auto" onclick="delRac(${i})">OK</button></div>
+    `).join("");
 }
 
-function inviaWhatsApp(){
-
-let nome=document.getElementById("nomePacco").value.trim().toUpperCase()
-
-let rubrica=DB.get("rubrica")
-
-let trovato=rubrica.find(r=>nome.includes(r.nome))
-
-if(!trovato){
-alert("Destinatario non trovato")
-return
+function delRac(i) {
+    let r = DB.get("rac"); r.splice(i, 1); DB.set("rac", r); renderRac();
 }
 
-let tel=trovato.tel.startsWith("39")?trovato.tel:"39"+trovato.tel
-
-let msg="Ciao "+trovato.nome+", è arrivato un pacco per te 📦"
-
-window.location.href=
-"https://wa.me/"+tel+
-"?text="+encodeURIComponent(msg)
-
+function beep() {
+    const osc = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    osc.connect(g); g.connect(audioCtx.destination);
+    osc.frequency.value = 800; g.gain.value = 0.1;
+    osc.start(); osc.stop(audioCtx.currentTime + 0.1);
 }
 
-async function startCamera(){
-
-const box=document.getElementById("cameraBox")
-const video=document.getElementById("video")
-
-box.style.display="block"
-
-stream=await navigator.mediaDevices.getUserMedia({
-video:{facingMode:"environment"}
-})
-
-video.srcObject=stream
-
-video.onloadedmetadata=function(){
-
-video.play()
-
-scannerTimer=setInterval(scan,3000)
-
-}
-
-}
-
-async function scan(){
-
-if(!stream)return
-
-const video=document.getElementById("video")
-
-const canvas=document.createElement("canvas")
-
-canvas.width=video.videoWidth
-canvas.height=video.videoHeight
-
-const ctx=canvas.getContext("2d")
-
-ctx.drawImage(
-video,
-video.videoWidth*0.2,
-video.videoHeight*0.3,
-video.videoWidth*0.6,
-video.videoHeight*0.4,
-0,
-0,
-canvas.width,
-canvas.height
-)
-
-const img=canvas.toDataURL("image/png")
-
-const result=await Tesseract.recognize(img,"ita")
-
-const text=result.data.text.toUpperCase()
-
-let righe=text.split("\n")
-
-let nome=righe.find(r=>r.length>5)
-
-if(nome){
-
-document.getElementById("nomePacco").value=nome.trim()
-
-beep()
-
-stopCamera()
-
-setTimeout(()=>{
-inviaWhatsApp()
-},500)
-
-}
-
-}
-
-function stopCamera(){
-
-if(scannerTimer){
-clearInterval(scannerTimer)
-}
-
-if(stream){
-stream.getTracks().forEach(t=>t.stop())
-stream=null
-}
-
-document.getElementById("cameraBox").style.display="none"
-
-}
-
+window.onload = () => { renderPacchi(); renderRac(); };
 </script>
-
 </body>
 </html>
