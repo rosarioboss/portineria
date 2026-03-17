@@ -3,34 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
-    <title>Portineria Pro</title>
+    <title>Portineria OK</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #f2f2f7; margin: 0; padding: 15px; }
         .card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         h2 { margin: 0 0 10px 0; font-size: 18px; }
-        input { width: 100%; padding: 15px; font-size: 18px; border-radius: 10px; border: 1px solid #ccc; box-sizing: border-box; margin-bottom: 10px; }
-        .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; color: white; font-weight: bold; font-size: 16px; margin-bottom: 10px; cursor: pointer; }
-        .btn-blue { background: #007aff; }
-        .btn-purple { background: #5856d6; }
-        .btn-wa { background: #25D366; width: auto; padding: 10px; margin: 0; font-size: 12px; }
-        .btn-red { background: #ff3b30; width: auto; padding: 10px; margin: 0; font-size: 12px; }
-        .item { background: white; padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-        .info { flex-grow: 1; }
-        .badge { font-size: 10px; padding: 3px 6px; border-radius: 4px; font-weight: bold; text-transform: uppercase; }
-        .badge-pacco { background: #e1f5fe; color: #0288d1; }
-        .badge-rac { background: #f3e5f5; color: #7b1fa2; }
+        input { width: 100%; padding: 15px; font-size: 18px; border-radius: 10px; border: 1px solid #ccc; box-sizing: border-box; }
+        .suggerimento { padding: 15px; border-bottom: 1px solid #eee; background: #fff; font-weight: bold; color: #007aff; }
+        .btn { width: 100%; padding: 18px; border: none; border-radius: 12px; color: white; font-weight: bold; font-size: 16px; margin-top: 10px; cursor: pointer; text-align: center; display: block; text-decoration: none; }
+        .btn-pacco { background: #007aff; }
+        .btn-rac { background: #5856d6; }
+        .btn-ritiro { background: #ff3b30; padding: 8px 12px; font-size: 12px; width: auto; margin: 0; }
+        .item { background: white; padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         .hidden { display: none; }
-        .suggerimento { padding: 10px; border-bottom: 1px solid #eee; background: #f9f9f9; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>➕ Registra Arrivo</h2>
-    <input id="nomeInput" placeholder="Cerca o scrivi nome..." oninput="suggerisci()">
-    <div id="boxSuggerimenti"></div>
-    <button class="btn btn-blue" onclick="aggiungi('PACCO')">REGISTRA PACCO</button>
-    <button class="btn btn-purple" onclick="aggiungi('RACCOMANDATA')">REGISTRA RACCOMANDATA</button>
+    <h2>📦 1. Cerca Condomino</h2>
+    <input id="cercaInput" placeholder="Scrivi il cognome..." oninput="cerca()">
+    <div id="risultati"></div>
+</div>
+
+<div id="sezioneAzioni" class="card hidden">
+    <h2 id="nomeDisplay">---</h2>
+    <button class="btn btn-pacco" onclick="eseguiRegistrazione('PACCO')">AVVISA PER PACCO ➔</button>
+    <button class="btn btn-rac" onclick="eseguiRegistrazione('RACCOMANDATA')">AVVISA PER RACCOMANDATA ➔</button>
+    <button class="btn" style="background:#8e8e93" onclick="annulla()">ANNULLA</button>
 </div>
 
 <div class="card">
@@ -38,121 +38,94 @@
     <div id="listaGiacenza"></div>
 </div>
 
-<button class="btn" style="background:gray" onclick="toggleAdmin()">⚙️ Gestisci Rubrica</button>
+<button onclick="document.getElementById('admin').classList.toggle('hidden')" style="width:100%; background:none; border:none; color:gray; padding:10px;">⚙️ Gestisci Rubrica</button>
 
 <div id="admin" class="card hidden">
-    <h3>Aggiungi / Lista Rubrica</h3>
-    <input id="rubNome" placeholder="Nome Cognome">
-    <input id="rubTel" placeholder="3331234567">
-    <button class="btn btn-blue" onclick="salvaInRubrica()">Salva in Rubrica</button>
-    <div id="listaRubrica" style="max-height: 200px; overflow-y: auto; font-size: 14px;"></div>
+    <h3>Aggiungi Contatto</h3>
+    <input id="rNome" placeholder="Nome Cognome" style="margin-bottom:10px">
+    <input id="rTel" placeholder="3331234567" style="margin-bottom:10px">
+    <button class="btn btn-pacco" onclick="aggiungiRubrica()">SALVA IN RUBRICA</button>
+    <div id="listaRubrica" style="margin-top:10px; font-size:12px;"></div>
 </div>
 
 <script>
-const DB = {
-    get: k => JSON.parse(localStorage.getItem(k)) || [],
-    set: (k, v) => localStorage.setItem(k, JSON.stringify(v))
+const STORAGE = {
+    save: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
+    load: k => JSON.parse(localStorage.getItem(k)) || []
 };
 
-// Funzione Suggerimenti
-function suggerisci() {
-    let q = document.getElementById("nomeInput").value.toUpperCase();
-    let box = document.getElementById("boxSuggerimenti");
-    if (q.length < 2) { box.innerHTML = ""; return; }
-    let trovati = DB.get("rubrica").filter(u => u.nome.includes(q));
-    box.innerHTML = trovati.map(u => `<div class="suggerimento" onclick="seleziona('${u.nome}')">${u.nome}</div>`).join("");
+let selezionato = null;
+
+function cerca() {
+    let q = document.getElementById("cercaInput").value.toUpperCase();
+    let res = document.getElementById("risultati");
+    if (q.length < 1) { res.innerHTML = ""; return; }
+    let rubrica = STORAGE.load("rubrica");
+    let trovati = rubrica.filter(u => u.nome.includes(q));
+    res.innerHTML = trovati.map(u => `<div class="suggerimento" onclick="selezionaCondomino('${u.nome}', '${u.tel}')">${u.nome}</div>`).join("");
 }
 
-function seleziona(n) {
-    document.getElementById("nomeInput").value = n;
-    document.getElementById("boxSuggerimenti").innerHTML = "";
+function selezionaCondomino(nome, tel) {
+    selezionato = { nome, tel };
+    document.getElementById("nomeDisplay").innerText = nome;
+    document.getElementById("sezioneAzioni").classList.remove("hidden");
+    document.getElementById("risultati").innerHTML = "";
+    document.getElementById("cercaInput").value = "";
 }
 
-function aggiungi(tipo) {
-    let nome = document.getElementById("nomeInput").value.toUpperCase().trim();
-    if (!nome) return alert("Inserisci un nome!");
-    let giacenza = DB.get("giacenza");
-    giacenza.unshift({
-        nome: nome,
-        tipo: tipo,
-        data: new Date().toLocaleString('it-IT', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})
-    });
-    DB.set("giacenza", giacenza);
-    document.getElementById("nomeInput").value = "";
-    document.getElementById("boxSuggerimenti").innerHTML = "";
-    renderGiacenza();
-}
+function eseguiRegistrazione(tipo) {
+    if (!selezionato) return;
 
-function inviaWA(nome, tipo) {
-    let rubrica = DB.get("rubrica");
-    let condomino = rubrica.find(u => u.nome === nome);
-    let tel = condomino ? condomino.tel : prompt("Numero per " + nome + ":");
-    if (!tel) return;
+    // 1. REGISTRA IN GIACENZA
+    let g = STORAGE.load("giacenza");
+    g.unshift({ nome: selezionato.nome, tipo: tipo, data: new Date().toLocaleDateString('it-IT') });
+    STORAGE.save("giacenza", g);
+
+    // 2. APRI WHATSAPP
+    let tel = selezionato.tel;
+    let pref = tel.startsWith("39") ? "" : "39";
+    let msg = `Buongiorno ${selezionato.nome}, ti avviso che è arrivato un ${tipo} per te in portineria.`;
     
-    if (!condomino) { // Se inserito a mano, salva in rubrica
-        rubrica.push({nome: nome, tel: tel});
-        DB.set("rubrica", rubrica);
-    }
+    // Reset interfaccia prima di aprire WA per evitare blocchi
+    annulla();
+    renderGiacenza();
 
-    let pfx = tel.startsWith("39") ? "" : "39";
-    let msg = `Ciao ${nome}, c'è un ${tipo} per te in portineria. 📦`;
-    window.open(`https://wa.me/${pfx}${tel}?text=${encodeURIComponent(msg)}`, '_blank');
+    // Apertura forzata WhatsApp
+    window.location.href = `https://wa.me/${pref}${tel}?text=${encodeURIComponent(msg)}`;
 }
 
 function renderGiacenza() {
-    let g = DB.get("giacenza");
+    let g = STORAGE.load("giacenza");
     document.getElementById("listaGiacenza").innerHTML = g.map((x, i) => `
         <div class="item">
-            <div class="info">
-                <b>${x.nome}</b> <span class="badge ${x.tipo=='PACCO'?'badge-pacco':'badge-rac'}">${x.tipo}</span><br>
-                <small>${x.data}</small>
-            </div>
-            <button class="btn btn-wa" onclick="inviaWA('${x.nome}', '${x.tipo}')">AVVISA</button>
-            <button class="btn btn-red" onclick="rimuovi(${i})">X</button>
+            <div><b>${x.nome}</b><br><small>${x.tipo} - ${x.data}</small></div>
+            <button class="btn btn-ritiro" onclick="ritira(${i})">RITIRATO</button>
         </div>
-    `).join("") || "<p>Giacenza vuota</p>";
+    `).join("") || "Nessun pacco";
 }
 
-function rimuovi(i) {
-    if(confirm("Confermi il ritiro?")) {
-        let g = DB.get("giacenza");
-        g.splice(i, 1);
-        DB.set("giacenza", g);
-        renderGiacenza();
-    }
+function ritira(i) {
+    let g = STORAGE.load("giacenza");
+    g.splice(i, 1);
+    STORAGE.save("giacenza", g);
+    renderGiacenza();
 }
 
-function toggleAdmin() {
-    document.getElementById('admin').classList.toggle('hidden');
-    renderRubrica();
+function aggiungiRubrica() {
+    let n = document.getElementById("rNome").value.toUpperCase().trim();
+    let t = document.getElementById("rTel").value.trim();
+    if (!n || !t) return alert("Inserisci tutti i dati!");
+    let r = STORAGE.load("rubrica");
+    r.push({ nome: n, tel: t });
+    STORAGE.save("rubrica", r);
+    alert("Salvato!");
+    document.getElementById("rNome").value = "";
+    document.getElementById("rTel").value = "";
 }
 
-function salvaInRubrica() {
-    let n = document.getElementById("rubNome").value.toUpperCase().trim();
-    let t = document.getElementById("rubTel").value.replace(/\D/g,'');
-    if(!n || !t) return alert("Dati mancanti!");
-    let r = DB.get("rubrica");
-    r.push({nome: n, tel: t});
-    DB.set("rubrica", r);
-    document.getElementById("rubNome").value = "";
-    document.getElementById("rubTel").value = "";
-    renderRubrica();
-}
-
-function renderRubrica() {
-    let r = DB.get("rubrica");
-    document.getElementById("listaRubrica").innerHTML = r.map((u, i) => `
-        <div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee">
-            ${u.nome} (${u.tel}) <span style="color:red" onclick="cancellaContatto(${i})">Elimina</span>
-        </div>
-    `).join("");
-}
-
-function cancellaContatto(i) {
-    let r = DB.get("rubrica");
-    r.splice(i, 1);
-    DB.set("rubrica", r);
-    renderRubrica();
+function annulla() {
+    selezionato = null;
+    document.getElementById("sezioneAzioni").classList.add("hidden");
 }
 
 window.onload = renderGiacenza;
