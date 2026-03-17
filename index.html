@@ -152,50 +152,30 @@ let testo=text.toUpperCase().replace(/[^A-Z\s]/g," ")
 
 console.log("OCR:",testo)
 
-// 🔥 MATCHING DEFINITIVO
-let trovato = null
-let punteggioMax = 0
-
-rubrica.forEach(x => {
-
-let nome = x.nome.toUpperCase()
-let testoPulito = testo.replace(/\s+/g," ")
-
-let score = 0
-
-if(testoPulito.includes(nome)) score += 5
-
-nome.split(" ").forEach(p=>{
-if(p.length > 2 && testoPulito.includes(p)) score += 2
-})
-
-nome.split(" ").forEach(p=>{
-if(p.length > 3){
-let short = p.substring(0,3)
-if(testoPulito.includes(short)) score += 1
-}
-})
-
-if(nome.length > testoPulito.length) score -= 1
-
-if(score > punteggioMax){
-punteggioMax = score
-trovato = x
-}
-
-})
-
 let ora=Date.now()
 
-if(trovato && punteggioMax>=2 && (ora-ultimoInvio>3000)){
+// 🔥 NUOVO SISTEMA INTELLIGENTE (NON ROMPE NULLA)
+if(testo.length > 3){
+
+document.getElementById("q").value = testo
+cerca()
+
+let risultati = rubrica.filter(x=>{
+let nome = x.nome.toUpperCase()
+return testo.split(" ").some(p => nome.includes(p))
+})
+
+if(risultati.length === 1 && (ora-ultimoInvio>3000)){
 
 ultimoInvio=ora
 
 if(navigator.vibrate) navigator.vibrate(200)
 
 stopOCR()
-invia(trovato.nome,trovato.tel)
+invia(risultati[0].nome, risultati[0].tel)
 return
+}
+
 }
 
 setTimeout(scanLoop,1000)
