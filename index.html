@@ -37,8 +37,8 @@ content:"";
 position:absolute;
 top:50%;
 left:50%;
-width:200px;
-height:200px;
+width:180px;
+height:180px;
 transform:translate(-50%,-50%);
 border:3px solid red;
 border-radius:12px;
@@ -98,7 +98,7 @@ pointer-events:none;
 
 <script>
 
-// ===== SCANNER QR =====
+// ===== SCANNER FIXATO (SOLO QUI MODIFICA) =====
 let qr
 
 function startQR(){
@@ -117,7 +117,13 @@ qr.start(
 cameraId,
 {
 fps: 10,
-qrbox: { width:200, height:200 }
+
+// 🔥 AREA CENTRALE DINAMICA (FIX VERO)
+qrbox: function(w,h){
+let size = Math.min(w,h) * 0.4
+return { width:size, height:size }
+}
+
 },
 msg => {
 
@@ -134,10 +140,9 @@ if(trovato){
 
 letto = true
 
-// 🔊 BEEP
+// 🔊 beep
 try{
-let audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg")
-audio.play()
+new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play()
 }catch(e){}
 
 // 📳 vibrazione
@@ -146,8 +151,6 @@ if(navigator.vibrate) navigator.vibrate(200)
 stopQR()
 invia(trovato.nome, trovato.tel)
 
-}else{
-console.log("QR non trovato:", codice)
 }
 
 }
