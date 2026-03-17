@@ -25,30 +25,18 @@ button{width:100%;padding:14px;margin-top:6px;border:none;border-radius:10px;col
 .mode button{flex:1;opacity:.5}
 .active{opacity:1}
 
-#reader{
-position:relative;
-width:100%;
-margin-top:10px;
-}
+#reader{position:relative;width:100%;margin-top:10px}
 
-/* MIRINO */
 #overlay{
 position:absolute;
-top:0;
-left:0;
-width:100%;
-height:100%;
-display:none;
-justify-content:center;
-align-items:center;
+top:0;left:0;width:100%;height:100%;
+display:none;justify-content:center;align-items:center;
 pointer-events:none;
 }
 
 .scan-box{
-width:200px;
-height:200px;
-border:3px solid red;
-border-radius:12px;
+width:200px;height:200px;
+border:3px solid red;border-radius:12px;
 }
 </style>
 </head>
@@ -69,9 +57,7 @@ border-radius:12px;
 <button class="gray" onclick="stopQR()">⛔ STOP</button>
 
 <div id="reader">
-  <div id="overlay">
-    <div class="scan-box"></div>
-  </div>
+<div id="overlay"><div class="scan-box"></div></div>
 </div>
 
 <div id="res"></div>
@@ -108,29 +94,22 @@ border-radius:12px;
 
 <script>
 
-// ===== SCANNER FIX DEFINITIVO =====
-let qr = null
-let scanning = false
+// ===== SCANNER STABILE =====
+let qr=null
+let scanning=false
 
 function startQR(){
-
 if(scanning) return
+scanning=true
+overlay.style.display="flex"
 
-scanning = true
-document.getElementById("overlay").style.display="flex"
+qr=new Html5Qrcode("reader")
+let letto=false
 
-qr = new Html5Qrcode("reader")
+Html5Qrcode.getCameras().then(devices=>{
+let camera=devices[devices.length-1]
 
-let letto = false
-
-qr.start(
-{ facingMode: "environment" },
-{
-fps:10,
-qrbox:{width:200,height:200}
-},
-msg=>{
-
+qr.start(camera.id,{fps:10,qrbox:{width:200,height:200}},msg=>{
 if(letto) return
 
 let codice=(msg||"").toUpperCase().trim()
@@ -141,47 +120,33 @@ return codice.includes(nome)||nome.includes(codice)
 })
 
 if(trovato){
-
-letto = true
-
-try{
-new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play()
-}catch(e){}
-
-if(navigator.vibrate) navigator.vibrate(200)
-
+letto=true
 stopQR()
 invia(trovato.nome,trovato.tel)
-
 }
-
-}
-).catch(err=>{
-console.log("Errore camera:",err)
-alert("Errore accesso fotocamera")
-stopQR()
 })
-
+})
 }
 
 function stopQR(){
-
-scanning = false
-
+scanning=false
 if(qr){
-qr.stop().then(()=>{
-qr.clear()
-}).catch(()=>{})
-qr = null
+qr.stop().then(()=>qr.clear()).catch(()=>{})
+qr=null
+}
+overlay.style.display="none"
 }
 
-document.getElementById("overlay").style.display="none"
+// ===== RUBRICA FIX =====
+let rubrica
+try{
+rubrica=JSON.parse(localStorage.getItem("rubrica"))||[]
+}catch{
+rubrica=[]
 }
-
-// ===== RESTO CODICE IDENTICO =====
-let rubrica=JSON.parse(localStorage.getItem("rubrica"))||[
-{nome:"ROSSI MARIO",tel:"3331234567"}
-]
+if(!rubrica.length){
+rubrica=[{nome:"ROSSI MARIO",tel:"3331234567"}]
+}
 
 let giacenza=JSON.parse(localStorage.getItem("giacenza"))||[]
 let mode="PACCO"
@@ -213,7 +178,7 @@ return
 }
 
 res.innerHTML=trovati.map(x=>
-<div class="item" onclick="invia('${x.nome}','${x.tel}')">${x.nome}</div>
+`<div class="item" onclick="invia('${x.nome}','${x.tel}')">${x.nome}</div>`
 ).join("")||"<div class='small'>Nessun risultato</div>"
 }
 
@@ -223,10 +188,10 @@ if(numero.length<8)return alert("Numero non valido")
 let pref=numero.startsWith("39")?"":"39"
 
 let msg=mode==="PACCO"
-?Buongiorno ${nome}, è arrivato un pacco in portineria
-:Buongiorno ${nome}, è arrivata una raccomandata in portineria
+?`Buongiorno ${nome}, è arrivato un pacco in portineria`
+:`Buongiorno ${nome}, è arrivata una raccomandata in portineria`
 
-window.location.href=https://wa.me/${pref}${numero}?text=${encodeURIComponent(msg)}
+window.location.href=`https://wa.me/${pref}${numero}?text=${encodeURIComponent(msg)}`
 
 giacenza.unshift({nome,tipo:mode,data:new Date().toLocaleDateString('it-IT')})
 localStorage.setItem("giacenza",JSON.stringify(giacenza))
@@ -266,17 +231,30 @@ a.download="rubrica.json"
 a.click()
 }
 
+// ===== IMPORT FIX =====
 function importa(e){
 let file=e.target.files[0]
+if(!file)return
+
 let reader=new FileReader()
-reader.onload=x=>{
+reader.onload=ev=>{
 try{
-rubrica=JSON.parse(x.target.result)
+let data=JSON.parse(ev.target.result)
+if(!Array.isArray(data)) throw "err"
+
+rubrica=data.map(x=>({
+nome:(x.nome||"").toUpperCase().trim(),
+tel:(x.tel||"").toString().trim()
+})).filter(x=>x.nome&&x.tel)
+
 localStorage.setItem("rubrica",JSON.stringify(rubrica))
 render()
-}catch{alert("File non valido")}
+}catch{
+alert("File non valido")
+}
 }
 reader.readAsText(file)
+e.target.value=""
 }
 
 function rimuovi(i){
@@ -289,14 +267,13 @@ function render(){
 lista.innerHTML=rubrica.map((x,i)=>
 `<div class="item">
 <b onclick="invia('${x.nome}','${x.tel}')">${x.nome}</b>
-<button class="del" onclick="event.stopPropagation();rimuovi(${i})">ELIMINA</button>
 </div>`).join("")
 
 g.innerHTML=giacenza.map((x,i)=>
 `<div class="item">
 <b>${x.nome}</b><br>
 <span class="small">${x.tipo}</span>
-<button class="del" onclick="event.stopPropagation();rimuovi(${i})">OK</button>
+<button class="del" onclick="rimuovi(${i})">OK</button>
 </div>`).join("")
 }
 
@@ -305,3 +282,4 @@ window.onload=render
 </script>
 
 </body>
+</html>
