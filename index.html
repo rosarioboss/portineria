@@ -154,15 +154,19 @@ console.log("OCR:",testo)
 
 let ora=Date.now()
 
-// 🔥 NUOVO SISTEMA INTELLIGENTE (NON ROMPE NULLA)
+// 🔥 FIX SENZA ROMPERE NIENTE
 if(testo.length > 3){
 
-document.getElementById("q").value = testo
+let parole = testo.split(" ").filter(p => p.length > 2)
+
+// aggiorna campo ricerca
+document.getElementById("q").value = parole.join(" ")
 cerca()
 
+// trova risultati
 let risultati = rubrica.filter(x=>{
 let nome = x.nome.toUpperCase()
-return testo.split(" ").some(p => nome.includes(p))
+return parole.some(p => nome.includes(p))
 })
 
 if(risultati.length === 1 && (ora-ultimoInvio>3000)){
