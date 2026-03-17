@@ -1,133 +1,171 @@
 <!DOCTYPE html>
+
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
-    <title>Portineria Pro</title>
-    <script src="https://unpkg.com/@zxing/library@latest"></script>
-    <style>
-        body { font-family: -apple-system, sans-serif; background: #f2f2f7; margin: 0; padding: 15px; }
-        .card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        input { width: 100%; padding: 15px; font-size: 18px; border-radius: 10px; border: 1px solid #ccc; box-sizing: border-box; margin-bottom: 10px; }
-        .btn { width: 100%; padding: 18px; border: none; border-radius: 12px; color: white; font-weight: bold; font-size: 16px; margin-bottom: 10px; cursor: pointer; text-align: center; }
-        .btn-scan { background: #ff9500; }
-        .btn-pacco { background: #007aff; }
-        .btn-rac { background: #5856d6; }
-        .btn-red { background: #ff3b30; width: auto; padding: 8px 12px; font-size: 12px; }
-        .item { background: white; padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-        #video { width: 100%; border-radius: 12px; display: none; margin-bottom: 10px; background: #000; }
-        .suggerimento { padding: 15px; border-bottom: 1px solid #eee; background: #fff; font-weight: bold; color: #007aff; }
-        .hidden { display: none; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+<title>Portineria PRO</title>
+
+<style>
+body{font-family:-apple-system,sans-serif;background:#f2f2f7;margin:0;padding:15px}
+.card{background:#fff;padding:15px;border-radius:12px;margin-bottom:15px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+h2{margin:0 0 10px;font-size:18px}
+input{width:100%;padding:15px;font-size:18px;border-radius:10px;border:1px solid #ccc}
+
+.suggerimento{padding:15px;border-bottom:1px solid #eee;font-weight:bold;color:#007aff}
+
+.btn-container{display:flex;gap:10px;margin-top:10px}
+.btn{flex:1;padding:18px;border:none;border-radius:12px;color:#fff;font-weight:bold;cursor:pointer}
+.btn-pacco{background:#007aff}
+.btn-rac{background:#5856d6}
+.btn-ritiro{background:#ff3b30;padding:10px;font-size:12px;flex:none}
+
+.item{padding:12px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center}
+.hidden{display:none}
+</style>
+
 </head>
+
 <body>
 
 <div class="card">
-    <h2>➕ Arrivo Pacco / Raccomandata</h2>
-    <video id="video"></video>
-    <button class="btn btn-scan" onclick="avviaScanner()">📷 SCANSIONA CODICE</button>
-    
-    <input id="nomeInput" placeholder="Cerca Cognome..." oninput="cerca()">
-    <div id="suggerimenti"></div>
+<h2>📦 Cerca Condomino</h2>
+<input id="cercaInput" placeholder="Scrivi cognome..." oninput="cerca()">
+<div id="risultati"></div>
+</div>
 
-    <div id="comandi" class="hidden">
-        <button class="btn btn-pacco" onclick="salvaEAvvisa('PACCO')">AVVISA PER PACCO ➔</button>
-        <button class="btn btn-rac" onclick="salvaEAvvisa('RACCOMANDATA')">AVVISA PER RACCOMANDATA ➔</button>
-    </div>
+<div id="azioni" class="card hidden">
+<h2 id="nomeSel"></h2>
+<div class="btn-container">
+<button class="btn btn-pacco" onclick="avvisa('PACCO')">PACCO</button>
+<button class="btn btn-rac" onclick="avvisa('RACCOMANDATA')">RACCOMANDATA</button>
+</div>
 </div>
 
 <div class="card">
-    <h2>📥 Giacenza</h2>
-    <div id="listaGiacenza"></div>
+<h2>📥 Giacenza</h2>
+<div id="lista"></div>
 </div>
 
-<button onclick="document.getElementById('admin').classList.toggle('hidden')" style="width:100%; background:none; border:none; color:gray; padding:10px;">⚙️ Gestisci Rubrica</button>
+<button onclick="admin()" style="width:100%;background:none;border:none;color:gray;padding:20px">
+⚙️ Rubrica
+</button>
 
 <div id="admin" class="card hidden">
-    <input id="rNome" placeholder="Nome Cognome">
-    <input id="rTel" placeholder="3331234567">
-    <button class="btn btn-pacco" onclick="salvaRubrica()">SALVA IN RUBRICA</button>
+<input id="nome" placeholder="Nome Cognome">
+<input id="tel" placeholder="Telefono">
+<button class="btn btn-pacco" style="width:100%" onclick="salva()">SALVA</button>
+</div>
+
+<div class="card">
+<button class="btn btn-pacco" style="width:100%;margin-bottom:10px" onclick="backup()">📤 Backup</button>
+<input type="file" id="file" style="display:none" onchange="restore(event)">
+<button class="btn btn-rac" style="width:100%;margin-bottom:10px" onclick="file.click()">📥 Ripristina</button>
+<button class="btn btn-ritiro" style="width:100%;background:#000" onclick="reset()">🗑️ Reset</button>
 </div>
 
 <script>
-const DB = {
-    get: k => JSON.parse(localStorage.getItem(k)) || [],
-    set: (k, v) => localStorage.setItem(k, JSON.stringify(v))
-};
-
-const codeReader = new ZXing.BrowserMultiFormatReader();
-let corrente = null;
-
-function avviaScanner() {
-    const v = document.getElementById('video');
-    v.style.display = 'block';
-    codeReader.decodeFromVideoDevice(null, 'video', (result) => {
-        if (result) {
-            codeReader.reset();
-            v.style.display = 'none';
-            alert("Codice: " + result.text);
-        }
-    });
+const DB={
+get:k=>JSON.parse(localStorage.getItem(k))||[],
+set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))
 }
 
-function cerca() {
-    let q = document.getElementById("nomeInput").value.toUpperCase();
-    let box = document.getElementById("suggerimenti");
-    if (q.length < 1) { box.innerHTML = ""; return; }
-    let trovati = DB.get("rubrica").filter(u => u.nome.includes(q));
-    box.innerHTML = trovati.map(u => `<div class="suggerimento" onclick="seleziona('${u.nome}', '${u.tel}')">${u.nome}</div>`).join("");
+let attuale=null
+
+function cerca(){
+let q=cercaInput.value.toUpperCase()
+if(!q)return risultati.innerHTML=""
+let r=DB.get("rubrica").filter(x=>x.nome.toUpperCase().includes(q)).sort((a,b)=>a.nome.localeCompare(b.nome))
+risultati.innerHTML=r.map(x=>`<div class="suggerimento" onclick="sel(\`${x.nome}\`,\`${x.tel}\`)">${x.nome}</div>`).join("")
 }
 
-function seleziona(nome, tel) {
-    corrente = { nome, tel };
-    document.getElementById("nomeInput").value = nome;
-    document.getElementById("suggerimenti").innerHTML = "";
-    document.getElementById("comandi").classList.remove("hidden");
+function sel(n,t){
+attuale={n,t}
+nomeSel.innerText=n
+azioni.classList.remove("hidden")
+risultati.innerHTML=""
+cercaInput.value=""
 }
 
-function salvaEAvvisa(tipo) {
-    if (!corrente) return;
-    let g = DB.get("giacenza");
-    g.unshift({ nome: corrente.nome, tipo: tipo, data: new Date().toLocaleDateString('it-IT') });
-    DB.set("giacenza", g);
-
-    let pref = corrente.tel.startsWith("39") ? "" : "39";
-    let msg = `Buongiorno ${corrente.nome}, c'è un ${tipo} per te in portineria.`;
-    
-    document.getElementById("comandi").classList.add("hidden");
-    document.getElementById("nomeInput").value = "";
-    render();
-    
-    window.location.href = `https://wa.me/${pref}${corrente.tel}?text=${encodeURIComponent(msg)}`;
+function avvisa(tipo){
+if(!attuale)return
+let tel=attuale.t.replace(/\D/g,'')
+let p=tel.startsWith("39")?"":"39"
+let msg=`Buongiorno ${attuale.n}, è arrivato un ${tipo} per te.`
+window.open(`https://wa.me/${p}${tel}?text=${encodeURIComponent(msg)}`)
+let g=DB.get("giacenza")
+g.unshift({n:attuale.n,tipo,data:new Date().toLocaleDateString('it-IT')})
+DB.set("giacenza",g)
+attuale=null
+azioni.classList.add("hidden")
+render()
 }
 
-function render() {
-    let g = DB.get("giacenza");
-    document.getElementById("listaGiacenza").innerHTML = g.map((x, i) => `
-        <div class="item">
-            <div><b>${x.nome}</b><br><small>${x.tipo} - ${x.data}</small></div>
-            <button class="btn btn-red" onclick="ritira(${i})">OK</button>
-        </div>
-    `).join("") || "Vuoto";
+function render(){
+let g=DB.get("giacenza")
+lista.innerHTML=g.map((x,i)=>`
+<div class="item">
+<div><b>${x.n}</b><br>${x.tipo} - ${x.data}</div>
+<button class="btn btn-ritiro" onclick="ritira(${i})">OK</button>
+</div>`).join("")||"Vuoto"
 }
 
-function ritira(i) {
-    let g = DB.get("giacenza");
-    g.splice(i, 1);
-    DB.set("giacenza", g);
-    render();
+function ritira(i){
+let g=DB.get("giacenza")
+g.splice(i,1)
+DB.set("giacenza",g)
+render()
 }
 
-function salvaRubrica() {
-    let n = document.getElementById("rNome").value.toUpperCase().trim();
-    let t = document.getElementById("rTel").value.trim();
-    let r = DB.get("rubrica");
-    r.push({ nome: n, tel: t });
-    DB.set("rubrica", r);
-    alert("Salvato!");
+function salva(){
+let n=nome.value.toUpperCase().trim()
+let t=tel.value.trim()
+if(!n||!t)return alert("Dati mancanti")
+if(!/^\d{9,}$/.test(t))return alert("Numero non valido")
+let r=DB.get("rubrica")
+if(r.some(x=>x.nome===n))return alert("Già esiste")
+r.push({nome:n,tel:t})
+DB.set("rubrica",r)
+nome.value=""
+tel.value=""
+alert("Salvato")
 }
 
-window.onload = render;
+function admin(){
+document.getElementById("admin").classList.toggle("hidden")
+}
+
+function backup(){
+let data={rubrica:DB.get("rubrica"),giacenza:DB.get("giacenza")}
+let b=new Blob([JSON.stringify(data)],{type:"application/json"})
+let a=document.createElement("a")
+a.href=URL.createObjectURL(b)
+a.download="backup.json"
+a.click()
+}
+
+function restore(e){
+let f=e.target.files[0]
+let r=new FileReader()
+r.onload=x=>{
+let d=JSON.parse(x.target.result)
+DB.set("rubrica",d.rubrica||[])
+DB.set("giacenza",d.giacenza||[])
+render()
+alert("Ripristinato")
+}
+r.readAsText(f)
+}
+
+function reset(){
+if(confirm("Cancello tutto?")){
+localStorage.clear()
+render()
+}
+}
+
+window.onload=render
 </script>
+
 </body>
 </html>
