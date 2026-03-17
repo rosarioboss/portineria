@@ -107,9 +107,7 @@ let scanning=false
 let ultimoInvio=0
 
 async function startOCR(){
-
 if(scanning){stopOCR();return}
-
 scanning=true
 
 const video=document.getElementById("video")
@@ -119,7 +117,6 @@ video:{facingMode:"environment"}
 })
 
 video.srcObject=stream
-
 scanLoop()
 }
 
@@ -155,37 +152,42 @@ let testo=text.toUpperCase().replace(/[^A-Z\s]/g," ")
 
 console.log("OCR:",testo)
 
-// 🔥 MATCHING MIGLIORATO
-let trovato=null
-let punteggioMax=0
+// 🔥 MATCHING DEFINITIVO
+let trovato = null
+let punteggioMax = 0
 
-rubrica.forEach(x=>{
+rubrica.forEach(x => {
 
-let nome=x.nome.toUpperCase()
-let parole=nome.split(" ")
-let match=0
+let nome = x.nome.toUpperCase()
+let testoPulito = testo.replace(/\s+/g," ")
 
-parole.forEach(p=>{
-if(p.length>2 && testo.includes(p)) match++
+let score = 0
+
+if(testoPulito.includes(nome)) score += 5
+
+nome.split(" ").forEach(p=>{
+if(p.length > 2 && testoPulito.includes(p)) score += 2
 })
 
-parole.forEach(p=>{
-if(p.length>3){
-let short=p.slice(0,4)
-if(testo.includes(short)) match++
+nome.split(" ").forEach(p=>{
+if(p.length > 3){
+let short = p.substring(0,3)
+if(testoPulito.includes(short)) score += 1
 }
 })
 
-if(match>punteggioMax){
-punteggioMax=match
-trovato=x
+if(nome.length > testoPulito.length) score -= 1
+
+if(score > punteggioMax){
+punteggioMax = score
+trovato = x
 }
 
 })
 
 let ora=Date.now()
 
-if(trovato && punteggioMax>0 && (ora-ultimoInvio>3000)){
+if(trovato && punteggioMax>=2 && (ora-ultimoInvio>3000)){
 
 ultimoInvio=ora
 
@@ -199,7 +201,7 @@ return
 setTimeout(scanLoop,1000)
 }
 
-// ===== RESTO =====
+// ===== RESTO IDENTICO =====
 let rubrica=JSON.parse(localStorage.getItem("rubrica"))||[
 {nome:"ROSSI MARIO",tel:"3331234567"}
 ]
@@ -216,7 +218,6 @@ btnRac.classList.toggle("active",m==="RACCOMANDATA")
 }
 
 function cerca(){
-
 let val=norm(q.value)
 if(!val){res.innerHTML="";return}
 
