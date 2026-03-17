@@ -36,10 +36,10 @@ border-radius:10px
 .wrap{position:relative}
 .mirino{
 position:absolute;
-top:30%;
-left:10%;
-width:80%;
-height:20%;
+top:40%;
+left:20%;
+width:60%;
+height:15%;
 border:3px solid red;
 border-radius:10px;
 pointer-events:none;
@@ -104,7 +104,6 @@ pointer-events:none;
 // ===== SCANNER =====
 let stream
 let scanning=false
-let ultimoInvio=0
 
 async function startOCR(){
 if(scanning){stopOCR();return}
@@ -136,48 +135,42 @@ const ctx=canvas.getContext("2d")
 let w=video.videoWidth
 let h=video.videoHeight
 
-let x=w*0.1
-let y=h*0.3
-let cw=w*0.8
-let ch=h*0.2
+// 🔥 ZONA RIDOTTA (SOLO MIRINO)
+let x = w * 0.2
+let y = h * 0.4
+let cw = w * 0.6
+let ch = h * 0.15
 
 canvas.width=cw
 canvas.height=ch
 
 ctx.drawImage(video,x,y,cw,ch,0,0,cw,ch)
 
-let { data:{ text } } = await Tesseract.recognize(canvas,'ita')
+let { data:{ text } } = await Tesseract.recognize(canvas,'eng')
 
 let testo=text.toUpperCase().replace(/[^A-Z\s]/g," ")
 
 console.log("OCR:",testo)
 
-let ora=Date.now()
-
-// 🔥 FIX SENZA ROMPERE NIENTE
+// comportamento stabile (come prima)
 if(testo.length > 3){
 
-let parole = testo.split(" ").filter(p => p.length > 2)
+let parole = testo
+.split(" ")
+.map(p => p.trim())
+.filter(p => p.length > 3)
 
-// aggiorna campo ricerca
-document.getElementById("q").value = parole.join(" ")
+parole = parole.filter(p => !/\d/.test(p))
+
+if(parole.length > 0){
+
+let candidato = parole[0]
+
+document.getElementById("q").value = candidato
 cerca()
 
-// trova risultati
-let risultati = rubrica.filter(x=>{
-let nome = x.nome.toUpperCase()
-return parole.some(p => nome.includes(p))
-})
+if(navigator.vibrate) navigator.vibrate(100)
 
-if(risultati.length === 1 && (ora-ultimoInvio>3000)){
-
-ultimoInvio=ora
-
-if(navigator.vibrate) navigator.vibrate(200)
-
-stopOCR()
-invia(risultati[0].nome, risultati[0].tel)
-return
 }
 
 }
