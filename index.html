@@ -69,7 +69,6 @@ pointer-events:none;
 <input id="telManuale" placeholder="Telefono">
 <button class="pacco" onclick="inviaManuale()">INVIA</button>
 
-<!-- NUOVO PULSANTE -->
 <button class="rac" onclick="inviaRacManuale()">📩 SOLO RACCOMANDATA</button>
 </div>
 
@@ -198,13 +197,11 @@ function cerca(){
 let val=norm(q.value)
 if(!val){res.innerHTML="";return}
 
-// cerca anche solo cognome
 let trovati=rubrica.filter(x=>{
 let nome=norm(x.nome)
 return nome.includes(val)
 })
 
-// auto invio se 1 solo
 if(trovati.length===1){
 invia(trovati[0].nome,trovati[0].tel)
 q.value=""
@@ -217,19 +214,26 @@ res.innerHTML=trovati.map(x=>
 ).join("") || "<div class='small'>Nessun risultato</div>"
 }
 
-// ===== INVIO =====
+// ===== INVIO (MODIFICATO SOLO QUI) =====
 function invia(nome,tel){
 
-let numero=tel.replace(/\D/g,'')
-if(numero.length<8)return alert("Numero non valido")
+let numeri = tel.split(",")
+
+let msg=mode==="PACCO"
+?`Salve, è arrivato un pacco per lei in portineria`
+:`Salve, è arrivata una raccomandata per lei in portineria`
+
+numeri.forEach(t => {
+
+let numero=t.replace(/\D/g,'')
+if(numero.length<8)return
 
 let pref=numero.startsWith("39")?"":"39"
 
-let msg=mode==="PACCO"
-?`Buongiorno ${nome}, è arrivato un pacco in portineria`
-:`Buongiorno ${nome}, è arrivata una raccomandata in portineria`
+let url=`https://wa.me/${pref}${numero}?text=${encodeURIComponent(msg)}`
+window.open(url,'_blank')
 
-window.location.href=`https://wa.me/${pref}${numero}?text=${encodeURIComponent(msg)}`
+})
 
 giacenza.unshift({nome,tipo:mode,data:new Date().toLocaleDateString('it-IT')})
 localStorage.setItem("giacenza",JSON.stringify(giacenza))
@@ -237,18 +241,25 @@ localStorage.setItem("giacenza",JSON.stringify(giacenza))
 render()
 }
 
-// ===== SOLO RACCOMANDATA =====
+// ===== SOLO RACCOMANDATA (MODIFICATO) =====
 function inviaRacManuale(){
 let n=nomeManuale.value.trim()
 let t=telManuale.value.trim()
 if(!n||!t)return alert("Inserisci dati")
 
-let numero=t.replace(/\D/g,'')
+let numeri = t.split(",")
+
+let msg=`Salve, è arrivata una raccomandata per lei in portineria`
+
+numeri.forEach(num => {
+
+let numero=num.replace(/\D/g,'')
 let pref=numero.startsWith("39")?"":"39"
 
-let msg=`Buongiorno ${n}, è arrivata una raccomandata in portineria`
+let url=`https://wa.me/${pref}${numero}?text=${encodeURIComponent(msg)}`
+window.open(url,'_blank')
 
-window.location.href=`https://wa.me/${pref}${numero}?text=${encodeURIComponent(msg)}`
+})
 }
 
 // ===== RESTO =====
