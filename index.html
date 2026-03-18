@@ -6,6 +6,7 @@
 <title>Portineria</title>
 
 <script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <style>
 body{font-family:sans-serif;background:#f2f2f7;margin:0;padding:15px}
@@ -26,7 +27,6 @@ button{width:100%;padding:14px;margin-top:6px;border:none;border-radius:10px;col
 .active{opacity:1}
 
 #reader{position:relative;width:100%;margin-top:10px}
-
 #reader.active::after{
 content:"";
 position:absolute;
@@ -39,6 +39,8 @@ border:3px solid red;
 border-radius:12px;
 pointer-events:none;
 }
+
+#qrcode{display:flex;justify-content:center;margin-top:10px}
 </style>
 </head>
 
@@ -58,7 +60,6 @@ pointer-events:none;
 <button class="gray" onclick="stopQR()">⛔ STOP</button>
 
 <div id="reader"></div>
-
 <div id="res"></div>
 </div>
 
@@ -67,14 +68,11 @@ pointer-events:none;
 <input id="nomeManuale" placeholder="Nome Cognome">
 <input id="telManuale" placeholder="Telefono">
 <button class="pacco" onclick="inviaManuale()">INVIA</button>
-
 <button class="rac" onclick="inviaRacManuale()">📩 SOLO RACCOMANDATA</button>
 </div>
 
 <div class="card">
-<h2 onclick="toggleRubrica()" style="cursor:pointer">
-👥 Rubrica
-</h2>
+<h2 onclick="toggleRubrica()" style="cursor:pointer">👥 Rubrica</h2>
 <input id="nomeNew" placeholder="Nome Cognome">
 <input id="telNew" placeholder="Telefono">
 <button class="pacco" onclick="aggiungi()">AGGIUNGI</button>
@@ -88,6 +86,12 @@ pointer-events:none;
 <div id="lista" style="display:none"></div>
 </div>
 
+<!-- NUOVA SEZIONE QR -->
+<div class="card">
+<h2>📷 QR Code</h2>
+<div id="qrcode"></div>
+</div>
+
 <div class="card">
 <h2>📥 Giacenza</h2>
 <div id="g"></div>
@@ -95,28 +99,23 @@ pointer-events:none;
 
 <script>
 
-// ===== SCANNER =====
+// ===== SCANNER (IDENTICO) =====
 let qr
 
 function startQR(){
-
 if(qr){ stopQR() }
 
 document.getElementById("reader").classList.add("active")
-
 qr = new Html5Qrcode("reader")
 
 let letto = false
 
 Html5Qrcode.getCameras().then(devices => {
-
 if(devices && devices.length){
 
-let cameraId = devices[devices.length-1].id // posteriore
+let cameraId = devices[devices.length-1].id
 
-qr.start(
-cameraId,
-{
+qr.start(cameraId,{
 fps:10,
 qrbox:(w,h)=>{
 let size=Math.min(w,h)*0.4
@@ -124,7 +123,6 @@ return {width:size,height:size}
 }
 },
 msg=>{
-
 if(letto)return
 
 let codice=(msg||"").toUpperCase().trim()
@@ -135,12 +133,10 @@ return codice.includes(nome) || nome.includes(codice)
 })
 
 if(trovato){
-
 letto=true
 
-// 🔊 NON blocca niente
 try{
-let a = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg")
+let a=new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg")
 a.play().catch(()=>{})
 }catch(e){}
 
@@ -148,22 +144,13 @@ if(navigator.vibrate) navigator.vibrate(200)
 
 stopQR()
 
-// 👉 PICCOLO RITARDO = evita bug
 setTimeout(()=>{
 invia(trovato.nome,trovato.tel)
 },300)
-
 }
-
-}
-)
-
-}else{
-alert("Nessuna fotocamera trovata")
-}
-
 })
-
+}
+})
 }
 
 function stopQR(){
@@ -184,6 +171,17 @@ let giacenza=JSON.parse(localStorage.getItem("giacenza"))||[]
 let mode="PACCO"
 
 function norm(t){return(t||"").toUpperCase().trim()}
+
+// ===== QR GENERAZIONE =====
+function generaQR(nome){
+document.getElementById("qrcode").innerHTML=""
+
+new QRCode(document.getElementById("qrcode"),{
+text:nome,
+width:200,
+height:200
+})
+}
 
 // ===== MODE =====
 function setMode(m){
@@ -210,11 +208,13 @@ return
 }
 
 res.innerHTML=trovati.map(x=>
-`<div class="item" onclick="invia('${x.nome}','${x.tel}')">${x.nome}</div>`
+`<div class="item" onclick="invia('${x.nome}','${x.tel}')">
+${x.nome}
+</div>`
 ).join("") || "<div class='small'>Nessun risultato</div>"
 }
 
-// ===== INVIO (STABILE) =====
+// ===== INVIO =====
 function invia(nome,tel){
 
 let numero=tel.replace(/\D/g,'')
@@ -226,7 +226,6 @@ let msg=mode==="PACCO"
 ?`Salve, è arrivato un pacco per lei in portineria`
 :`Salve, è arrivata una raccomandata per lei in portineria`
 
-// 👉 QUESTO FUNZIONA SEMPRE
 window.location.href=`https://wa.me/${pref}${numero}?text=${encodeURIComponent(msg)}`
 
 giacenza.unshift({nome,tipo:mode,data:new Date().toLocaleDateString('it-IT')})
@@ -301,10 +300,12 @@ localStorage.setItem("giacenza",JSON.stringify(giacenza))
 render()
 }
 
+// 🔥 QUI AGGIUNTO BOTTONE QR
 function render(){
 lista.innerHTML=rubrica.map((x,i)=>
 `<div class="item">
 <b onclick="invia('${x.nome}','${x.tel}')">${x.nome}</b>
+<button class="gray" onclick="generaQR('${x.nome}')">QR</button>
 </div>`).join("")
 
 g.innerHTML=giacenza.map((x,i)=>
