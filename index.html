@@ -95,17 +95,6 @@ pointer-events:none;
 
 <script>
 
-// 🔊 AUDIO STABILE
-let beepAudio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg")
-beepAudio.preload = "auto"
-
-function beep(){
-try{
-beepAudio.currentTime = 0
-beepAudio.play().catch(()=>{})
-}catch(e){}
-}
-
 // ===== SCANNER =====
 let qr
 
@@ -123,12 +112,7 @@ Html5Qrcode.getCameras().then(devices => {
 
 if(devices && devices.length){
 
-let backCam = devices.find(d => 
-d.label.toLowerCase().includes("back") || 
-d.label.toLowerCase().includes("rear")
-)
-
-let cameraId = backCam ? backCam.id : devices[devices.length-1].id
+let cameraId = devices[devices.length-1].id // posteriore
 
 qr.start(
 cameraId,
@@ -154,12 +138,20 @@ if(trovato){
 
 letto=true
 
-beep() // 🔊 FIX
+// 🔊 NON blocca niente
+try{
+let a = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg")
+a.play().catch(()=>{})
+}catch(e){}
 
 if(navigator.vibrate) navigator.vibrate(200)
 
 stopQR()
+
+// 👉 PICCOLO RITARDO = evita bug
+setTimeout(()=>{
 invia(trovato.nome,trovato.tel)
+},300)
 
 }
 
@@ -196,8 +188,8 @@ function norm(t){return(t||"").toUpperCase().trim()}
 // ===== MODE =====
 function setMode(m){
 mode=m
-btnPacco.classList.toggle("active",m==="PACCO")
-btnRac.classList.toggle("active",m==="RACCOMANDATA")
+document.getElementById("btnPacco").classList.toggle("active",m==="PACCO")
+document.getElementById("btnRac").classList.toggle("active",m==="RACCOMANDATA")
 }
 
 // ===== RICERCA =====
@@ -222,26 +214,20 @@ res.innerHTML=trovati.map(x=>
 ).join("") || "<div class='small'>Nessun risultato</div>"
 }
 
-// ===== INVIO STABILE MULTIPLO =====
+// ===== INVIO (STABILE) =====
 function invia(nome,tel){
 
-let numeri = tel.split(",")
+let numero=tel.replace(/\D/g,'')
+if(numero.length<8)return alert("Numero non valido")
+
+let pref=numero.startsWith("39")?"":"39"
 
 let msg=mode==="PACCO"
 ?`Salve, è arrivato un pacco per lei in portineria`
 :`Salve, è arrivata una raccomandata per lei in portineria`
 
-let t = numeri[0].trim() // prende il primo
-
-let numero=t.replace(/\D/g,'')
-if(numero.length<8)return alert("Numero non valido")
-
-let pref=numero.startsWith("39")?"":"39"
-
-let url=`https://wa.me/${pref}${numero}?text=${encodeURIComponent(msg)}`
-
-// ✅ stabile
-window.location.href = url
+// 👉 QUESTO FUNZIONA SEMPRE
+window.location.href=`https://wa.me/${pref}${numero}?text=${encodeURIComponent(msg)}`
 
 giacenza.unshift({nome,tipo:mode,data:new Date().toLocaleDateString('it-IT')})
 localStorage.setItem("giacenza",JSON.stringify(giacenza))
