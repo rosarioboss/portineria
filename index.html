@@ -95,7 +95,7 @@ pointer-events:none;
 
 <script>
 
-// 🔊 NUOVO BEEP STABILE
+// 🔊 BEEP STABILE
 function beep(){
 try{
 let audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg")
@@ -152,7 +152,7 @@ if(trovato){
 
 letto=true
 
-beep() // 👈 FIX SUONO
+beep()
 
 if(navigator.vibrate) navigator.vibrate(200)
 
@@ -172,4 +172,171 @@ alert("Nessuna fotocamera trovata")
 
 }
 
-// ===== resto identico (non toccato) =====
+function stopQR(){
+if(qr){
+qr.stop().then(()=>{
+qr.clear()
+document.getElementById("reader").classList.remove("active")
+})
+}
+}
+
+// ===== DATI =====
+let rubrica=JSON.parse(localStorage.getItem("rubrica"))||[
+{nome:"ROSSI MARIO",tel:"3331234567"}
+]
+
+let giacenza=JSON.parse(localStorage.getItem("giacenza"))||[]
+let mode="PACCO"
+
+function norm(t){return(t||"").toUpperCase().trim()}
+
+// ===== MODE =====
+function setMode(m){
+mode=m
+btnPacco.classList.toggle("active",m==="PACCO")
+btnRac.classList.toggle("active",m==="RACCOMANDATA")
+}
+
+// ===== RICERCA =====
+function cerca(){
+let val=norm(q.value)
+if(!val){res.innerHTML="";return}
+
+let trovati=rubrica.filter(x=>{
+let nome=norm(x.nome)
+return nome.includes(val)
+})
+
+if(trovati.length===1){
+invia(trovati[0].nome,trovati[0].tel)
+q.value=""
+res.innerHTML=""
+return
+}
+
+res.innerHTML=trovati.map(x=>
+`<div class="item" onclick="invia('${x.nome}','${x.tel}')">${x.nome}</div>`
+).join("") || "<div class='small'>Nessun risultato</div>"
+}
+
+// ===== INVIO =====
+function invia(nome,tel){
+
+let numeri = tel.split(",")
+
+let msg=mode==="PACCO"
+?`Salve, è arrivato un pacco per lei in portineria`
+:`Salve, è arrivata una raccomandata per lei in portineria`
+
+numeri.forEach(t => {
+
+let numero=t.replace(/\D/g,'')
+if(numero.length<8)return
+
+let pref=numero.startsWith("39")?"":"39"
+
+let url=`https://wa.me/${pref}${numero}?text=${encodeURIComponent(msg)}`
+window.open(url,'_blank')
+
+})
+
+giacenza.unshift({nome,tipo:mode,data:new Date().toLocaleDateString('it-IT')})
+localStorage.setItem("giacenza",JSON.stringify(giacenza))
+
+render()
+}
+
+// ===== RACCOMANDATA =====
+function inviaRacManuale(){
+let n=nomeManuale.value.trim()
+let t=telManuale.value.trim()
+if(!n||!t)return alert("Inserisci dati")
+
+let numeri = t.split(",")
+
+let msg=`Salve, è arrivata una raccomandata per lei in portineria`
+
+numeri.forEach(num => {
+
+let numero=num.replace(/\D/g,'')
+let pref=numero.startsWith("39")?"":"39"
+
+let url=`https://wa.me/${pref}${numero}?text=${encodeURIComponent(msg)}`
+window.open(url,'_blank')
+
+})
+}
+
+// ===== RESTO =====
+function inviaManuale(){
+let n=nomeManuale.value.trim()
+let t=telManuale.value.trim()
+if(!n||!t)return alert("Inserisci dati")
+invia(n,t)
+nomeManuale.value=""
+telManuale.value=""
+}
+
+function aggiungi(){
+let n=nomeNew.value.trim()
+let t=telNew.value.trim()
+if(!n||!t)return alert("Inserisci dati")
+rubrica.push({nome:n.toUpperCase(),tel:t})
+localStorage.setItem("rubrica",JSON.stringify(rubrica))
+nomeNew.value=""
+telNew.value=""
+render()
+}
+
+function toggleRubrica(){
+lista.style.display=lista.style.display==="none"?"block":"none"
+}
+
+function esporta(){
+let blob=new Blob([JSON.stringify(rubrica,null,2)],{type:"application/json"})
+let a=document.createElement("a")
+a.href=URL.createObjectURL(blob)
+a.download="rubrica.json"
+a.click()
+}
+
+function importa(e){
+let file=e.target.files[0]
+let reader=new FileReader()
+reader.onload=x=>{
+try{
+rubrica=JSON.parse(x.target.result)
+localStorage.setItem("rubrica",JSON.stringify(rubrica))
+render()
+}catch{alert("File non valido")}
+}
+reader.readAsText(file)
+}
+
+function rimuovi(i){
+giacenza.splice(i,1)
+localStorage.setItem("giacenza",JSON.stringify(giacenza))
+render()
+}
+
+function render(){
+lista.innerHTML=rubrica.map((x,i)=>
+`<div class="item">
+<b onclick="invia('${x.nome}','${x.tel}')">${x.nome}</b>
+</div>`).join("")
+
+g.innerHTML=giacenza.map((x,i)=>
+`<div class="item">
+<b>${x.nome}</b><br>
+<span class="small">${x.tipo}</span>
+<button class="del" onclick="event.stopPropagation();rimuovi(${i})">OK</button>
+</div>`).join("")
+}
+
+window.onload=render
+
+</script>
+
+</body>
+</html>
