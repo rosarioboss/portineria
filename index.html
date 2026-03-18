@@ -95,12 +95,14 @@ pointer-events:none;
 
 <script>
 
-// 🔊 BEEP STABILE
+// 🔊 AUDIO STABILE
+let beepAudio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg")
+beepAudio.preload = "auto"
+
 function beep(){
 try{
-let audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg")
-audio.volume = 1
-audio.play().catch(()=>{})
+beepAudio.currentTime = 0
+beepAudio.play().catch(()=>{})
 }catch(e){}
 }
 
@@ -152,7 +154,7 @@ if(trovato){
 
 letto=true
 
-beep()
+beep() // 🔊 FIX
 
 if(navigator.vibrate) navigator.vibrate(200)
 
@@ -220,7 +222,7 @@ res.innerHTML=trovati.map(x=>
 ).join("") || "<div class='small'>Nessun risultato</div>"
 }
 
-// ===== INVIO =====
+// ===== INVIO STABILE MULTIPLO =====
 function invia(nome,tel){
 
 let numeri = tel.split(",")
@@ -229,17 +231,17 @@ let msg=mode==="PACCO"
 ?`Salve, è arrivato un pacco per lei in portineria`
 :`Salve, è arrivata una raccomandata per lei in portineria`
 
-numeri.forEach(t => {
+let t = numeri[0].trim() // prende il primo
 
 let numero=t.replace(/\D/g,'')
-if(numero.length<8)return
+if(numero.length<8)return alert("Numero non valido")
 
 let pref=numero.startsWith("39")?"":"39"
 
 let url=`https://wa.me/${pref}${numero}?text=${encodeURIComponent(msg)}`
-window.open(url,'_blank')
 
-})
+// ✅ stabile
+window.location.href = url
 
 giacenza.unshift({nome,tipo:mode,data:new Date().toLocaleDateString('it-IT')})
 localStorage.setItem("giacenza",JSON.stringify(giacenza))
@@ -253,19 +255,12 @@ let n=nomeManuale.value.trim()
 let t=telManuale.value.trim()
 if(!n||!t)return alert("Inserisci dati")
 
-let numeri = t.split(",")
+let numero=t.replace(/\D/g,'')
+let pref=numero.startsWith("39")?"":"39"
 
 let msg=`Salve, è arrivata una raccomandata per lei in portineria`
 
-numeri.forEach(num => {
-
-let numero=num.replace(/\D/g,'')
-let pref=numero.startsWith("39")?"":"39"
-
-let url=`https://wa.me/${pref}${numero}?text=${encodeURIComponent(msg)}`
-window.open(url,'_blank')
-
-})
+window.location.href=`https://wa.me/${pref}${numero}?text=${encodeURIComponent(msg)}`
 }
 
 // ===== RESTO =====
