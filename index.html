@@ -86,7 +86,6 @@ pointer-events:none;
 <div id="lista" style="display:none"></div>
 </div>
 
-<!-- NUOVA SEZIONE QR -->
 <div class="card">
 <h2>📷 QR Code</h2>
 <div id="qrcode"></div>
@@ -99,11 +98,10 @@ pointer-events:none;
 
 <script>
 
-// ===== SCANNER (IDENTICO) =====
 let qr
 
 function startQR(){
-if(qr){ stopQR() }
+if(qr){ return }
 
 document.getElementById("reader").classList.add("active")
 qr = new Html5Qrcode("reader")
@@ -153,14 +151,27 @@ invia(trovato.nome,trovato.tel)
 })
 }
 
+// ✅ FIX SICURO
 function stopQR(){
 if(qr){
 qr.stop().then(()=>{
 qr.clear()
+qr = null
 document.getElementById("reader").classList.remove("active")
+}).catch(()=>{
+qr = null
 })
 }
 }
+
+// ✅ RIAVVIO SICURO
+window.addEventListener("focus", () => {
+if(!qr){
+setTimeout(()=>{
+startQR()
+},500)
+}
+})
 
 // ===== DATI =====
 let rubrica=JSON.parse(localStorage.getItem("rubrica"))||[
@@ -172,10 +183,8 @@ let mode="PACCO"
 
 function norm(t){return(t||"").toUpperCase().trim()}
 
-// ===== QR GENERAZIONE =====
 function generaQR(nome){
 document.getElementById("qrcode").innerHTML=""
-
 new QRCode(document.getElementById("qrcode"),{
 text:nome,
 width:200,
@@ -183,14 +192,12 @@ height:200
 })
 }
 
-// ===== MODE =====
 function setMode(m){
 mode=m
 document.getElementById("btnPacco").classList.toggle("active",m==="PACCO")
 document.getElementById("btnRac").classList.toggle("active",m==="RACCOMANDATA")
 }
 
-// ===== RICERCA =====
 function cerca(){
 let val=norm(q.value)
 if(!val){res.innerHTML="";return}
@@ -214,9 +221,7 @@ ${x.nome}
 ).join("") || "<div class='small'>Nessun risultato</div>"
 }
 
-// ===== INVIO =====
 function invia(nome,tel){
-
 let numero=tel.replace(/\D/g,'')
 if(numero.length<8)return alert("Numero non valido")
 
@@ -234,7 +239,6 @@ localStorage.setItem("giacenza",JSON.stringify(giacenza))
 render()
 }
 
-// ===== RACCOMANDATA =====
 function inviaRacManuale(){
 let n=nomeManuale.value.trim()
 let t=telManuale.value.trim()
@@ -248,7 +252,6 @@ let msg=`Salve, è arrivata una raccomandata per lei in portineria`
 window.location.href=`https://wa.me/${pref}${numero}?text=${encodeURIComponent(msg)}`
 }
 
-// ===== RESTO =====
 function inviaManuale(){
 let n=nomeManuale.value.trim()
 let t=telManuale.value.trim()
@@ -300,7 +303,6 @@ localStorage.setItem("giacenza",JSON.stringify(giacenza))
 render()
 }
 
-// 🔥 QUI AGGIUNTO BOTTONE QR
 function render(){
 lista.innerHTML=rubrica.map((x,i)=>
 `<div class="item">
